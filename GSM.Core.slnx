@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../../GSM.Test/GSM.Test.csproj" Id="56ebedd9-0a69-4f35-8fd3-ae421bb186d9" />
+  <Project Path="GSM.Core.csproj" Id="5d90b5e0-ed75-471e-8516-2cba0c43da18" />
+</Solution>
