@@ -16,14 +16,19 @@ namespace GSM.Core.Source.Device
         public bool SmsSend(string PhoneNumber , string SmsText)
         {
             bool result = false;
-            if (this.DeviceIsBusy(nameof(this.SmsSend)) || !this.InternalStatusCheck(INTERNAL_STATUS.READY, nameof(this.SmsSend)))
+            if (this.TrySetBusy())
+            {
+                result = false;
+                this.ErrorSet(ERROR_CODE.BUSY, nameof(this.SmsSend));
+                return result;
+            }
+            if (!this.InternalStatusCheck(INTERNAL_STATUS.READY, nameof(this.SmsSend)))
             {
                 result = false;
                 return result;
             }
             try
             {
-                this.DeviceBusyActive();
                 DeviceDefinitions.SmsSendData smsSendData = null;
                 string resultStr = string.Empty;
                 result = this.SmsSendDataInitial(ref smsSendData, PhoneNumber, SmsText);

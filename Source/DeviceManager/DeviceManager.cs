@@ -115,11 +115,11 @@ namespace GSM.Core.Source.DeviceManager
             {
                 if (this._firstStart)
                 {
-                    this.DeviceRunOperation(runtime, runtime.Device, DEVICE_OPERATION.DEVICE_REFRESH);
+                    this.DeviceRunOperation(runtime, DEVICE_OPERATION.DEVICE_REFRESH);
                 }
                 else
                 {
-                    this.DeviceRunOperation(runtime, runtime.Device, runtime.LastOperation);
+                    this.DeviceRunOperation(runtime, runtime.LastOperation);
                 }
             }
             this._firstStart = false;
@@ -141,7 +141,7 @@ namespace GSM.Core.Source.DeviceManager
             this.SmsDataUpdate(runtime, result);
             this.DeviceOperationCompletedSetValue(runtime, operation, result);
             nextOperation = this.NextOperation(runtime, operation, result);
-            _ = this.DeviceRunOperationAsync(runtime, sender, nextOperation);
+            this.DeviceRunOperation(runtime, nextOperation);
         }
         private void DeviceOperationCompletedSetValue(DeviceRuntime runtime, DeviceDefinitions.DEVICE_OPERATION LastOperation, bool OperationResult)
         {
@@ -248,25 +248,25 @@ namespace GSM.Core.Source.DeviceManager
             runtime.LastOperation = result;
             return result;
         }
-        private async Task DeviceRunOperationAsync(DeviceRuntime runtime, Device.Device sender, DeviceDefinitions.DEVICE_OPERATION NextOperation)
+        private void DeviceRunOperation(DeviceRuntime runtime, DeviceDefinitions.DEVICE_OPERATION NextOperation)
         {
             if (this._workEnable)
             {
                 switch (NextOperation)
                 {
                     case DEVICE_OPERATION.DEVICE_REFRESH:
-                        this.DeviceRefresh(sender);
+                        _ = this.DeviceRefreshAsync(runtime.Device);
                         break;
 
                     case DEVICE_OPERATION.SMS_SEND:
                         string phoneNumber = string.Empty, smsText = string.Empty;
                         if (this.SmsDataGet(runtime, ref phoneNumber, ref smsText))
                         {
-                            this.SmsSend(sender, phoneNumber, smsText);
+                            _ = this.SmsSendAsync(runtime.Device, phoneNumber, smsText);
                         }
                         else
                         {
-                            await DeviceWaitAsync(runtime, sender, DeviceDefinitions.DEVICE_OPERATION.SMS_SEND);
+                            _ = this.DeviceWaitAsync(runtime, DeviceDefinitions.DEVICE_OPERATION.SMS_SEND);
                         }
                         break;
 
@@ -275,39 +275,33 @@ namespace GSM.Core.Source.DeviceManager
                 }
             }
         }
-        private void DeviceRefresh(Device.Device sender)
+        private Task DeviceRefreshAsync(Device.Device sender)
         {
-            Task.Run(() =>
+            try
             {
-                try
-                {
-                    sender.DeviceRefresh();
-                }
-                catch (Exception)
-                {
-                }
-            });
+                return Task.Run(() => sender.DeviceRefresh());
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
-        private void SmsSend(Device.Device sender, string PhoneNumber, string SmsText)
+        private Task SmsSendAsync(Device.Device sender, string PhoneNumber, string SmsText)
         {
-            Task.Run(() =>
+            try
             {
-                try
-                {
-                    sender.SmsSend(PhoneNumber, SmsText);
-                }
-                catch (Exception)
-                {
-                }
-            });
-
+                return Task.Run(() => sender.SmsSend(PhoneNumber, SmsText));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
-        private async Task DeviceWaitAsync(DeviceRuntime runtime, Device.Device sender, DeviceDefinitions.DEVICE_OPERATION NextOperation)
+        private async Task DeviceWaitAsync(DeviceRuntime runtime, DeviceDefinitions.DEVICE_OPERATION NextOperation)
         {
             await Task.Delay(DEVICE_WAIT_MS);
-            this.DeviceRunOperation(runtime, sender, NextOperation);
+            this.DeviceRunOperation(runtime, NextOperation);
         }
-
         private bool SmsDataGet(DeviceRuntime runtime, ref string PhoneNumber, ref String SmsText)
         {
             bool result = false;
@@ -547,7 +541,7 @@ namespace GSM.Core.Source.DeviceManager
             device.DeviceOperationCompleted += DeviceOperationCompleted;
             _devices.Add(device, new DeviceRuntime(device));
         }
-
+    
         public void SmsListFill(List<(int ExternalIndex, string PhoneNumber, string SmsText)> smsList)
         {
             this._smsManager.AddData(smsList);

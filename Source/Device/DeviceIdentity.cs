@@ -76,14 +76,14 @@ namespace GSM.Core.Source.Device
         public bool DeviceCountGet(ref int DeviceCount, bool InternalValueSet)
         {
             bool result = false;
-            if (this.DeviceIsBusy(nameof(this.DeviceCountGet)))
+            if (this.TrySetBusy())
             {
                 result = false;
+                this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceCountGet));
                 return result;
             }
             try
             {
-                this.DeviceBusyActive();
                 result = this.DeviceCountGetWorkflow(ref DeviceCount, InternalValueSet);
                 return result;
             }

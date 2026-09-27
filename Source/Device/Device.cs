@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using static GSM.Core.Source.Common.DeviceDefinitions;
 
@@ -137,7 +138,7 @@ namespace GSM.Core.Source.Device
         {
             get
             {
-                if (this._busyFlag || this._refreshMode)
+                if (this._busyFlag == 0)
                 {
                     return STATUS.BUSY;
                 }
@@ -414,12 +415,12 @@ namespace GSM.Core.Source.Device
             bool result = false;
             try
             {
-                if (this.DeviceIsBusy(nameof(this.DeviceRefresh)))
+                if (this.TrySetBusy())
                 {
                     result = false;
+                    this.ErrorSet(ERROR_CODE.BUSY , nameof(this.DeviceRefresh));
                     return result;
                 }
-                this.DeviceBusyActive();
                 result = this.DeviceRefreshWorkFlow(PowerRestartAllow);
                 return result;
             }
@@ -817,22 +818,9 @@ namespace GSM.Core.Source.Device
         }
         //Error Manager
         //Busy Flag manager
-        private bool DeviceIsBusy(string FuncName)
+        private bool TrySetBusy()
         {
-            if (this._busyFlag)
-            {
-                this._errorCode = ERROR_CODE.BUSY;
-                this._errorMessage = FuncName;
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        private void DeviceBusyActive()
-        {
-            this._busyFlag = true;
+            return Interlocked.CompareExchange(ref this._busyFlag, 1, 0) == 0;
         }
         private void DeviceBusyDeactive(string FuncName,bool FuncResult)
         {
@@ -867,7 +855,7 @@ namespace GSM.Core.Source.Device
                     operation = DeviceDefinitions.DEVICE_OPERATION.UNKNOWN;
                     break;
             }
-            this._busyFlag = false;
+            Interlocked.Exchange(ref this._busyFlag, 0);
             this.OnOperationCompleted(operation , FuncResult);
         }
         //Busy Flag manager

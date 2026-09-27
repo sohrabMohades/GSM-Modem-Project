@@ -114,8 +114,7 @@ namespace GSM.Core.Source.Device
         //Fields
         //Variable
         private INTERNAL_STATUS _internalStatus = INTERNAL_STATUS.INVALID;
-        private bool _busyFlag = false;
-        private bool _refreshMode = false;
+        private int _busyFlag = 0;
         private ERROR_CODE _errorCode = ERROR_CODE.NO_ERROR;
         private string _errorMessage = "";
         private readonly string _dllFileName;

@@ -14,14 +14,14 @@ namespace GSM.Core.Source.Device
         public bool DeviceIdentity(int DeviceIndex, ref int DeviceNumber, ref string IMEI)
         {
             bool result = false;
-            if (this.DeviceIsBusy(nameof(this.DeviceIdentity)))
+            if (this.TrySetBusy())
             {
                 result = false;
+                this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceIdentity));
                 return result;
             }
             try
             {
-                this.DeviceBusyActive();
                 result = this.DeviceIdentityWorkFlow(DeviceIndex, ref DeviceNumber, ref IMEI);
                 return result;
             }
@@ -77,14 +77,19 @@ namespace GSM.Core.Source.Device
         public bool DeviceNumberChange(int DeviceNumberNew)
         {
             bool result = false;
-            if (this.DeviceIsBusy(nameof(this.DeviceNumberChange)) || !this.DeviceNumberChangeAllow(nameof(DeviceNumberChange)))
+            if (this.TrySetBusy())
+            {
+                result = false;
+                this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceNumberChange));
+                return result;
+            }
+            if (!this.DeviceNumberChangeAllow(nameof(DeviceNumberChange)))
             {
                 result = false;
                 return result;
             }
             try
             {
-                this.DeviceBusyActive();
                 result = this.DeviceNumberChangeWorkFlow(DeviceIndex, DeviceNumberNew);
                 if (result)
                 {
@@ -120,14 +125,14 @@ namespace GSM.Core.Source.Device
         public bool DeviceUnselect()
         {
             bool result = false;
-            if (this.DeviceIsBusy(nameof(this.DeviceUnselect)))
+            if (this.TrySetBusy())
             {
                 result = false;
+                this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceUnselect));
                 return result;
             }
             try
             {
-                this.DeviceBusyActive();
                 result = this.DeviceUnselectWorkFlow();
                 return result;
             }

@@ -1209,7 +1209,6 @@ namespace GSM.Core.Source.Device
         //Signal Get
         private bool SignalGetWorkflow(ref int Signal, bool InternalValueSet)
         {
-            this._busyFlag = true;
             bool result = true, result1 = false, result2 = false;
             int signal1 = DeviceDefinitions.NUMBER_INVALID, signal2 = DeviceDefinitions.NUMBER_INVALID;
             if (result)
