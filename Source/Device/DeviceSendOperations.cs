@@ -1,4 +1,5 @@
 ﻿using GSM.Core.Source.Common;
+using GSM.Core.Source.StringAnalyzer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,13 +8,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using static GSM.Core.Source.Common.DeviceDefinitions;
+using static GSM.Core.Source.StringAnalyzer.StringAnalyzer;
 
 namespace GSM.Core.Source.Device
 {
     public partial class Device : IDisposable
     {
         //SMS Send
-        public bool SmsSend(string PhoneNumber , string SmsText)
+        public bool SmsSend(string PhoneNumber, string SmsText, ref List<int> SMSReference)
         {
             bool result = false;
             if (this.TrySetBusy())
@@ -30,11 +32,10 @@ namespace GSM.Core.Source.Device
             try
             {
                 DeviceDefinitions.SmsSendData smsSendData = null;
-                string resultStr = string.Empty;
                 result = this.SmsSendDataInitial(ref smsSendData, PhoneNumber, SmsText);
                 if (result)
                 {
-                    result = this.SMSSendWorkflow(smsSendData , ref resultStr);
+                    result = this.SMSSendWorkflow(smsSendData, ref SMSReference);
                 }
                 return result;
             }
@@ -43,43 +44,33 @@ namespace GSM.Core.Source.Device
                 this.DeviceBusyDeactive(nameof(this.SmsSend), result);
             }
         }
-        private bool SMSSendWorkflow(DeviceDefinitions.SmsSendData smsSendData, ref string ResultStr)
+        private bool SMSSendWorkflow(DeviceDefinitions.SmsSendData smsSendData, ref List<int> SMSReference)
         {
             bool result = true;
             string resultStr = string.Empty;
             if (result)
             {
-                result = this.SMSSendExecute(smsSendData, DELAY_NORMAL1_MS, ref resultStr);
+                result = this.SMSSendExecute(smsSendData, DELAY_NORMAL1_MS, ref SMSReference);
             }
-            if (result)
-            {
-                result = this.SMSSendCheck(resultStr);
-            }
-            ResultStr = resultStr;
             return result;
         }
-        private bool SMSSendExecute(DeviceDefinitions.SmsSendData smsSendData, int Delay , ref string ResultStr)
+        private bool SMSSendExecute(DeviceDefinitions.SmsSendData smsSendData, int Delay, ref List<int> SMSReference)
         {
             Thread.Sleep(Delay);
-            return this.SMSSendBase(smsSendData , ref ResultStr);
+            return this.SMSSendBase(smsSendData , ref SMSReference);
         }
-        private bool SMSSendCheck(string SMSSendCheck)
+        private bool SMSSendBase(DeviceDefinitions.SmsSendData smsSendData, ref List<int> SMSReference)
         {
             bool result = true;
-
-            return result;
-        }
-        private bool SMSSendBase(DeviceDefinitions.SmsSendData smsSendData, ref string ResultStr)
-        {
-            bool result = true;
+            string smsSendedResult = string.Empty;
             this.ErrorReset();
             if (result)
             {
-                result = this.SMSSendBaseDll(smsSendData, ref ResultStr);
+                result = this.SMSSendBaseDll(smsSendData, ref smsSendedResult);
             }
             if (result)
             {
-                result = this.SMSSendBaseCheck(ResultStr);
+                result = this.SMSSendBaseCheck(smsSendedResult , ref SMSReference);
             }
             return result;
         }
@@ -97,9 +88,17 @@ namespace GSM.Core.Source.Device
                 return false;
             }
         }
-        private bool SMSSendBaseCheck(string ResultStr)
+        private bool SMSSendBaseCheck(string SmsSendedResult, ref List<int> SMSReference)
         {
-            return !string.IsNullOrEmpty(ResultStr);
+            bool result;
+            StringAnalyzer.StringAnalyzer.ERROR_CODE errorCode = StringAnalyzer.StringAnalyzer.ERROR_CODE.NO_ERROR;
+            string errorMessage = string.Empty;
+            result = StringAnalyzer.StringAnalyzer.ParseSmsSendResult(SmsSendedResult , ref SMSReference , ref errorCode , ref errorMessage);
+            if(!result && errorCode != StringAnalyzer.StringAnalyzer.ERROR_CODE.NO_ERROR)
+            {
+                this.ErrorSet(ERROR_CODE.SEND_SMS_RESULT , errorMessage);
+            }
+            return result;
         }
         //End : Char Mode Set
 

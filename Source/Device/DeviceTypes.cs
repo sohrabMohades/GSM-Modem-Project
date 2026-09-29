@@ -83,16 +83,17 @@ namespace GSM.Core.Source.Device
             SMS_INBOX_NUMBER = 33,  //Inbox SMS number get error
             INBOX_ALARM_SET = 34,   //Inbox alarm set error
             SEND_SMS_COMMON = 35,   //Send SMS common error
-            SEND_AT_COMMON = 36,    //Send AT Command common error
-            READ_INBOX_COMMON = 37, //Read Inbox common error
-            DEVICE_SELECT_INDEX = 38,//Device Select By Index Error
-            DEVICE_SELECT_NUMBER = 39,//Device Select By Device Number Error
-            DEVICE_NUMBER = 40,     //Device Number out of range or error
-            Execute_TIMEOUT = 41,   //Execute DLL function timeout
-            BUSY = 42,              //Device is Busy wait untill current work end
-            INTERNAL_STATUS = 43,   //current Status NOT in correct Internal Status
-            GSM_STATUS = 44,        //GSM Status fail
-            DEVICE_NUMBER_CHANGE_NOT_ALLOW = 45,//Device Number not allow change
+            SEND_SMS_RESULT = 36,   //Send SMS return invalid result string
+            SEND_AT_COMMON = 37,    //Send AT Command common error
+            READ_INBOX_COMMON = 38, //Read Inbox common error
+            DEVICE_SELECT_INDEX = 39,//Device Select By Index Error
+            DEVICE_SELECT_NUMBER = 40,//Device Select By Device Number Error
+            DEVICE_NUMBER = 41,     //Device Number out of range or error
+            Execute_TIMEOUT = 42,   //Execute DLL function timeout
+            BUSY = 43,              //Device is Busy wait untill current work end
+            INTERNAL_STATUS = 44,   //current Status NOT in correct Internal Status
+            GSM_STATUS = 45,        //GSM Status fail
+            DEVICE_NUMBER_CHANGE_NOT_ALLOW = 46,//Device Number not allow change
             UNKNOWN_ERROR = 1000    //Unknown error 
         }
         //End : Error Codes

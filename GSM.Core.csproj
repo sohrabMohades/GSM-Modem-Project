@@ -60,6 +60,7 @@
     <Compile Include="Source\FileManager\FileManager.cs" />
     <Compile Include="Source\SMS\SMSManager.cs" />
     <Compile Include="Source\SMS\SMSTypes.cs" />
+    <Compile Include="Source\StringAnalyzer\StringAnalyzer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Docs\ADR\" />

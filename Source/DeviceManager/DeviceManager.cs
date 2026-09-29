@@ -290,7 +290,12 @@ namespace GSM.Core.Source.DeviceManager
         {
             try
             {
-                return Task.Run(() => sender.SmsSend(PhoneNumber, SmsText));
+                return Task.Run(() => { 
+                    List<int> smsRefrences = new List<int>();
+                    sender.SmsSend(PhoneNumber, SmsText , ref smsRefrences); 
+                    string smsReferenceStr = string.Join(",", smsRefrences);
+                    Console.WriteLine($"Device {sender.DeviceNumber} sent SMS to {PhoneNumber} with result: {smsReferenceStr}");
+                });
             }
             catch (Exception)
             {
@@ -314,6 +319,7 @@ namespace GSM.Core.Source.DeviceManager
         {
             if (runtime.LastOperation == DEVICE_OPERATION.SMS_SEND)
             {
+                Console.WriteLine($"Device {runtime.Device.DeviceNumber} sent SMS Index {runtime.SmsIndex} with result: {Result}");
                 this._smsManager.UpdateData(runtime.SmsIndex, Result);
             }
         }
@@ -350,6 +356,7 @@ namespace GSM.Core.Source.DeviceManager
             {
                 this.DevicesDiscoveryList(deviceDiscoveryItem);
             }
+            Console.WriteLine("Devices Discovery count = " + deviceDiscoveryItem.Count.ToString());
             if (result)
             {
                 result = this.DevicesListCreation(deviceDiscoveryItem);
@@ -512,13 +519,17 @@ namespace GSM.Core.Source.DeviceManager
             {
                 device = new Device.Device(FileName);
                 device.DeviceIndex = DeviceIndex;
+                Console.WriteLine("Devices Index = " + device.DeviceIndex.ToString() + " - Device Number Changing ....");
                 result = device.DeviceNumberChange(DeviceIndex);
+                Console.WriteLine("Devices Index = " + device.DeviceIndex.ToString() + " - Device Number = " + device.DeviceNumber.ToString());
                 if (result)
                 {
                     this.DeviceAdd(device);
+                    device.DeviceUnselect();
                 }
                 else
                 {
+                    device.DeviceUnselect();
                     //device.Dispose();
                 }
             }

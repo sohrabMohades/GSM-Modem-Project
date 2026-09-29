@@ -820,7 +820,7 @@ namespace GSM.Core.Source.Device
         //Busy Flag manager
         private bool TrySetBusy()
         {
-            return Interlocked.CompareExchange(ref this._busyFlag, 1, 0) == 0;
+            return Interlocked.CompareExchange(ref this._busyFlag, 1, 0) == 1;
         }
         private void DeviceBusyDeactive(string FuncName,bool FuncResult)
         {
