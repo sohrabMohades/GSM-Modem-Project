@@ -985,7 +985,7 @@ namespace GSM.Core.Source.Device
             NationalMobileID = NationalMobileIDNewValue;
             if (InternalValueSet)
             {
-                this._natinalMobileID = NationalMobileIDNewValue;
+                this._nationalMobileID = NationalMobileIDNewValue;
             }
         }
         private bool NationalMobileIDGetBase(ref string NationalMobileID)

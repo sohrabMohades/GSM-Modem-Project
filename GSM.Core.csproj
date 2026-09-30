@@ -51,6 +51,7 @@
     <Compile Include="Source\Device\DeviceProperties.cs" />
     <Compile Include="Source\Device\DeviceSendOperations.cs" />
     <Compile Include="Source\Device\DeviceTypes.cs" />
+    <Compile Include="Source\Device\PublicMethodsDocumentation.cs" />
     <Compile Include="Source\DllWrapper\DllWrapper.cs" />
     <Compile Include="Source\DllWrapper\DllWrapperDelegates.cs" />
     <Compile Include="Source\DllWrapper\DllWrapperLoader.cs" />
@@ -81,6 +82,10 @@
     <None Include="Docs\Architecture\GSM_Architecture_v1.1_FA.docx" />
     <None Include="Docs\Design\GSM_Design_v1.1_FA.docx" />
     <None Include="Docs\Requirements\GSM_Project_Definition_v1.1_FA.docx" />
+    <None Include="Source\Device\Device_Documentation.md" />
+    <None Include="Source\Device\Device_QuickReference.md" />
+    <None Include="Source\Device\README.md" />
+    <None Include="Source\Device\SUMMARY_Farsi.md" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

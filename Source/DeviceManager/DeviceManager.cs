@@ -292,9 +292,7 @@ namespace GSM.Core.Source.DeviceManager
             {
                 return Task.Run(() => { 
                     List<int> smsRefrences = new List<int>();
-                    sender.SmsSend(PhoneNumber, SmsText , ref smsRefrences); 
-                    string smsReferenceStr = string.Join(",", smsRefrences);
-                    Console.WriteLine($"Device {sender.DeviceNumber} sent SMS to {PhoneNumber} with result: {smsReferenceStr}");
+                    bool result = sender.SmsSend(PhoneNumber, SmsText , ref smsRefrences);
                 });
             }
             catch (Exception)
@@ -319,7 +317,6 @@ namespace GSM.Core.Source.DeviceManager
         {
             if (runtime.LastOperation == DEVICE_OPERATION.SMS_SEND)
             {
-                Console.WriteLine($"Device {runtime.Device.DeviceNumber} sent SMS Index {runtime.SmsIndex} with result: {Result}");
                 this._smsManager.UpdateData(runtime.SmsIndex, Result);
             }
         }
@@ -349,27 +346,16 @@ namespace GSM.Core.Source.DeviceManager
             {
                 result = this.DevicesCount();
             }
-            //for test , must REMOVE
-            Console.WriteLine("Devices Count = " + this._mainDevice.DeviceCount.ToString());
-            //End : for test , must REMOVE
             if (result)
             {
                 this.DevicesDiscoveryList(deviceDiscoveryItem);
             }
-            Console.WriteLine("Devices Discovery count = " + deviceDiscoveryItem.Count.ToString());
             if (result)
             {
                 result = this.DevicesListCreation(deviceDiscoveryItem);
             }
             //this._mainDevice.Dispose();
             this._mainDevice.DeviceUnselect();
-            //for test , must REMOVE
-            Console.WriteLine("Devices Number Add = " + this._devices.Count.ToString());
-            foreach (var item in this._devices)
-            {
-                Console.WriteLine("Device Index = " + item.Key.DeviceIndex + " - Device Number = " + item.Key.DeviceNumber);
-            }
-            //End : for test , must REMOVE
             return result;
         }
         private bool FileManagerCreate()
@@ -519,9 +505,7 @@ namespace GSM.Core.Source.DeviceManager
             {
                 device = new Device.Device(FileName);
                 device.DeviceIndex = DeviceIndex;
-                Console.WriteLine("Devices Index = " + device.DeviceIndex.ToString() + " - Device Number Changing ....");
                 result = device.DeviceNumberChange(DeviceIndex);
-                Console.WriteLine("Devices Index = " + device.DeviceIndex.ToString() + " - Device Number = " + device.DeviceNumber.ToString());
                 if (result)
                 {
                     this.DeviceAdd(device);

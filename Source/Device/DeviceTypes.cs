@@ -147,7 +147,7 @@ namespace GSM.Core.Source.Device
         private string _gsmDateTime = DeviceDefinitions.STRING_INVALID;
         private string _smsCenter = DeviceDefinitions.STRING_INVALID;
         private string _networkName = DeviceDefinitions.STRING_INVALID;
-        private string _natinalMobileID = DeviceDefinitions.STRING_INVALID;
+        private string _nationalMobileID = DeviceDefinitions.STRING_INVALID;
         //End : property
         //Common Operations
         private DeviceDefinitions.SMS_TYPE _smsType = DeviceDefinitions.SMS_TYPE.Persian;
