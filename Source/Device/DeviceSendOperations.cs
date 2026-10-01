@@ -90,15 +90,12 @@ namespace GSM.Core.Source.Device
         }
         private bool SMSSendBaseCheck(string SmsSendedResult, ref List<int> SMSReference)
         {
-            bool result;
-            StringAnalyzer.StringAnalyzer.ERROR_CODE errorCode = StringAnalyzer.StringAnalyzer.ERROR_CODE.NO_ERROR;
-            string errorMessage = string.Empty;
-            result = StringAnalyzer.StringAnalyzer.ParseSmsSendResult(SmsSendedResult , ref SMSReference , ref errorCode , ref errorMessage);
-            if(!result && errorCode != StringAnalyzer.StringAnalyzer.ERROR_CODE.NO_ERROR)
+            var result = StringAnalyzer.StringAnalyzer.ParseSmsSendResult(SmsSendedResult);
+            if(!result.Result && result.ErrorCode != StringAnalyzer.StringAnalyzer.ERROR_CODE.NO_ERROR)
             {
-                this.ErrorSet(ERROR_CODE.SEND_SMS_RESULT , errorMessage);
+                this.ErrorSet(ERROR_CODE.SEND_SMS_RESULT , result.ErrorMessage);
             }
-            return result;
+            return result.Result;
         }
         //End : Char Mode Set
 

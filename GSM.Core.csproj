@@ -86,6 +86,7 @@
     <None Include="Source\Device\Device_QuickReference.md" />
     <None Include="Source\Device\README.md" />
     <None Include="Source\Device\SUMMARY_Farsi.md" />
+    <None Include="Tools\ModemBufferParserProbe.ps1" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
