@@ -30,13 +30,15 @@ namespace GSM.Core.Source.Common
         //SMS Type
         public enum SMS_TYPE
         {
-            ENGLISH = 0,
-            Persian = 1
+            UNKHOWN = 0,
+            ENGLISH = 1,
+            Persian = 2
         }
         //End : SMS Type
         //Char Mode
         public enum SMS_CHAR_MODE
         {
+            UNKHOWN = 0,
             GSM = 1,
             HEX = 2,
             IRA = 3,

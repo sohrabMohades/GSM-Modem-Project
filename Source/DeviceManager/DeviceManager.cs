@@ -291,7 +291,7 @@ namespace GSM.Core.Source.DeviceManager
             try
             {
                 return Task.Run(() => { 
-                    List<int> smsRefrences = new List<int>();
+                    List<string> smsRefrences = new List<string>();
                     bool result = sender.SmsSend(PhoneNumber, SmsText , ref smsRefrences);
                 });
             }

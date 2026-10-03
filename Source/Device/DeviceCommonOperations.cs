@@ -10,6 +10,39 @@ namespace GSM.Core.Source.Device
 {
     public partial class Device : IDisposable
     {
+        //Send Configuration Set
+        private bool SendConfigurationSetWorkflow(DeviceDefinitions.SMS_CHAR_MODE CharMode, DeviceDefinitions.SMS_TYPE SmsType, int ATCommandDelay)
+        {
+            bool result = true;
+            if (result && CharMode != this._smsCharMode)
+            {
+                result = this.CharModeSetWorkflow(CharMode, true);
+            }
+            if (result && SmsType != this._smsType)
+            {
+                result = this.SmsTypeSetWorkflow(SmsType, true);
+            }
+            if (result && ATCommandDelay != this._atCommandDelay)
+            {
+                result = this.ATCommandDelaySetWorkflow(ATCommandDelay, true);
+            }
+            return result;
+        }
+        private bool SendConfigurationSetWorkflow(DeviceDefinitions.SMS_CHAR_MODE CharMode, DeviceDefinitions.SMS_TYPE SmsType)
+        {
+            bool result = true;
+            if (result && CharMode != this._smsCharMode)
+            {
+                result = this.CharModeSetWorkflow(CharMode, true);
+            }
+            if (result && SmsType != this._smsType)
+            {
+                result = this.SmsTypeSetWorkflow(SmsType, true);
+            }
+            return result;
+        }
+        //End : Send Configuration Set
+
         //Char Mode Set
         private bool CharModeSetWorkflow(DeviceDefinitions.SMS_CHAR_MODE CharMode, bool InternalValueSet)
         {
@@ -46,9 +79,22 @@ namespace GSM.Core.Source.Device
             this.ErrorReset();
             if (result)
             {
+                result = this.CharModeSetBaseInputCheck(CharMode);
+            }
+            if (result)
+            {
                 result = this.CharModeSetBaseDll(CharMode);
             }
             return result;
+        }
+        private bool CharModeSetBaseInputCheck(DeviceDefinitions.SMS_CHAR_MODE CharMode)
+        {
+            if (CharMode == DeviceDefinitions.SMS_CHAR_MODE.UNKHOWN)
+            {
+                this.ErrorSet(ERROR_CODE.INVALID_INPUT, "CharMode = " + CharMode.ToString());
+                return false;
+            }
+            return true;
         }
         private bool CharModeSetBaseDll(DeviceDefinitions.SMS_CHAR_MODE CharMode)
         {
@@ -101,9 +147,22 @@ namespace GSM.Core.Source.Device
             this.ErrorReset();
             if (result)
             {
+                result = this.SmsTypeSetBaseInputCheck(SmsType);
+            }
+            if (result)
+            {
                 result = this.SmsTypeSetBaseDll(SmsType);
             }
             return result;
+        }
+        private bool SmsTypeSetBaseInputCheck(DeviceDefinitions.SMS_TYPE SmsType)
+        {
+            if (SmsType == DeviceDefinitions.SMS_TYPE.UNKHOWN)
+            {
+                this.ErrorSet(ERROR_CODE.INVALID_INPUT, "SmsType = " + SmsType.ToString());
+                return false;
+            }
+            return true;
         }
         private bool SmsTypeSetBaseDll(DeviceDefinitions.SMS_TYPE SmsType)
         {

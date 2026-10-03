@@ -15,24 +15,26 @@ namespace GSM.Core.Source.Device
     public partial class Device : IDisposable
     {
         //SMS Send
-        public bool SmsSend(string PhoneNumber, string SmsText, ref List<int> SMSReference)
+        public bool SmsSend(string PhoneNumber, string SmsText, ref List<string> SMSReference)
         {
             bool result = false;
             if (this.TrySetBusy())
             {
-                result = false;
                 this.ErrorSet(ERROR_CODE.BUSY, nameof(this.SmsSend));
-                return result;
+                return false;
             }
             if (!this.InternalStatusCheck(INTERNAL_STATUS.READY, nameof(this.SmsSend)))
             {
-                result = false;
-                return result;
+                return false;
             }
             try
             {
                 DeviceDefinitions.SmsSendData smsSendData = null;
                 result = this.SmsSendDataInitial(ref smsSendData, PhoneNumber, SmsText);
+                if (result)
+                {
+                    result = this.SendConfigurationSetWorkflow(SMS_CHAR_MODE.UCS2 , SMS_TYPE.ENGLISH);
+                }
                 if (result)
                 {
                     result = this.SMSSendWorkflow(smsSendData, ref SMSReference);
@@ -44,25 +46,25 @@ namespace GSM.Core.Source.Device
                 this.DeviceBusyDeactive(nameof(this.SmsSend), result);
             }
         }
-        private bool SMSSendWorkflow(DeviceDefinitions.SmsSendData smsSendData, ref List<int> SMSReference)
+        private bool SMSSendWorkflow(DeviceDefinitions.SmsSendData smsSendData, ref List<string> SMSReference)
         {
             bool result = true;
-            string resultStr = string.Empty;
             if (result)
             {
                 result = this.SMSSendExecute(smsSendData, DELAY_NORMAL1_MS, ref SMSReference);
             }
             return result;
         }
-        private bool SMSSendExecute(DeviceDefinitions.SmsSendData smsSendData, int Delay, ref List<int> SMSReference)
+        private bool SMSSendExecute(DeviceDefinitions.SmsSendData smsSendData, int Delay, ref List<string> SMSReference)
         {
             Thread.Sleep(Delay);
             return this.SMSSendBase(smsSendData , ref SMSReference);
         }
-        private bool SMSSendBase(DeviceDefinitions.SmsSendData smsSendData, ref List<int> SMSReference)
+        private bool SMSSendBase(DeviceDefinitions.SmsSendData smsSendData, ref List<string> SMSReference)
         {
             bool result = true;
             string smsSendedResult = string.Empty;
+            List<string> smsReferenceList = new List<string>();
             this.ErrorReset();
             if (result)
             {
@@ -70,9 +72,21 @@ namespace GSM.Core.Source.Device
             }
             if (result)
             {
-                result = this.SMSSendBaseCheck(smsSendedResult , ref SMSReference);
+                result = this.SMSSendBaseCheck(smsSendedResult , ref smsReferenceList);
             }
+            this.SMSSendBaseSetValue(result, smsReferenceList, ref SMSReference);
             return result;
+        }
+        private void SMSSendBaseSetValue(bool result, List<string> smsReferenceList, ref List<string> SMSReference)
+        {
+            if (result)
+            {
+                SMSReference = smsReferenceList;
+            }
+            else
+            {
+                SMSReference = null;
+            }
         }
         private bool SMSSendBaseDll(DeviceDefinitions.SmsSendData smsSendData, ref string ResultStr)
         {
@@ -84,20 +98,83 @@ namespace GSM.Core.Source.Device
             }
             catch (Exception ex)
             {
-                this.DllWrapperErrorCheckSetValue($"CharModeSetBaseDll Error : {ex.Message}");
+                this.DllWrapperErrorCheckSetValue($"SMSSendBaseDll Error : {ex.Message}");
                 return false;
             }
         }
-        private bool SMSSendBaseCheck(string SmsSendedResult, ref List<int> SMSReference)
+        private bool SMSSendBaseCheck(string SmsSendedResult, ref List<string> SMSReference)
         {
             var result = StringAnalyzer.StringAnalyzer.ParseSmsSendResult(SmsSendedResult);
             if(!result.Result && result.ErrorCode != StringAnalyzer.StringAnalyzer.ERROR_CODE.NO_ERROR)
             {
                 this.ErrorSet(ERROR_CODE.SEND_SMS_RESULT , result.ErrorMessage);
             }
+            else
+            {
+                SMSReference = result.Data;
+            }
             return result.Result;
         }
-        //End : Char Mode Set
+        //End : SMS Send
+
+        //AT Command Send
+        private bool ATCommandSendWorkflow(string ATCommand, ref string ATCommandResult)
+        {
+            bool result = true;
+            string resultStr = string.Empty;
+            if (result)
+            {
+                result = this.ATCommandSendExecute(ATCommand, DELAY_NORMAL1_MS, ref resultStr);
+            }
+            return result;
+        }
+        private bool ATCommandSendExecute(string ATCommand, int Delay, ref string ATCommandResult)
+        {
+            Thread.Sleep(Delay);
+            return this.ATCommandSendBase(ATCommand, ref ATCommandResult);
+        }
+        private bool ATCommandSendBase(string ATCommand, ref string ATCommandResult)
+        {
+            bool result = true;
+            int resultLen = 0;
+            string atCommandSendedResult = string.Empty;
+            this.ErrorReset();
+            if (result)
+            {
+                result = this.ATCommandSendBaseDll(ATCommand, ref atCommandSendedResult, ref resultLen);
+            }
+            if (result)
+            {
+                result = this.ATCommandSendBaseCheck(atCommandSendedResult, resultLen);
+            }
+            return result;
+        }
+        private bool ATCommandSendBaseDll(string ATCommand, ref string ATCommandResult , ref int ResultLen)
+        {
+            try
+            {
+                this._dllWrapper.ATCommandSend(ATCommand, ref ResultLen, out ATCommandResult);
+                return this.DllWrapperErrorCheck();
+            }
+            catch (Exception ex)
+            {
+                this.DllWrapperErrorCheckSetValue($"ATCommandtBaseDll Error : {ex.Message}");
+                return false;
+            }
+        }
+        private bool ATCommandSendBaseCheck(string ATCommandResult, int ResultLen)
+        {
+            if (string.IsNullOrWhiteSpace(ATCommandResult) || ResultLen <= 0)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+        //End : AT Command Send
+
 
         //Helper Functions
         private bool SmsSendDataInitial(ref DeviceDefinitions.SmsSendData smsSendData, string PhoneNumber, string SmsText)
