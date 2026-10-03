@@ -147,6 +147,7 @@ namespace GSM.Core.Source.Device
             {
                 result = this.ATCommandSendBaseCheck(atCommandSendedResult, resultLen);
             }
+            this.ATCommandSendBaseSetValue(result, atCommandSendedResult, ref ATCommandResult);
             return result;
         }
         private bool ATCommandSendBaseDll(string ATCommand, ref string ATCommandResult , ref int ResultLen)
@@ -171,6 +172,17 @@ namespace GSM.Core.Source.Device
             else
             {
                 return true;
+            }
+        }
+        private void ATCommandSendBaseSetValue(bool result, string atCommandSendedResult, ref string ATCommandResult)
+        {
+            if(result)
+            {
+                ATCommandResult = atCommandSendedResult;
+            }
+            else
+            {
+                ATCommandResult = null;
             }
         }
         //End : AT Command Send
