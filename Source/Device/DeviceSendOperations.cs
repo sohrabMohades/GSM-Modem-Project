@@ -31,9 +31,13 @@ namespace GSM.Core.Source.Device
             {
                 DeviceDefinitions.SmsSendData smsSendData = null;
                 result = this.SmsSendDataInitial(ref smsSendData, PhoneNumber, SmsText);
+                if(!result)
+                {
+                    this.ErrorSet(ERROR_CODE.SEND_SMS_INPUT, nameof(this.SmsSend) + " - Phone Number = " + PhoneNumber + " - SMS Text = " + SmsText);
+                }
                 if (result)
                 {
-                    result = this.SendConfigurationSetWorkflow(SMS_CHAR_MODE.UCS2 , SMS_TYPE.ENGLISH);
+                    result = this.SendConfigurationSetWorkflow(SMS_CHAR_MODE.UCS2 , SMS_TYPE.Persian);
                 }
                 if (result)
                 {
@@ -63,16 +67,16 @@ namespace GSM.Core.Source.Device
         private bool SMSSendBase(DeviceDefinitions.SmsSendData smsSendData, ref List<string> SMSReference)
         {
             bool result = true;
-            string smsSendedResult = string.Empty;
+            string smsSendResultRaw = string.Empty;
             List<string> smsReferenceList = new List<string>();
             this.ErrorReset();
             if (result)
             {
-                result = this.SMSSendBaseDll(smsSendData, ref smsSendedResult);
+                result = this.SMSSendBaseDll(smsSendData, ref smsSendResultRaw);
             }
             if (result)
             {
-                result = this.SMSSendBaseCheck(smsSendedResult , ref smsReferenceList);
+                result = this.SMSSendBaseCheck(smsSendResultRaw, ref smsReferenceList);
             }
             this.SMSSendBaseSetValue(result, smsReferenceList, ref SMSReference);
             return result;
@@ -102,9 +106,9 @@ namespace GSM.Core.Source.Device
                 return false;
             }
         }
-        private bool SMSSendBaseCheck(string SmsSendedResult, ref List<string> SMSReference)
+        private bool SMSSendBaseCheck(string SmsSendResultRaw, ref List<string> SMSReference)
         {
-            var result = StringAnalyzer.StringAnalyzer.ParseSmsSendResult(SmsSendedResult);
+            var result = StringAnalyzer.StringAnalyzer.ParseSmsSendResult(SmsSendResultRaw);
             if(!result.Result && result.ErrorCode != StringAnalyzer.StringAnalyzer.ERROR_CODE.NO_ERROR)
             {
                 this.ErrorSet(ERROR_CODE.SEND_SMS_RESULT , result.ErrorMessage);
@@ -121,10 +125,9 @@ namespace GSM.Core.Source.Device
         private bool ATCommandSendWorkflow(string ATCommand, ref string ATCommandResult)
         {
             bool result = true;
-            string resultStr = string.Empty;
             if (result)
             {
-                result = this.ATCommandSendExecute(ATCommand, DELAY_NORMAL1_MS, ref resultStr);
+                result = this.ATCommandSendExecute(ATCommand, DELAY_NORMAL1_MS, ref ATCommandResult);
             }
             return result;
         }
@@ -137,17 +140,17 @@ namespace GSM.Core.Source.Device
         {
             bool result = true;
             int resultLen = 0;
-            string atCommandSendedResult = string.Empty;
+            string atCommandSendResultRaw = string.Empty;
             this.ErrorReset();
             if (result)
             {
-                result = this.ATCommandSendBaseDll(ATCommand, ref atCommandSendedResult, ref resultLen);
+                result = this.ATCommandSendBaseDll(ATCommand, ref atCommandSendResultRaw, ref resultLen);
             }
             if (result)
             {
-                result = this.ATCommandSendBaseCheck(atCommandSendedResult, resultLen);
+                result = this.ATCommandSendBaseCheck(atCommandSendResultRaw, resultLen);
             }
-            this.ATCommandSendBaseSetValue(result, atCommandSendedResult, ref ATCommandResult);
+            this.ATCommandSendBaseSetValue(result, atCommandSendResultRaw, ref ATCommandResult);
             return result;
         }
         private bool ATCommandSendBaseDll(string ATCommand, ref string ATCommandResult , ref int ResultLen)
@@ -174,11 +177,11 @@ namespace GSM.Core.Source.Device
                 return true;
             }
         }
-        private void ATCommandSendBaseSetValue(bool result, string atCommandSendedResult, ref string ATCommandResult)
+        private void ATCommandSendBaseSetValue(bool result, string atCommandSendResultRaw, ref string ATCommandResult)
         {
             if(result)
             {
-                ATCommandResult = atCommandSendedResult;
+                ATCommandResult = atCommandSendResultRaw;
             }
             else
             {
@@ -227,7 +230,7 @@ namespace GSM.Core.Source.Device
             {
                 return false;
             }
-
+            PhoneNumber = PhoneNumber.Trim();
             switch (PhoneNumber.Length)
             {
                 // 9121234567 -> +989121234567
@@ -271,7 +274,6 @@ namespace GSM.Core.Source.Device
                     }
                     break;
             }
-
             return false;
         }
         private bool SmsSendSmsTextCheck(string SmsText)
