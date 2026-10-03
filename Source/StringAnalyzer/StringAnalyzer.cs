@@ -103,9 +103,10 @@ namespace GSM.Core.Source.StringAnalyzer
         private static readonly Regex _whitespaceRegex = new Regex(@"\s+", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         private static readonly Regex _smsSendResultRegex = new Regex(@"R(?<index>\d+):(?<reference>\d+)--", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex _smsSendResultFullRegex = new Regex( @"^\s*(R\d+:\d+--)+\s*$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex _balanceTextRegex = new Regex(@"(?<balance>[0-9]+)\s*ریال", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex _balanceQuestionMarkRegex = new Regex(@"(?<balance>[0-9]{1,})\?+", RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        private static readonly Regex _providerDomainRegex = new Regex(@"(?<domain>" + @"SHOP\.MCI\.IR" + @"|MCI\.IR" + @"IRANCELL\.IR" + @"MTN\.IR" + @")",
+        private static readonly Regex _providerDomainRegex = new Regex(@"(?<domain>SHOP\.MCI\.IR|MCI\.IR|IRANCELL\.IR|MTN\.IR)",
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex _mobileNumberRegex = new Regex(@"[01]\.(?<mobileNumber>09[0-9]{9})", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
@@ -125,7 +126,7 @@ namespace GSM.Core.Source.StringAnalyzer
             try
             {
                 MatchCollection matches = _smsSendResultRegex.Matches(smsSendResult);
-                if (matches.Count == 0)
+                if (matches.Count == 0 || !_smsSendResultFullRegex.IsMatch(smsSendResult))
                 {
                     return new AnalyzerResult<List<string>>
                     {
