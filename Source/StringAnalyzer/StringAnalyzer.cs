@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace GSM.Core.Source.StringAnalyzer
 {
@@ -73,7 +74,9 @@ namespace GSM.Core.Source.StringAnalyzer
         {
             NO_ERROR = 0,
             SEND_SMS_RESULT = 1,
-            SEND_SMS_RESULT_PARSE_ERROR = 2
+            SEND_SMS_RESULT_PARSE_ERROR = 2,
+            USSD_BALANCE_PARSE_ERROR = 3,
+            USSD_MOBILE_NUMBER_PARSE_ERROR = 4,
         }
         public class AnalyzerResult<T>
         {
@@ -82,6 +85,29 @@ namespace GSM.Core.Source.StringAnalyzer
             public ERROR_CODE ErrorCode { get; set; }
             public string ErrorMessage { get; set; }
         }
+        public class BalanceData
+        {
+            public string Value { get; set; }
+            public string ProviderDomain { get; set; }
+            public string UssdText { get; set; }
+        }
+        public class MobileData
+        {
+            public string Value { get; set; }
+            public string UssdText { get; set; }
+        }
+        
+        private static readonly Regex _cusdRegex = new Regex(@"\+CUSD:\s*(?<status>[012])\s*,\s*""(?<payload>[^""]*)""\s*,\s*72",
+            RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex _hexPayloadRegex = new Regex(@"\A[0-9A-Fa-f]+\z", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex _whitespaceRegex = new Regex(@"\s+", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+        private static readonly Regex _smsSendResultRegex = new Regex(@"R(?<index>\d+):(?<reference>\d+)--", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex _balanceTextRegex = new Regex(@"(?<balance>[0-9]+)\s*ریال", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex _balanceQuestionMarkRegex = new Regex(@"(?<balance>[0-9]{1,})\?+", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex _providerDomainRegex = new Regex(@"(?<domain>" + @"SHOP\.MCI\.IR" + @"|MCI\.IR" + @"IRANCELL\.IR" + @"MTN\.IR" + @")",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex _mobileNumberRegex = new Regex(@"[01]\.(?<mobileNumber>09[0-9]{9})", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         public static AnalyzerResult<List<string>> ParseSmsSendResult(string smsSendResult)
         {
@@ -98,8 +124,7 @@ namespace GSM.Core.Source.StringAnalyzer
 
             try
             {
-                var regex = new Regex(@"R(\d+):(\d+)--");
-                var matches = regex.Matches(smsSendResult);
+                MatchCollection matches = _smsSendResultRegex.Matches(smsSendResult);
                 if (matches.Count == 0)
                 {
                     return new AnalyzerResult<List<string>>
@@ -114,9 +139,8 @@ namespace GSM.Core.Source.StringAnalyzer
                 var items = new List<(int R, string Reference)>();
                 foreach (Match match in matches)
                 {
-                    int r = int.Parse(match.Groups[1].Value);
-                    string reference = match.Groups[2].Value;
-
+                    int r = int.Parse(match.Groups["index"].Value);
+                    string reference = match.Groups["reference"].Value;
                     items.Add((r, reference));
                 }
 
@@ -181,6 +205,101 @@ namespace GSM.Core.Source.StringAnalyzer
                     ErrorMessage = smsSendResult
                 };
             }
+        }
+
+        public static AnalyzerResult<BalanceData> TryParseCusdBalance(string response)
+        {
+            if (string.IsNullOrWhiteSpace(response))
+            {
+                return new AnalyzerResult<BalanceData>
+                {
+                    Result = false,
+                    Data = null,
+                    ErrorCode = ERROR_CODE.NO_ERROR,
+                    ErrorMessage = string.Empty
+                };
+            }
+            List<string> ussdTexts = ExtractCusdTexts(response);
+            foreach (string ussdText in ussdTexts)
+            {
+                Match balanceMatch = _balanceQuestionMarkRegex.Match(ussdText);
+                if (!balanceMatch.Success)
+                {
+                    balanceMatch = _balanceTextRegex.Match(ussdText);
+                    if (!balanceMatch.Success)
+                    {
+                        continue;
+                    }
+                }
+                string balance = balanceMatch.Groups["balance"].Value.Trim();
+                string providerDomain = string.Empty;
+                Match domainMatch = _providerDomainRegex.Match(ussdText);
+                if (domainMatch.Success)
+                {
+                    providerDomain = domainMatch.Groups["domain"].Value;
+                }
+                return new AnalyzerResult<BalanceData>
+                {
+                    Result = true,
+                    Data = new BalanceData { Value = balance, ProviderDomain = providerDomain, UssdText = ussdText },
+                    ErrorCode = ERROR_CODE.NO_ERROR,
+                    ErrorMessage = string.Empty
+                };
+            }
+            return new AnalyzerResult<BalanceData>
+            {
+                Result = false,
+                Data = null,
+                ErrorCode = ERROR_CODE.USSD_BALANCE_PARSE_ERROR,
+                ErrorMessage = response
+            };
+        }
+
+
+        public static AnalyzerResult<MobileData> TryParseCusdMobileNumber(string response)
+        {
+            if (string.IsNullOrWhiteSpace(response))
+            {
+                return new AnalyzerResult<MobileData>
+                {
+                    Result = false,
+                    Data = null,
+                    ErrorCode = ERROR_CODE.NO_ERROR,
+                    ErrorMessage = string.Empty
+                };
+            }
+            List<string> ussdTexts = ExtractCusdTexts(response);
+            foreach (string ussdText in ussdTexts)
+            {
+                Match mobileMatch = _mobileNumberRegex.Match(ussdText);
+                if (!mobileMatch.Success)
+                {
+                    continue;
+                }
+                return new AnalyzerResult<MobileData>
+                {
+                    Result = true,
+                    Data = new MobileData { Value = mobileMatch.Groups["mobileNumber"].Value, UssdText = ussdText },
+                    ErrorCode = ERROR_CODE.NO_ERROR,
+                    ErrorMessage = string.Empty
+                };
+            }
+            return new AnalyzerResult<MobileData>
+            {
+                Result = false,
+                Data = null,
+                ErrorCode = ERROR_CODE.USSD_MOBILE_NUMBER_PARSE_ERROR,
+                ErrorMessage = string.Empty
+            };
+        }
+
+        public static bool UssdResponseDetection(string response)
+        {
+            if (string.IsNullOrWhiteSpace(response))
+            {
+                return false;
+            }
+            return _cusdRegex.IsMatch(response);
         }
 
         public sealed class ModemBufferParser
@@ -696,141 +815,69 @@ namespace GSM.Core.Source.StringAnalyzer
             }
         }
         */
-        public static bool TryParseCusdBalance(string response, out string balance, out string providerDomain)
-        {
-            balance = string.Empty;
-            providerDomain = string.Empty;
 
+        //Helper
+        //USSD response finder and decoder
+        private static List<string> ExtractCusdTexts(string response)
+        {
+            List<string> result = new List<string>();
             if (string.IsNullOrWhiteSpace(response))
+            {
+                return result;
+            }
+            MatchCollection cusdMatches = _cusdRegex.Matches(response);
+            foreach (Match cusdMatch in cusdMatches)
+            {
+                string payload = cusdMatch.Groups["payload"].Value;
+                string decodedText;
+                if (TryDecodeCusdHexPayload(payload, out decodedText))
+                {
+                    result.Add(decodedText);
+                }
+                else
+                {
+                    result.Add(payload);
+                }
+            }
+            return result;
+        }
+        //End : USSD response finder and decoder
+        //Hex Decoder
+        private static bool TryDecodeCusdHexPayload(string payload, out string decodedText)
+        {
+            decodedText = null;
+            if (string.IsNullOrWhiteSpace(payload))
             {
                 return false;
             }
-
-            var cusdMatches = Regex.Matches(response, @"\+CUSD:\s*0\s*,\s*""(?<payload>[^""]*)""", RegexOptions.CultureInvariant);
-            foreach (Match cusdMatch in cusdMatches)
-            {
-                var payload = cusdMatch.Groups["payload"].Value;
-                var balanceMatch = Regex.Match(payload, @"(?<balance>[0-9]{3,})\?+", RegexOptions.CultureInvariant);
-                if (!balanceMatch.Success)
-                {
-                    continue;
-                }
-
-                balance = balanceMatch.Groups["balance"].Value;
-                var domainMatch = Regex.Match(payload, @"(?<domain>SHOP\.MCI\.IR)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-                if (domainMatch.Success)
-                {
-                    providerDomain = domainMatch.Groups["domain"].Value;
-                }
-
-                return true;
-            }
-
-            return false;
-        }
-
-        public static bool TryParseCusdHexBalance(string response, out string balance, out string translatedText)
-        {
-            balance = string.Empty;
-            translatedText = string.Empty;
-
-            if (string.IsNullOrWhiteSpace(response))
+            string hexPayload = _whitespaceRegex.Replace(payload, string.Empty);
+            if (hexPayload.Length == 0)
             {
                 return false;
             }
-
-            var cusdMatches = Regex.Matches(response, @"\+CUSD:\s*2\s*,\s*""(?<payload>[^""]*)""", RegexOptions.CultureInvariant);
-            foreach (Match cusdMatch in cusdMatches)
-            {
-                var hexPayload = Regex.Replace(cusdMatch.Groups["payload"].Value, @"\s+", string.Empty);
-                if (hexPayload.Length == 0 || hexPayload.Length % 4 != 0 || !Regex.IsMatch(hexPayload, @"\A[0-9A-Fa-f]+\z", RegexOptions.CultureInvariant))
-                {
-                    continue;
-                }
-
-                var decoded = new StringBuilder(hexPayload.Length / 4);
-                for (var index = 0; index < hexPayload.Length; index += 4)
-                {
-                    var codeUnit = int.Parse(hexPayload.Substring(index, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-                    decoded.Append((char)codeUnit);
-                }
-
-                var text = decoded.ToString();
-                var balanceMatch = Regex.Match(text, @"(?<balance>[0-9]+)\s*ریال", RegexOptions.CultureInvariant);
-                if (!balanceMatch.Success)
-                {
-                    continue;
-                }
-
-                balance = balanceMatch.Groups["balance"].Value;
-                translatedText = text;
-                return true;
-            }
-
-            return false;
-        }
-
-        public static bool TryParseCusdMobileNumber(string response, out string mobileNumber)
-        {
-            mobileNumber = string.Empty;
-
-            if (string.IsNullOrWhiteSpace(response))
+            //Hex String contain 4 code for every character, such : "F0E1" or "123F089A"
+            if (hexPayload.Length % 4 != 0)
             {
                 return false;
             }
-
-            var cusdMatches = Regex.Matches(response, @"\+CUSD:\s*1\s*,\s*""(?<payload>[^""]*)""", RegexOptions.CultureInvariant);
-            foreach (Match cusdMatch in cusdMatches)
-            {
-                var mobileMatch = Regex.Match(cusdMatch.Groups["payload"].Value, @"[012]\.(?<mobileNumber>[0-9]{11})", RegexOptions.CultureInvariant);
-                if (!mobileMatch.Success)
-                {
-                    continue;
-                }
-
-                mobileNumber = mobileMatch.Groups["mobileNumber"].Value;
-                return true;
-            }
-
-            return false;
-        }
-
-        public static bool TryParseCusdHexMobileNumber(string response, out string mobileNumber)
-        {
-            mobileNumber = string.Empty;
-
-            if (string.IsNullOrWhiteSpace(response))
+            //try to decode the hex string to text
+            if (!_hexPayloadRegex.IsMatch(hexPayload))
             {
                 return false;
             }
-
-            var cusdMatches = Regex.Matches(response, @"\+CUSD:\s*1\s*,\s*""(?<payload>[^""]*)""", RegexOptions.CultureInvariant);
-            foreach (Match cusdMatch in cusdMatches)
+            StringBuilder decoded = new StringBuilder(hexPayload.Length / 4);
+            for (int index = 0; index < hexPayload.Length; index += 4)
             {
-                var hexPayload = Regex.Replace(cusdMatch.Groups["payload"].Value, @"\s+", string.Empty);
-                if (hexPayload.Length == 0 || hexPayload.Length % 4 != 0 || !Regex.IsMatch(hexPayload, @"\A[0-9A-Fa-f]+\z", RegexOptions.CultureInvariant))
+                if (!ushort.TryParse(hexPayload.Substring(index, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ushort codeUnit))
                 {
-                    continue;
+                    return false;
                 }
-
-                var decoded = new StringBuilder(hexPayload.Length / 4);
-                for (var index = 0; index < hexPayload.Length; index += 4)
-                {
-                    var codeUnit = int.Parse(hexPayload.Substring(index, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-                    decoded.Append((char)codeUnit);
-                }
-
-                var mobileMatch = Regex.Match(decoded.ToString(), @"[012]\.(?<mobileNumber>[0-9]{11})", RegexOptions.CultureInvariant);
-                if (!mobileMatch.Success)
-                {
-                    continue;
-                }
-
-                mobileNumber = mobileMatch.Groups["mobileNumber"].Value;
-                return true;
+                decoded.Append((char)codeUnit);
             }
-
-            return false;
+            decodedText = decoded.ToString();
+            return true;
         }
+        //Hex Decoder
+        //End : Helper
     }
 }
