@@ -256,7 +256,6 @@ namespace GSM.Core.Source.StringAnalyzer
             };
         }
 
-
         public static AnalyzerResult<MobileData> TryParseCusdMobileNumber(string response)
         {
             if (string.IsNullOrWhiteSpace(response))
