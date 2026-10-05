@@ -23,10 +23,10 @@ namespace GSM.Core.Source.Device
                 this.ErrorSet(ERROR_CODE.BUSY, nameof(this.SmsSend));
                 return false;
             }
-            if (!this.InternalStatusCheck(INTERNAL_STATUS.READY, nameof(this.SmsSend)))
-            {
-                return false;
-            }
+            //if (!this.InternalStatusCheck(INTERNAL_STATUS.READY, nameof(this.SmsSend)))
+            //{
+            //    return false;
+            //}
             try
             {
                 DeviceDefinitions.SmsSendData smsSendData = null;
