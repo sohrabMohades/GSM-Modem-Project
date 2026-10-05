@@ -395,18 +395,9 @@ namespace GSM.Core.Source.Device
                 this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceNumberChange));
                 return result;
             }
-            if (!this.DeviceNumberChangeAllow(nameof(DeviceNumberChange)))
-            {
-                result = false;
-                return result;
-            }
             try
             {
                 result = this.DeviceNumberChangeWorkFlow(DeviceIndex, DeviceNumberNew);
-                if (result)
-                {
-                    this.DeviceNumberChanged();
-                }
                 return result;
             }
             finally

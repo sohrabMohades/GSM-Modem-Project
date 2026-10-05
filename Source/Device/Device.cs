@@ -139,45 +139,38 @@ namespace GSM.Core.Source.Device
         {
             get
             {
-                if (this._busyFlag == 1)
+                if (this._state.Busy == 1)
                 {
                     return STATUS.BUSY;
                 }
 
-                switch (this._internalStatus)
+                switch (this._state.InternalStatus)
                 {
                     case INTERNAL_STATUS.INVALID:
                         return STATUS.DISCONNECTED;
 
-                    case INTERNAL_STATUS.DEVICE_NOT_SELECT:
-                    case INTERNAL_STATUS.HARDWARE_NOT_READY:
-                    case INTERNAL_STATUS.SIM_NOT_READY:
-                    case INTERNAL_STATUS.NETWORK_NOT_READY:
-                        return STATUS.NOT_READY;
-
-                    case INTERNAL_STATUS.READY:
+                    case INTERNAL_STATUS.BASIC_LEVEL:
+                    case INTERNAL_STATUS.SINGLE_DEVICE:
+                    case INTERNAL_STATUS.WORKING_MODE:
+                    case INTERNAL_STATUS.FULL_MODE:
                         return STATUS.READY;
 
                     default:
-                        return STATUS.DISCONNECTED;
+                        return STATUS.NOT_READY;
                 }
             }
         }
         public ERROR_CODE ErrorCode
         {
-            get => this._errorCode;
+            get => this._state.ErrorCode;
         }
         public string ErrorMessage
         {
-            get => this._errorMessage;
+            get => this._state.ErrorMessage;
         }
         public string DllFileName
         {
             get => this._dllFileName;
-        }
-        public DateTime LastRefreshTime
-        {
-            get => this._lastRefreshTime;
         }
         //End : Variable
         //identity
@@ -487,7 +480,6 @@ namespace GSM.Core.Source.Device
             DeviceDefinitions.SIM_STATUS tempSimStatus = DeviceDefinitions.SIM_STATUS.UNKHOWN_ERROR;
             DeviceDefinitions.GSM_STATUS tempGsmStatus = DeviceDefinitions.GSM_STATUS.UNKHOWN;
             REFRESH_RESULT refreshResult = REFRESH_RESULT.UNKNOWN_ERROR;
-            this._lastRefreshTime = DateTime.Now;
 
             //Internal Status Check
             /*if (!this.InternalStatusCheck(INTERNAL_STATUS.DEVICE_NOT_SELECT, nameof(this.DeviceRefreshBase)))
@@ -650,8 +642,8 @@ namespace GSM.Core.Source.Device
                 }
                 else
                 {
-                    this._errorCode = ERROR_CODE.DLL_WRAPPER;
-                    this._errorMessage = "DllWrapper ErrorCode = " + this._dllWrapper.ErrorCode.ToString() + " - ErrorMessage = " + this._dllWrapper.ErrorMessage;
+                    this._state.ErrorCode = ERROR_CODE.DLL_WRAPPER;
+                    this._state.ErrorMessage = "DllWrapper ErrorCode = " + this._dllWrapper.ErrorCode.ToString() + " - ErrorMessage = " + this._dllWrapper.ErrorMessage;
                     return false;
                 }
             }
@@ -665,11 +657,11 @@ namespace GSM.Core.Source.Device
         {
             if (result)
             {
-                this._internalStatus = INTERNAL_STATUS.DEVICE_NOT_SELECT;
+                this._state.InternalStatus = INTERNAL_STATUS.BASIC_LEVEL;
             }
             else
             {
-                this._internalStatus = INTERNAL_STATUS.INVALID;
+                this._state.InternalStatus = INTERNAL_STATUS.INVALID;
             }
         }
         //Constructor

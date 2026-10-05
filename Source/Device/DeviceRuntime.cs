@@ -10,11 +10,52 @@ namespace GSM.Core.Source.Device
 {
     public partial class Device : IDisposable
     {
+        //Group 1 : Status
+        private sealed class DeviceRuntimeState
+        {
+            public int Busy = 0;
+            public ERROR_CODE ErrorCode = ERROR_CODE.NO_ERROR;
+            public string ErrorMessage = string.Empty;
+            public INTERNAL_STATUS InternalStatus = INTERNAL_STATUS.INVALID;
+        }
+        //End : Group 1 : Status
+        //Group 2 : Flags & Counters
+        //class for flags
+        private sealed class DeviceRuntimeFlags
+        {
+            public bool NeedRefresh { get; set; }
+            public bool NeedSimChange { get; set; }
+            public bool LowCredit { get; set; }
+            public bool AutoRefreshEnabled { get; set; }
+            public bool AutoSmsSendEnabled { get; set; }
+            public bool AutoInboxEnabled { get; set; }
+        }
+        //End : class for flags -> Group 1 : Status
+        //class for counters -> continues failures
+        private sealed class DeviceRuntimeFailureCounters
+        {
+            public int Select { get; set; }
+            public int Refresh { get; set; }
+            public int SmsSend { get; set; }
+        }
+        //End : class for counters -> continues failures
+        //class for Device information
+        private sealed class DeviceRuntimeInfo
+        {
+            public DateTime LastRefreshTime { get; set; }
+            public DateTime LastSmsSendTime { get; set; }
+            public DateTime LastInboxReadTime { get; set; }
+            public DateTime CreateDateTime { get; set; }
+            public DateTime LastRecoveryTime { get; set; }
+        }
+        //End : class for Device information
+        //End : Group 2 : Flags & Counters
+
         //Error Manager
         private void ErrorReset()
         {
-            this._errorCode = ERROR_CODE.NO_ERROR;
-            this._errorMessage = string.Empty;
+            this._state.ErrorCode = ERROR_CODE.NO_ERROR;
+            this._state.ErrorMessage = string.Empty;
         }
         private bool DllWrapperErrorCheck()
         {
@@ -38,18 +79,18 @@ namespace GSM.Core.Source.Device
         }
         private void DllWrapperErrorCheckSetValue(string error)
         {
-            this._errorCode = ERROR_CODE.DLL_WRAPPER;
-            this._errorMessage = error;
+            this._state.ErrorCode = ERROR_CODE.DLL_WRAPPER;
+            this._state.ErrorMessage = error;
         }
         private bool ErrorSet(ERROR_CODE ErrorCode, string ErrorMessage)
         {
-            this._errorCode = ErrorCode;
-            this._errorMessage = ErrorMessage;
+            this._state.ErrorCode = ErrorCode;
+            this._state.ErrorMessage = ErrorMessage;
             return false;
         }
         private bool BaseErrorCheck()
         {
-            if (this._errorCode == ERROR_CODE.DLL_WRAPPER || this._errorCode == ERROR_CODE.INTERNAL_STATUS || this._errorCode == ERROR_CODE.INVALID_INPUT)
+            if (this._state.ErrorCode == ERROR_CODE.DLL_WRAPPER || this._state.ErrorCode == ERROR_CODE.INTERNAL_STATUS || this._state.ErrorCode == ERROR_CODE.INVALID_INPUT)
             {
                 return true;
             }
@@ -62,7 +103,7 @@ namespace GSM.Core.Source.Device
         //Busy Flag manager
         private bool TrySetBusy()
         {
-            return Interlocked.CompareExchange(ref this._busyFlag, 1, 0) == 1;
+            return Interlocked.CompareExchange(ref this._state.Busy, 1, 0) == 1;
         }
         private void DeviceBusyDeactive(string FuncName, bool FuncResult)
         {
@@ -97,7 +138,7 @@ namespace GSM.Core.Source.Device
                     operation = DeviceDefinitions.DEVICE_OPERATION.UNKNOWN;
                     break;
             }
-            Interlocked.Exchange(ref this._busyFlag, 0);
+            Interlocked.Exchange(ref this._state.Busy, 0);
             this.OnOperationCompleted(operation, FuncResult);
         }
         //Busy Flag manager
@@ -118,19 +159,5 @@ namespace GSM.Core.Source.Device
             }
         }
         //End : Timeout
-        //Device Number Change Allow
-        private bool DeviceNumberChangeAllow(string FuncName)
-        {
-            if (!this._deviceNumberChangeAllow)
-            {
-                return this.ErrorSet(ERROR_CODE.DEVICE_NUMBER_CHANGE_NOT_ALLOW, FuncName);
-            }
-            return true;
-        }
-        private void DeviceNumberChanged()
-        {
-            this._deviceNumberChangeAllow = false;
-        }
-        //End : Device Number Change Allow
     }
 }

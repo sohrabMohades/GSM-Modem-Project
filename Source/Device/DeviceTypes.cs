@@ -33,11 +33,10 @@ namespace GSM.Core.Source.Device
         private enum INTERNAL_STATUS
         {
             INVALID = 0,            //DllWrapper creation error
-            DEVICE_NOT_SELECT = 1,  //Device Select or USB connection error
-            HARDWARE_NOT_READY = 2, //Hardware Error
-            SIM_NOT_READY = 3,      //Sim Error
-            NETWORK_NOT_READY = 4,  //Network Error
-            READY = 5               //ready for any operations
+            BASIC_LEVEL = 1,
+            SINGLE_DEVICE = 2,
+            WORKING_MODE = 3,
+            FULL_MODE = 4
         }
         //End : Internal Device Status
         //External Device Status
@@ -115,21 +114,19 @@ namespace GSM.Core.Source.Device
 
         //Fields
         //Variable
-        private INTERNAL_STATUS _internalStatus = INTERNAL_STATUS.INVALID;
-        private int _busyFlag = 0;
-        private ERROR_CODE _errorCode = ERROR_CODE.NO_ERROR;
-        private string _errorMessage = "";
         private readonly string _dllFileName;
         private DllWrapper.ManshoorGsmDllWrapper _dllWrapper;
         private bool _enableDoubleReadValidation = false;
-        private DateTime _lastRefreshTime;
         private bool _disposed;
+        private readonly DeviceRuntimeState _state = new DeviceRuntimeState(); 
+        private readonly DeviceRuntimeFlags _runtimeFlags = new DeviceRuntimeFlags();
+        private readonly DeviceRuntimeFailureCounters _failureCounters = new DeviceRuntimeFailureCounters();
+        private readonly DeviceRuntimeInfo _runtimeInfo = new DeviceRuntimeInfo();
         //End : Variable
         //identity
         private int _deviceCount = DeviceDefinitions.NUMBER_INVALID;
         private int _deviceIndex = DeviceDefinitions.NUMBER_INVALID;
         private int _deviceNumber = DeviceDefinitions.NUMBER_INVALID;
-        private bool _deviceNumberChangeAllow = true;
         //End : identity
         //property
         private string _imei = DeviceDefinitions.STRING_INVALID;
