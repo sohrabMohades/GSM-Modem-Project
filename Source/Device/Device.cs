@@ -13,14 +13,75 @@ namespace GSM.Core.Source.Device
     public partial class Device : IDisposable
     {
         /*
-         *************************** MUST UPDATE ***************************
-         
         ====================================================================
-        Device Status & Error Management Rules
+        State Management Rules
         ====================================================================
 
-        Error Code
+        Busy Flag:
         --------------------------------------------------------------------
+            - Check only in Controller
+            - Set only in Controller
+            - Clear only in Controller
+        --------------------------------------------------------------------
+
+        Internal Status
+        --------------------------------------------------------------------
+        Purpose:
+            Define what the Device can do and cannot do.
+
+        Description:
+            Internal Status is the main decision flag inside Device.
+
+        Used For:
+            - Operation permission checks
+            - State transitions
+            - Recovery logic
+
+        Examples:
+            INVALID         -> Device cannot operate, must be destroyed and recreated
+            BASIC_LEVEL     -> Device is not associated with a valid selected modem. Only discovery and identity operations are allowed.
+                               Device Number Change is only allowed in this status to prevent Device Number conflicts.
+            SINGLE_DEVICE   -> Device is associated with a modem (only Select By Device Number) and can perform refresh and device-level operations.
+            WORKING_MODE    -> Device can communicate with SIM and Network. SMS sending is not allowed.
+            FULL_MODE       -> All operations are allowed, including Main Operation -> SMS Send
+
+        Notes:
+            - Only Status Update is allowed to change Internal Status. Status Update evaluates current device information, Error Code, Flags, Counters and
+              Runtime Information, then determines the next Internal Status.
+            - Controller Layer must never change Internal Status directly.
+            - Controller Layer methods must validate Internal Status before execution.
+            - Controller Layer may only call Status Update and use the resulting Internal Status for operation permission checks.            
+        --------------------------------------------------------------------
+
+        Flags:
+        --------------------------------------------------------------------
+            - Update only in Controller
+        --------------------------------------------------------------------
+
+        Counters:
+        --------------------------------------------------------------------
+            - Update only in Controller
+        --------------------------------------------------------------------
+
+        Runtime Information:
+        --------------------------------------------------------------------
+            - Update only in Controller
+        --------------------------------------------------------------------
+
+        Last Operation:
+        --------------------------------------------------------------------
+            - Update only in Controller
+        --------------------------------------------------------------------
+
+        Events:
+        --------------------------------------------------------------------
+            - Raise only in Controller
+        --------------------------------------------------------------------
+
+        ====================================================================
+        Error Management Rules
+        ====================================================================
+
         Purpose:
             Report what happened.
 
@@ -38,90 +99,189 @@ namespace GSM.Core.Source.Device
             - Error Code does NOT define device state.
             - Error Code does NOT define allowed operations.
             - Error Code is used for logging, debugging and error reporting.
+            - Errors may occur in any layer and set Error Code and Error Message.
+            - Controller Layer is responsible for evaluating the current Error Code, Internal Status and Runtime Information, then deciding the next action.
+        DLL Error:
+            - Generated in DllWrapper/Base
+            - Processed in Controller
 
+        Validation Error:
+            - Generated in Base
 
-        Internal Status
-        --------------------------------------------------------------------
-        Purpose:
-            Define what the Device can do and cannot do.
+        Workflow Error:
+            - Generated in Workflow
 
-        Description:
-            Internal Status is the main decision flag inside Device.
-
-        Used For:
-            - Operation permission checks
-            - Workflow decisions
-            - State transitions
-            - Recovery logic
-
-        Examples:
-            INVALID
-            DEVICE_NOT_SELECT
-            HARDWARE_NOT_READY
-            SIM_NOT_READY
-            NETWORK_NOT_READY
-            READY
-
-        Notes:
-            - Some operations may change Internal Status.
-            - Internal Status controls which operations are allowed.
-            - Device methods must validate Internal Status before execution.
-
-
-        External Status
-        --------------------------------------------------------------------
-        Purpose:
-            Represent Device state to DeviceManager.
-
-        Description:
-            External Status is a simplified view of Internal Status.
-
-        Used For:
-            - DeviceManager decisions
-            - Scheduling operations
-            - Device availability checks
-
-        Examples:
-            DISCONNECTED
-            NOT_READY
-            READY
-            BUSY
-
-        Notes:
-            - DeviceManager should use External Status only.
-            - DeviceManager must not use Internal Status directly.
-            - External Status may represent multiple Internal Status values.
-
-
-        Status Ownership
-        --------------------------------------------------------------------
-        Device
-            Owns:
-                Error Code
-                Internal Status
-                External Status
-
-        DeviceManager
-            Uses:
-                External Status
-
-        DeviceManager
-            Does NOT use:
-                Internal Status
-
-
-        Decision Hierarchy
-        --------------------------------------------------------------------
-        Error Code => What happened?
-
-        Internal Status => What can Device do now?
-
-        External Status => What DeviceManager can request from Device?
+        Status Decision:
+            - Generated in Controller
 
         ====================================================================
-        New Rules :
-            1. Device Number Change only 1 time and befor Refresh (Device Startup), in DeviceManager only in discovery, Unless Device Must KILL and construct again
-            2. Busy check and set only in public method
+        Decision Hierarchy
+        ====================================================================
+        Error Code => What happened?
+
+        Internal Status => What can Device do now? What DeviceManager can request from Device?
+
+        Flags / Runtime Information => Additional Device Conditions
+
+        Controller => What action should be taken next?
+
+        ====================================================================
+        */
+
+        /*
+        ====================================================================
+        Device Method Architecture
+        ====================================================================
+
+        Controller Layer
+        ------------------------------------------------
+        Responsibilities:
+        - Busy Check
+        - Status Check
+        - Status Update
+        - Runtime Update
+        - Flag Update
+        - Counter Update
+        - Last Operation Update
+        - Event Trigger
+
+        Rules:
+        - Entry point of Device operations
+        - Only layer allowed to change Runtime State
+        - Only layer allowed to change Internal Status
+        - Only layer allowed to update Flags and Counters
+        - Only layer allowed to raise Events
+        - Must call Workflow methods
+        - Must NOT call Base methods directly
+        ------------------------------------------------
+
+        Workflow Layer
+        ------------------------------------------------
+        Responsibilities:
+        - Retry
+        - Delay
+        - Confirmation
+        - Multi-Step Operations
+        - Execute Sequence Control
+
+        Rules:
+        - May call one or more Base methods
+        - May call one or more Workflow methods
+        - May contain loops
+        - May contain retry logic
+        - May contain confirmation logic
+        - May contain recovery logic
+
+        Must NOT:
+        - Change Internal Status
+        - Change Runtime State
+        - Change Busy Flag
+        - Raise Events
+        ------------------------------------------------
+
+        Base Layer
+        ------------------------------------------------
+        Responsibilities:
+        - Single Atomic Operation
+        - DLL Access
+        - Input Validation
+        - Output Validation
+        - Output Value Assignment
+
+        Rules:
+        - One hardware operation only
+        - confirmation Dll Value or Values
+        - No retry, No delay, No recovery
+        - No workflow logic
+
+        Must NOT:
+        - Base Layer validates DLL returned values.
+        - Base Layer does NOT perform multi-read confirmation.
+        - Multi-read confirmation belongs to Workflow Layer.
+        - Change Internal Status
+        - Change Runtime State
+        - Change Busy Flag
+        - Raise Events
+        ------------------------------------------------
+
+        DllWrapper
+        ------------------------------------------------
+        Responsibilities:
+        - Direct DLL Access Only
+
+        Rules:
+        - No Device Logic
+        - No Retry Logic
+        - No Recovery Logic
+        - No Status Logic
+        ------------------------------------------------
+
+       ====================================================================
+        Execution Flow
+        ====================================================================
+
+        Controller
+            ↓
+        Workflow
+            ↓
+        Execute
+            ↓
+        Check
+            ↓
+        Commit Values
+            ↓
+        Controller Update
+            ↓
+        Event
+
+        ====================================================================
+        Workflow Pattern
+        ====================================================================
+
+        Workflow
+            ↓
+        Execute
+                ↓
+                Base
+                ↓
+                Base
+                ↓
+                Base
+            ↓
+        Check
+            ↓
+        Commit Values
+            ↓
+        Return Result
+
+        Notes:
+
+        Check:
+            - Compare multiple reads
+            - Compare confirmation values
+            - Verify operation consistency
+
+        Commit Values:
+            - Update output parameters
+            - Update internal cached values
+
+        ====================================================================
+        Base Pattern
+        ====================================================================
+
+        Base Method
+            ↓
+        Input Check
+            ↓
+        DLL Call
+            ↓
+        DLL Error Check
+            ↓
+        Output Check
+            ↓
+        Set Output Values
+            ↓
+        Return Result
         */
 
         //Event definition

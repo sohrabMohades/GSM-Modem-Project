@@ -11,58 +11,6 @@ namespace GSM.Core.Source.Device
 {
     public partial class Device : IDisposable
     {
-        /*
-        ====================================================================
-        Device Method Architecture
-        ====================================================================
-
-        (private)
-        Workflow Layer
-            ↓
-        Execute
-            ↓
-        Check (compare result and output is equal -> NOT check value renge , such 0 <= X <= 127 or IndexCheck ...)
-            ↓
-        Commit Values (Set Internal and Output Values)
-
-        (Private) , (Atomic Layer)
-        Base Method 
-            ↓
-        ErrorReset
-            ↓
-        Internal Status Check -> (maybe move to WorkFlow !!!)
-            ↓
-        Input Check
-            ↓
-        DLL Call , DLL Error Check
-            ↓
-        Output Check
-            ↓
-        Set Output Values
-            ↓
-        Return result
-
-
-        Rules
-        --------------------------------------------------------------------
-        private WorkFlow Method:
-            - May contain Retry
-            - May contain Delay
-            - May contain Confirmation
-            - May contain Multi-Step Operations
-            - May call one or more Base Methods
-
-        Private Base Method:
-            - Single Atomic Operation
-            - No Retry
-            - No Delay
-            - No Confirmation
-            - No Workflow Logic
-            - Responsible for Dll Access
-
-        ====================================================================
-        */
-
         //Device Count
         public bool DeviceCountGet()
         {

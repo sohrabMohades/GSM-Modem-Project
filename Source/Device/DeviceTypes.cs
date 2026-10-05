@@ -110,6 +110,15 @@ namespace GSM.Core.Source.Device
             SUCCEED = 7
         }
         //End : Refresh Result
+        //Enum Function Result
+        private enum FUNC_RESULT
+        {
+            SUCCESS = 0,
+            FAIL = 1,
+            RETRY = 2,
+            MAJOR_ERROR = 3
+        }
+        //End : Enum Function Result
         //End : Constants
 
         //Fields
