@@ -233,5 +233,8 @@ namespace GSM.Core.Source.Device
             }
         }
         //End : AT Command Delay Set
+
+        //Buffer
+        //End : Buffer
     }
 }

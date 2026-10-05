@@ -29,6 +29,7 @@ namespace GSM.Core.Source.Device
         private const bool TIME_OUT_CHECK = true;
         private const int TIME_OUT_MAX_MS = 30000;
         //End : Config Values
+
         //Internal Device Status
         private enum INTERNAL_STATUS
         {
@@ -120,6 +121,47 @@ namespace GSM.Core.Source.Device
         }
         //End : Enum Function Result
         //End : Constants
+
+        //Group 1 : Status
+        private sealed class DeviceRuntimeState
+        {
+            public int Busy = 0;
+            public ERROR_CODE ErrorCode = ERROR_CODE.NO_ERROR;
+            public string ErrorMessage = string.Empty;
+            public INTERNAL_STATUS InternalStatus = INTERNAL_STATUS.INVALID;
+        }
+        //End : Group 1 : Status
+        //Group 2 : Flags & Counters
+        //class for flags
+        private sealed class DeviceRuntimeFlags
+        {
+            public bool NeedRefresh { get; set; }
+            public bool NeedSimChange { get; set; }
+            public bool LowCredit { get; set; }
+            public bool AutoRefreshEnabled { get; set; }
+            public bool AutoSmsSendEnabled { get; set; }
+            public bool AutoInboxEnabled { get; set; }
+        }
+        //End : class for flags -> Group 1 : Status
+        //class for counters -> continues failures
+        private sealed class DeviceRuntimeFailureCounters
+        {
+            public int Select { get; set; }
+            public int Refresh { get; set; }
+            public int SmsSend { get; set; }
+        }
+        //End : class for counters -> continues failures
+        //class for Device information
+        private sealed class DeviceRuntimeInfo
+        {
+            public DateTime LastRefreshTime { get; set; }
+            public DateTime LastSmsSendTime { get; set; }
+            public DateTime LastInboxReadTime { get; set; }
+            public DateTime CreateDateTime { get; set; }
+            public DateTime LastRecoveryTime { get; set; }
+        }
+        //End : class for Device information
+        //End : Group 2 : Flags & Counters
 
         //Fields
         //Variable
