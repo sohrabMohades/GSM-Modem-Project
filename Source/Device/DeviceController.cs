@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GSM.Core.Source.Device
 {
-    internal class DeviceController
+    public partial class Device : IDisposable
     {
     }
 }
