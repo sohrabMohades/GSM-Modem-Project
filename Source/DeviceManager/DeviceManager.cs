@@ -20,7 +20,8 @@ namespace GSM.Core.Source.DeviceManager
             FAULTED = 1,
             WORKING = 2
         }
-        private enum DEVICE_DETECTION_STATUS
+        //this is private , for test convert to public
+        public enum DEVICE_DETECTION_STATUS
         {
             FAIL = 0,
             IMEI_FAIL = 1,
@@ -60,7 +61,8 @@ namespace GSM.Core.Source.DeviceManager
                 this.LastOperation = DEVICE_OPERATION.UNKNOWN;
             }
         }
-        private class DeviceDiscoveryItem
+        //this is private , for test convert to public
+        public class DeviceDiscoveryItem
         {
             public int DeviceIndex { get; set; }
             public int DeviceNumber { get; set; }
@@ -130,6 +132,12 @@ namespace GSM.Core.Source.DeviceManager
         }
         private void DeviceOperationCompleted(Device.Device sender, DeviceDefinitions.DEVICE_OPERATION operation, bool result)
         {
+            /////////////////test
+            if(this._test)
+            {
+
+            }
+            /////////////////test
             DeviceDefinitions.DEVICE_OPERATION nextOperation = DeviceDefinitions.DEVICE_OPERATION.UNKNOWN;
             if (sender == null)
                 return;
@@ -541,5 +549,43 @@ namespace GSM.Core.Source.DeviceManager
         {
             this._smsManager.AddData(smsList);
         }
+
+        //test
+        bool _test = true;
+        public void SendSMSTest(Device.Device sender, string PhoneNumber, string SmsText)
+        {
+            this.SmsSendAsync(sender, PhoneNumber, SmsText);
+        }
+        public void RefreshTest(Device.Device sender)
+        {
+            this.DeviceRefreshAsync(sender);
+        }
+        public int DeviceCountTest()
+        {
+            if (this.DevicesCount())
+            {
+                return this._mainDevice.DeviceCount;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        public List<DeviceDiscoveryItem> DeviceDiscoveryTest()
+        {
+            List<DeviceDiscoveryItem> deviceDiscoveryItem = new List<DeviceDiscoveryItem>();
+            this.DevicesDiscoveryList(deviceDiscoveryItem);
+            return deviceDiscoveryItem;
+        }
+
+        private void AllDevicesUnselect()
+        {
+
+            foreach (var item in _devices.Values)
+            {
+                item.Device.DeviceUnselect();
+            }
+        }
+        //End : test
     }
 }
