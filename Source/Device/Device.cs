@@ -286,17 +286,9 @@ namespace GSM.Core.Source.Device
         Return Result
         */
 
-        //Event definition
-        public delegate void DeviceOperationCompletedEventHandler(Device sender, DeviceDefinitions.DEVICE_OPERATION operation, bool result);
-        public event DeviceOperationCompletedEventHandler DeviceOperationCompleted;
-        private void OnOperationCompleted(DeviceDefinitions.DEVICE_OPERATION operation, bool result)
-        {
-            this.DeviceOperationCompleted?.Invoke(this, operation, result);
-        }        
-        //End : Event definition
-
         //Get
         //Variable
+        /*
         public STATUS Status
         {
             get
@@ -322,6 +314,7 @@ namespace GSM.Core.Source.Device
                 }
             }
         }
+        */
         public ERROR_CODE ErrorCode
         {
             get => this._state.ErrorCode;
@@ -338,171 +331,201 @@ namespace GSM.Core.Source.Device
         //identity
         public int DeviceCount
         {
-            get => this._deviceCount;
+            get => this._runtimeIdentity.DeviceCount;
         }
         public int DeviceIndex
         {
-            get => this._deviceIndex;
+            get => this._runtimeIdentity.DeviceIndex;
             set
             {
                 if (this.DeviceIndexRangeCheck(value))
                 { 
-                    this._deviceIndex = value; 
+                    this._runtimeIdentity.DeviceIndex = value; 
                 }
             }
         }
         public int DeviceNumber
         {
-            get => this._deviceNumber;
+            get => this._runtimeIdentity.DeviceNumber;
         }
         //End : identity
         //property
         public bool GsmPower
         {
-            get => this._gsmPower;
+            get
+            {
+                if (this._runtimeHardware.GsmPower == BOOL_TYPE.TRUE)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
         }
         public bool GsmIsConnect
         {
-            get => this._gsmIsConnect;
+            get
+            {
+                if (this._runtimeHardware.GsmIsConnect == BOOL_TYPE.TRUE)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
         }
         public bool GsmIsReady
         {
-            get => this._gsmIsReady;
+            get
+            {
+                if (this._runtimeHardware.GsmIsReady == BOOL_TYPE.TRUE)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
         }
         public DeviceDefinitions.GSM_STATUS GsmStatus
         {
-            get => this._gsmStatus;
+            get => this._runtimeHardware.GsmStatus;
         }
         public int GsmStatusValue
         {
-            get => this._gsmStatusValue;
+            get => this._runtimeHardware.GsmStatusValue;
         }
         public string GsmStatusMessage
         {
-            get => this._gsmStatusMessage;
+            get => this._runtimeHardware.GsmStatusMessage;
         }
         public DeviceDefinitions.SIM_STATUS SimStatus
         {
-            get => this._simStatus;
+            get => this._runtimeSim.SIMStatus;
         }
         public string IMEI
         {
-            get => this._imei;
+            get => this._runtimeHardware.IMEI;
         }
-        public string SimNumber
+        public string MobileNumber
         {
-            get => this._simNumber;
+            get => this._runtimeOperator.MobileNumber;
         }
         public string SimID
         {
-            get => this._simID;
+            get => this._runtimeSim.SIMID;
         }
         public string SoftwareModel
         {
-            get => this._softwareVersion;
+            get => this._runtimeHardware.SoftwareVersion;
         }
         public string DeviceModel
         {
-            get => this._deviceInformation;
+            get => this._runtimeHardware.DeviceInformation;
         }
         public string SMSCenter
         {
-            get => this._smsCenter;
+            get => this._runtimeNetwork.SMSCenter;
         }
         public string NetworkName
         {
-            get => this._networkName;
+            get => this._runtimeNetwork.NetworkName;
         }
         public string NationalMobileID
         {
-            get => this._nationalMobileID;
+            get => this._runtimeSim.NationalMobileID;
         }
         public int Signal
         {
-            get => this._modemSignal;
+            get => this._runtimeNetwork.ModemSignal;
         }
         public string GSMDateTime
         {
-            get => this._gsmDateTime;
+            get => this._runtimeUngroup.GsmDateTime;
         }
         //End : property
         //Common Operations
         public DeviceDefinitions.SMS_TYPE SMSType
         {
-            get => this._smsType;
+            get => this._runtimeWorkingConfig.SmsType;
         }
         public DeviceDefinitions.SMS_CHAR_MODE SMSCharMode
         {
-            get => this._smsCharMode;
+            get => this._runtimeWorkingConfig.SmsCharMode;
         }
         //End : Common Operations
         //Send SMS data
         public bool SmsSendDeliveryReport
         {
-            get => this._smsSendDeliveryReport;
-            set => this._smsSendDeliveryReport = value;
+            get => this._runtimeSmsSendConfig.DeliveryReport;
+            set => this._runtimeSmsSendConfig.DeliveryReport = value;
         }
         public int SmsSendSendInterval
         {
-            get => this._smsSendSendInterval;
+            get => this._runtimeSmsSendConfig.SendInterval;
             set
             {
                 if (value >= DeviceDefinitions.SMS_SEND_SEND_INTERVAL_MIN && value <= DeviceDefinitions.SMS_SEND_SEND_INTERVAL_MAX)
                 {
-                    this._smsSendSendInterval = value;
+                    this._runtimeSmsSendConfig.SendInterval = value;
                 }
             }
         }
         public int SmsSendRetryTimes
         {
-            get => this._smsSendRetryTimes;
+            get => this._runtimeSmsSendConfig.RetryTimes;
             set
             {
                 if (value >= DeviceDefinitions.SMS_SEND_RETRY_TIMES_MIN && value <= DeviceDefinitions.SMS_SEND_RETRY_TIMES_MAX)
                 {
-                    this._smsSendRetryTimes = value;
+                    this._runtimeSmsSendConfig.RetryTimes = value;
                 }
             }
         }
         public DeviceDefinitions.SMS_VALIDITY SmsSendSmsValidity
         {
-            get => this._smsSendSmsValidity;
-            set => this._smsSendSmsValidity = value;
+            get => this._runtimeSmsSendConfig.SmsValidity;
+            set => this._runtimeSmsSendConfig.SmsValidity = value;
         }
         //End : Send SMS data
         //Send Operations
         public int ATCommandDelay
         {
-            get => this._atCommandDelay;
+            get => this._runtimeWorkingConfig.AtCommandDelay;
         }
         //End : Send Operations
         //Get Operations
         public int InboxTotalSpace
         {
-            get => this._inboxTotalSpace;
+            get => this._runtimeInboxProperty.TotalSpace;
         }
         public int InboxFreeSpace
         {
-            get => this._inboxFreeSpace;
+            get => (this._runtimeInboxProperty.TotalSpace - this._runtimeInboxProperty.SMSNumber);
         }
         public int InboxSMSNumber
         {
-            get => this._inboxSMSNumber;
+            get => this._runtimeInboxProperty.SMSNumber;
         }
         public bool NewInboxAlarm
         {
-            get => this._newInboxAlarm;
+            get => this._runtimeInboxConfig.NewInboxAlarm;
         }
         //End : Get Operations
         //Check condition
         public int SignalMinValue
         {
-            get => this._signalMinAcceptableValue;
+            get => this._runtimeConfig.SignalMinAcceptableValue;
             set
             {
                 if (value >= DeviceDefinitions.SIGNAL_MIN && value <= DeviceDefinitions.SIGNAL_MAX)
                 {
-                    this._signalMinAcceptableValue = value;
+                    this._runtimeConfig.SignalMinAcceptableValue = value;
                 }
             }
         }

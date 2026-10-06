@@ -9,6 +9,15 @@ namespace GSM.Core.Source.Device
 {
     public partial class Device : IDisposable
     {
+        //Event definition
+        private delegate void DeviceOperationCompletedEventHandler(Device sender, DeviceDefinitions.DEVICE_OPERATION operation, FUNC_RESULT result);
+        private event DeviceOperationCompletedEventHandler DeviceOperationCompleted;
+        private void OnOperationCompleted(DeviceDefinitions.DEVICE_OPERATION operation, FUNC_RESULT result)
+        {
+            this.DeviceOperationCompleted?.Invoke(this, operation, result);
+        }
+        //End : Event definition
+
         //Internal Device Status
         private enum INTERNAL_STATUS
         {
@@ -125,7 +134,7 @@ namespace GSM.Core.Source.Device
         private enum FAIL_LIMIT
         {
             NUM_ERROR = 3,
-            DEVICE_NUM_ERROR = 2
+            DEVICE_NUM_ERROR = 2,
         }
         //End : Try Fail read limitation
         //bool type
@@ -179,7 +188,7 @@ namespace GSM.Core.Source.Device
             public FUNC_RESULT LastOperationResult = FUNC_RESULT.UNKNOWN;
             public DateTime LastOperationTime = DateTime.MinValue;
 
-            public DateTime _timeOutCounter = DateTime.MinValue;
+            public DateTime TimeOutCounter = DateTime.MinValue;
         }
         //End : class for Device information
         //class Device Runtime Configuration

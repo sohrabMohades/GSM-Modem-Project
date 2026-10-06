@@ -72,11 +72,11 @@ namespace GSM.Core.Source.Device
         //Timeout
         private void TimeOutStart()
         {
-            this._timeOutCounter = DateTime.Now;
+            this._runtimeInfo.TimeOutCounter = DateTime.Now;
         }
         private bool TimeOutEnd()
         {
-            if ((DateTime.Now - this._timeOutCounter).TotalMilliseconds >= TIME_OUT_MAX_MS)
+            if ((DateTime.Now - this._runtimeInfo.TimeOutCounter).TotalMilliseconds >= this._runtimeConfig.TimeoutMaxMs)
             {
                 return true;
             }
