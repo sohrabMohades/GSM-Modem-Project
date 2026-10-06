@@ -49,7 +49,7 @@ namespace GSM.Core.Source.Device
         }
         private bool BaseErrorCheck()
         {
-            if (this._state.ErrorCode == ERROR_CODE.DLL_WRAPPER || this._state.ErrorCode == ERROR_CODE.INTERNAL_STATUS || this._state.ErrorCode == ERROR_CODE.INVALID_INPUT)
+            if (this._state.ErrorCode == ERROR_CODE.DLL_WRAPPER || this._state.ErrorCode == ERROR_CODE.INVALID_INPUT)
             {
                 return true;
             }
@@ -64,8 +64,29 @@ namespace GSM.Core.Source.Device
         {
             return Interlocked.CompareExchange(ref this._state.Busy, 1, 0) == 0;
         }
-        private void DeviceBusyDeactive(string FuncName, bool FuncResult)
+        private void DeviceBusyDeactive()
         {
+            Interlocked.Exchange(ref this._state.Busy, 0);
+        }
+        //Busy Flag manager
+        //Timeout
+        private void TimeOutStart()
+        {
+            this._timeOutCounter = DateTime.Now;
+        }
+        private bool TimeOutEnd()
+        {
+            if ((DateTime.Now - this._timeOutCounter).TotalMilliseconds >= TIME_OUT_MAX_MS)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        //End : Timeout
+        /*
             DeviceDefinitions.DEVICE_OPERATION operation = DeviceDefinitions.DEVICE_OPERATION.UNKNOWN;
             switch (FuncName)
             {
@@ -97,26 +118,7 @@ namespace GSM.Core.Source.Device
                     operation = DeviceDefinitions.DEVICE_OPERATION.UNKNOWN;
                     break;
             }
-            Interlocked.Exchange(ref this._state.Busy, 0);
             this.OnOperationCompleted(operation, FuncResult);
-        }
-        //Busy Flag manager
-        //Timeout
-        private void TimeOutStart()
-        {
-            this._timeOutCounter = DateTime.Now;
-        }
-        private bool TimeOutEnd()
-        {
-            if ((DateTime.Now - this._timeOutCounter).TotalMilliseconds >= TIME_OUT_MAX_MS)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        //End : Timeout
+        */
     }
 }

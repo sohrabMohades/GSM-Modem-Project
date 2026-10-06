@@ -52,7 +52,7 @@
     <Compile Include="Source\Device\DeviceProperties.cs" />
     <Compile Include="Source\Device\DeviceRuntime.cs" />
     <Compile Include="Source\Device\DeviceSendOperations.cs" />
-    <Compile Include="Source\Device\DeviceDefinitions.cs" />
+    <Compile Include="Source\Device\DeviceTypes.cs" />
     <Compile Include="Source\DllWrapper\DllWrapper.cs" />
     <Compile Include="Source\DllWrapper\DllWrapperDelegates.cs" />
     <Compile Include="Source\DllWrapper\DllWrapperLoader.cs" />

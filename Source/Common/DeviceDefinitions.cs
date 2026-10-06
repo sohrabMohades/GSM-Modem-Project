@@ -108,6 +108,7 @@ namespace GSM.Core.Source.Common
         public const int DEVICE_INDEX_INVALID = -1;
         public const int DEVICE_NUMBER_INVALID = -1;
         public const int AT_COMMAND_DELAY_INVALID = 0;
+        public const int AT_COMMAND_DELAY_DEFAULT = 5000;
         //End : Initial Values
         //Constants
 

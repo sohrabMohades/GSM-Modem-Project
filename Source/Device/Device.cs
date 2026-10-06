@@ -144,6 +144,7 @@ namespace GSM.Core.Source.Device
         - Counter Update
         - Last Operation Update
         - Event Trigger
+        - Error reset
 
         Rules:
         - Entry point of Device operations
@@ -151,6 +152,7 @@ namespace GSM.Core.Source.Device
         - Only layer allowed to change Internal Status
         - Only layer allowed to update Flags and Counters
         - Only layer allowed to raise Events
+        - Only layer allowed to Reset Error
         - Must call Workflow methods
         - Must NOT call Base methods directly
         ------------------------------------------------
@@ -513,7 +515,6 @@ namespace GSM.Core.Source.Device
             this.ErrorReset();
             this._dllFileName = DllFileName;
             bool result = true;
-
             if (result)
             {
                 result = this.DllLoad();
@@ -523,7 +524,6 @@ namespace GSM.Core.Source.Device
             {
                 result = this.DllLoadCheck();
             }
-
             this.ConstructorStatusSet(result);
         }
         //End : constructor
@@ -583,8 +583,7 @@ namespace GSM.Core.Source.Device
                 }
                 else
                 {
-                    this._state.ErrorCode = ERROR_CODE.DLL_WRAPPER;
-                    this._state.ErrorMessage = "DllWrapper ErrorCode = " + this._dllWrapper.ErrorCode.ToString() + " - ErrorMessage = " + this._dllWrapper.ErrorMessage;
+                    DllWrapperErrorCheckSetValue("DllWrapper ErrorCode = " + this._dllWrapper.ErrorCode.ToString() + " - ErrorMessage = " + this._dllWrapper.ErrorMessage);
                     return false;
                 }
             }
