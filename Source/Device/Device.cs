@@ -339,8 +339,8 @@ namespace GSM.Core.Source.Device
             set
             {
                 if (this.DeviceIndexRangeCheck(value))
-                { 
-                    this._runtimeIdentity.DeviceIndex = value; 
+                {
+                    this._runtimeIdentity.DeviceIndex = value;
                 }
             }
         }
@@ -583,6 +583,7 @@ namespace GSM.Core.Source.Device
         //End : Deconstructor
 
         //Helper
+        //Constructor Helper
         private bool DllLoad()
         {
             try
@@ -627,6 +628,46 @@ namespace GSM.Core.Source.Device
                 this._state.InternalStatus = INTERNAL_STATUS.INVALID;
             }
         }
+        //Constructor Helper
+        //Device Helper
+        private void XXXBaseSetValue<T>(FUNC_RESULT result, T successValue, T failValue, ref T target)
+        {
+            target = result == FUNC_RESULT.SUCCESS ? successValue : failValue;
+        }
+        private void XXXBaseSetValue<T>(T newValue, ref T target)
+        {
+            target = newValue;
+        }
+        private void XXXSetValue<T>(FUNC_RESULT result, T successValue, T failValue, ref T outputValue, ref T internalValue, bool internalValueSet)
+        {
+            T value = result == FUNC_RESULT.SUCCESS ? successValue  : failValue;
+            outputValue = value;
+            if (internalValueSet)
+            {
+                internalValue = value;
+            }
+        }
+        private void XXXSetValue<T>(T newValue, ref T outputValue, ref T internalValue, bool internalValueSet)
+        {
+            outputValue = newValue;
+            if (internalValueSet)
+            {
+                internalValue = newValue;
+            }
+        }
+        private FUNC_RESULT XXXCheck<T>(FUNC_RESULT Result, FUNC_RESULT Result1, FUNC_RESULT Result2, T Value1, T Value2)
+        {
+            if (Result == FUNC_RESULT.MAJOR_ERROR)
+            {
+                return FUNC_RESULT.MAJOR_ERROR;
+            }
+            if (Result1 == FUNC_RESULT.SUCCESS && Result2 == FUNC_RESULT.SUCCESS && EqualityComparer<T>.Default.Equals(Value1, Value2))
+            {
+                return FUNC_RESULT.SUCCESS;
+            }
+            return FUNC_RESULT.FAIL;
+        }
+        //End : Device Helper
         //End : Helper
     }
 }

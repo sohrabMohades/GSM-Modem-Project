@@ -12,81 +12,35 @@ namespace GSM.Core.Source.Device
     public partial class Device : IDisposable
     {
         //Device Count
-        public bool DeviceCountGet()
+        private FUNC_RESULT DeviceCountGetWorkflow(ref int DeviceCount, bool InternalValueSet)
         {
-            int deviceCount = DeviceDefinitions.NUMBER_INVALID;
-            return this.DeviceCountGet(ref deviceCount, true);
-        }
-        public bool DeviceCountGet(ref int DeviceCount)
-        {
-            return this.DeviceCountGet(ref DeviceCount, true);
-        }
-        public bool DeviceCountGet(ref int DeviceCount, bool InternalValueSet)
-        {
-            bool result = false;
-            if (this.TrySetBusy())
-            {
-                result = false;
-                this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceCountGet));
-                return result;
-            }
-            try
-            {
-                result = this.DeviceCountGetWorkflow(ref DeviceCount, InternalValueSet);
-                return result;
-            }
-            finally
-            {
-                this.DeviceBusyDeactive(nameof(this.DeviceCountGet) , result);
-            }
-        }
-        private bool DeviceCountGetWorkflow(ref int DeviceCount, bool InternalValueSet)
-        {
-            bool result = true, result1 = false, result2 = false;
+            FUNC_RESULT result = FUNC_RESULT.UNKNOWN, result1 = FUNC_RESULT.UNKNOWN, result2 = FUNC_RESULT.UNKNOWN;
             int deviceCount1 = DeviceDefinitions.NUMBER_INVALID, deviceCount2 = DeviceDefinitions.NUMBER_INVALID;
-            if (result)
-            {
-                this.DeviceCountGetExecute(TRY_READ_FAST, DELAY_SHORT_MS, ref result1, ref result2, ref deviceCount1, ref deviceCount2);
-            }
-            if (result)
-            {
-                result = this.DeviceCountGetCheck(result1, result2, deviceCount1, deviceCount2);
-            }
-            if (result)
-            {
-                this.DeviceCountGetSetValue(deviceCount1, ref DeviceCount, InternalValueSet);
-            }
-            else
-            {
-                this.DeviceCountGetSetValue(DeviceDefinitions.NUMBER_INVALID, ref DeviceCount, InternalValueSet);
-            }
+            result = this.DeviceCountGetExecute((int)TRY_COUNT.FAST, (int)OPERATION_DELAY_MS.SHORT, ref result1, ref result2, ref deviceCount1, ref deviceCount2);
+            result = this.XXXCheck(result, result1, result2, deviceCount1, deviceCount2);
+            this.XXXSetValue(result, deviceCount1, DeviceDefinitions.NUMBER_INVALID, ref DeviceCount, ref this._runtimeIdentity.DeviceCount, InternalValueSet);
             return result;
         }
-        private void DeviceCountGetExecute(int loopCount,int Delay, ref bool Result1, ref bool Result2, ref int DeviceCount1, ref int DeviceCount2)
+        private FUNC_RESULT DeviceCountGetExecute(int loopCount,int Delay, ref FUNC_RESULT Result1, ref FUNC_RESULT Result2, ref int DeviceCount1, ref int DeviceCount2)
         {
             //How Many continues fail accepted
-            int resultCount = TRY_FAIL_TIME;
+            int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
             //1 result get or 2 result get and check 1 and 2
-            if (!this._enableDoubleReadValidation)
+            if (!this._runtimeConfig.EnableDoubleReadValidation)
             {
-                Result2 = true;
+                Result2 = FUNC_RESULT.SUCCESS;
             }
             //try time
-            while (loopCount > 0 && (!Result1 || !Result2))
+            while (loopCount > 0 && (Result1 != FUNC_RESULT.SUCCESS || Result2 != FUNC_RESULT.SUCCESS))
             {
                 //delay
                 Thread.Sleep(Delay);
                 //try for first correct result
-                if (!Result1)
+                if (Result1 != FUNC_RESULT.SUCCESS)
                 {
                     Result1 = this.DeviceCountGetBase(ref DeviceCount1);
-                    //major error check
-                    if (this.BaseErrorCheck())
-                    {
-                        return;
-                    }
                     //continues fail check
-                    if (!Result1)
+                    if (Result1 != FUNC_RESULT.SUCCESS)
                     {
                         resultCount--;
                         if (resultCount <= 0)
@@ -99,89 +53,72 @@ namespace GSM.Core.Source.Device
                 else
                 {
                     Result2 = this.DeviceCountGetBase(ref DeviceCount2);
-                    //major error check
-                    if (this.BaseErrorCheck())
-                    {
-                        return;
-                    }
                 }
                 loopCount--;
+                if (Result1 == FUNC_RESULT.MAJOR_ERROR || Result2 == FUNC_RESULT.MAJOR_ERROR)
+                {
+                    return FUNC_RESULT.MAJOR_ERROR;
+                }
             }
             //1 result get or 2 result get and check 1 and 2
-            if (!this._enableDoubleReadValidation)
+            if (!this._runtimeConfig.EnableDoubleReadValidation)
             {
                 DeviceCount2 = DeviceCount1;
             }
+            return FUNC_RESULT.SUCCESS;
         }
-        private bool DeviceCountGetCheck(bool Result1, bool Result2, int DeviceCount1, int DeviceCount2)
+        private FUNC_RESULT DeviceCountGetBase(ref int DeviceCount)
         {
-            return (Result1 && Result2 && DeviceCount1 == DeviceCount2);
-        }
-        private void DeviceCountGetSetValue(int DeviceCountNewValue, ref int DeviceCount, bool InternalValueSet)
-        {
-            DeviceCount = DeviceCountNewValue;
-            if (InternalValueSet)
-            {
-                this._deviceCount = DeviceCountNewValue;
-            }
-        }
-        private bool DeviceCountGetBase(ref int DeviceCount)
-        {
-            bool result = true;
+            FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             int deviceCount = 0;
             this.ErrorReset();
-            if (result)
-            {
-                result = this.DeviceCountGetBaseDll(ref deviceCount);
-            }
-            if (result)
+            result = this.DeviceCountGetBaseDll(ref deviceCount);
+            if (result == FUNC_RESULT.SUCCESS)
             {
                 result = this.DeviceCountGetBaseCheck(deviceCount);
             }
-            if (result)
-            {
-                this.DeviceCountGetBaseSetValue(deviceCount, ref DeviceCount);
-            }
-            else
-            {
-                this.DeviceCountGetBaseSetValue(DeviceDefinitions.NUMBER_INVALID, ref DeviceCount);
-            }
+            this.XXXBaseSetValue(result , deviceCount, DeviceDefinitions.NUMBER_INVALID, ref DeviceCount);
             return result;
         }
-        private bool DeviceCountGetBaseDll(ref int DeviceCount)
+        private FUNC_RESULT DeviceCountGetBaseDll(ref int DeviceCount)
         {
             try
             {
                 DeviceCount = this._dllWrapper.DeviceCount();
-                return this.DllWrapperErrorCheck();
+                if(this.DllWrapperHasError())
+                {
+                    return FUNC_RESULT.MAJOR_ERROR;
+                }
+                else
+                {
+                    return FUNC_RESULT.SUCCESS;
+                }
             }
             catch (Exception ex)
             {
                 this.DllWrapperErrorCheckSetValue($"DeviceCountGetDll Error : {ex.Message}");
-                return false;
+                return FUNC_RESULT.MAJOR_ERROR;
             }
         }
-        private bool DeviceCountGetBaseCheck(int DeviceCount)
+        private FUNC_RESULT DeviceCountGetBaseCheck(int DeviceCount)
         {
             try
             {
                 if (DeviceCount >= DeviceDefinitions.DEVICE_COUNT_MIN && DeviceCount <= DeviceDefinitions.DEVICE_COUNT_MAX)
                 {
-                    return true;
+                    return FUNC_RESULT.SUCCESS;
                 }
                 else
                 {
-                    return this.ErrorSet(ERROR_CODE.DEVICE_COUNT, "Device Count = " + DeviceCount.ToString());
+                    this.ErrorSet(ERROR_CODE.DEVICE_COUNT, "Device Count = " + DeviceCount.ToString());
+                    return FUNC_RESULT.FAIL;
                 }
             }
             catch (Exception ex)
             {
-                return this.ErrorSet(ERROR_CODE.DEVICE_COUNT, "DeviceCountGetCheck Error : " + ex.Message);
+                this.ErrorSet(ERROR_CODE.DEVICE_COUNT, "DeviceCountGetCheck Error : " + ex.Message);
+                return FUNC_RESULT.FAIL;
             }
-        }
-        private void DeviceCountGetBaseSetValue(int DeviceCountNewValue, ref int DeviceCount)
-        {
-            DeviceCount = DeviceCountNewValue;
         }
         //End : Device Count
 

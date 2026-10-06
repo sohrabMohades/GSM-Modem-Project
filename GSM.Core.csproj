@@ -47,6 +47,7 @@
     <Compile Include="Source\Device\Device.cs" />
     <Compile Include="Source\Device\DeviceCommonOperations.cs" />
     <Compile Include="Source\Device\DeviceController.cs" />
+    <Compile Include="Source\Device\DeviceControllers.cs" />
     <Compile Include="Source\Device\DeviceGetOperations.cs" />
     <Compile Include="Source\Device\DeviceIdentity.cs" />
     <Compile Include="Source\Device\DeviceProperties.cs" />

@@ -16,24 +16,24 @@ namespace GSM.Core.Source.Device
             this._state.ErrorCode = ERROR_CODE.NO_ERROR;
             this._state.ErrorMessage = string.Empty;
         }
-        private bool DllWrapperErrorCheck()
+        private bool DllWrapperHasError()
         {
             try
             {
                 if (this._dllWrapper.ErrorCode == DllWrapper.ERROR_CODE.NO_ERROR)
                 {
-                    return true;
+                    return false;
                 }
                 else
                 {
                     this.DllWrapperErrorCheckSetValue(this._dllWrapper.ErrorMessage);
-                    return false;
+                    return true;
                 }
             }
             catch (Exception ex)
             {
                 this.DllWrapperErrorCheckSetValue(ex.Message);
-                return false;
+                return true;
             }
         }
         private void DllWrapperErrorCheckSetValue(string error)
@@ -86,6 +86,22 @@ namespace GSM.Core.Source.Device
             }
         }
         //End : Timeout
+        //Internal Status
+        private bool InternalStatusCheck(INTERNAL_STATUS MinStatusNeed , string FuncName)
+        {
+            if ((int)this._state.InternalStatus >= (int)MinStatusNeed)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        private void InternalStatusUpdate()
+        {
+        }
+        //Internal Status
         /*
             DeviceDefinitions.DEVICE_OPERATION operation = DeviceDefinitions.DEVICE_OPERATION.UNKNOWN;
             switch (FuncName)
