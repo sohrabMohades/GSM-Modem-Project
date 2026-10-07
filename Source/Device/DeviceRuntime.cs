@@ -16,24 +16,24 @@ namespace GSM.Core.Source.Device
             this._state.ErrorCode = ERROR_CODE.NO_ERROR;
             this._state.ErrorMessage = string.Empty;
         }
-        private bool DllWrapperHasError()
+        private FUNC_RESULT DllWrapperHasError(FUNC_RESULT funcResult)
         {
             try
             {
                 if (this._dllWrapper.ErrorCode == DllWrapper.ERROR_CODE.NO_ERROR)
                 {
-                    return false;
+                    return funcResult;
                 }
                 else
                 {
                     this.DllWrapperErrorCheckSetValue(this._dllWrapper.ErrorMessage);
-                    return true;
+                    return FUNC_RESULT.MAJOR_ERROR;
                 }
             }
             catch (Exception ex)
             {
                 this.DllWrapperErrorCheckSetValue(ex.Message);
-                return true;
+                return FUNC_RESULT.MAJOR_ERROR;
             }
         }
         private void DllWrapperErrorCheckSetValue(string error)
@@ -87,8 +87,19 @@ namespace GSM.Core.Source.Device
         }
         //End : Timeout
         //Internal Status
-        private bool InternalStatusCheck(INTERNAL_STATUS MinStatusNeed , string FuncName)
+        private bool InternalStatusCheck(INTERNAL_STATUS MinStatusNeed, string FuncName)
         {
+            if (FuncName == nameof(this.DeviceNumberChange))
+            {
+                if ((int)this._state.InternalStatus == (int)MinStatusNeed)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
             if ((int)this._state.InternalStatus >= (int)MinStatusNeed)
             {
                 return true;

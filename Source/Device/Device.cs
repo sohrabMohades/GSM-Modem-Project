@@ -155,9 +155,37 @@ namespace GSM.Core.Source.Device
         - Only layer allowed to Reset Error
         - Must call Workflow methods
         - Must NOT call Base methods directly
+
+        Acceptable Operations:
+        - Controller -> Workflow (only 1 Workflow)
+        - Controller -> ComplexWorkflow (only 1 ComplexWorkflow)
+
+        NOT Acceptable Operations:
+        - Controller -> Execute
+        - Controller -> Base
+        - Controller -> Controller
         ------------------------------------------------
 
-        Workflow Layer
+        ComplexWorkflow Layer
+        ------------------------------------------------
+        Responsibilities:
+        - Call multiple Workflow methods
+        - Sequence multiple operations
+        - Branch based on Workflow result
+        - Coordinate fallback paths
+        - Coordinate multi-step device operations
+
+        Acceptable Operations:
+        - ComplexWorkflow -> Workflow, Workflow, Workflow, ...
+
+        NOT Acceptable Operations:
+        - ComplexWorkflow -> Controller
+        - ComplexWorkflow -> ComplexWorkflow
+        - ComplexWorkflow -> Execute
+        - ComplexWorkflow -> Base
+        ------------------------------------------------
+
+        Workflow and Execute Layer
         ------------------------------------------------
         Responsibilities:
         - Retry
@@ -179,6 +207,24 @@ namespace GSM.Core.Source.Device
         - Change Runtime State
         - Change Busy Flag
         - Raise Events
+
+        Acceptable Operations:
+        - Workflow -> Execute, Execute, Execute, ...
+
+        NOT Acceptable Operations:
+        - Workflow -> Controller
+        - Workflow -> ComplexWorkflow
+        - Workflow -> Workflow
+        - Workflow -> Base
+
+        Acceptable Operations:
+        - Execute -> Base, Base, Base, ...
+
+        NOT Acceptable Operations:
+        - Execute -> Controller
+        - Execute -> ComplexWorkflow
+        - Execute -> Workflow
+        - Execute -> Execute
         ------------------------------------------------
 
         Base Layer
@@ -218,19 +264,42 @@ namespace GSM.Core.Source.Device
         - No Status Logic
         ------------------------------------------------
 
-       ====================================================================
+        ====================================================================
+        Layer Relation
+        ====================================================================
+
+        ------------------------------------------------
+        Controller
+            |----------------
+            ↓               |
+        ComplexWorkflow     |
+            ↓               ↓
+        Workflow         Workflow
+            ↓               ↓
+          Execute        Execute
+            ↓               ↓
+          Base            Base
+            ↓               ↓
+        DllWrapper     DllWrapper
+        ------------------------------------------------
+
+        ------------------------------------------------
+        Controller
+            ├─ Workflow
+            ├─ Workflow
+            └─ ComplexWorkflow
+                  ├─ Workflow
+                  ├─ Workflow
+                  └─ Workflow
+        ------------------------------------------------
+
+        ====================================================================
         Execution Flow
         ====================================================================
 
         Controller
             ↓
         Workflow
-            ↓
-        Execute
-            ↓
-        Check
-            ↓
-        Commit Values
             ↓
         Controller Update
             ↓
