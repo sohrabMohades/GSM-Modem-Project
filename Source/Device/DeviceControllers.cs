@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static GSM.Core.Source.Common.DeviceDefinitions;
 
 namespace GSM.Core.Source.Device
 {
@@ -55,6 +56,7 @@ namespace GSM.Core.Source.Device
             finally
             {
                 this.DeviceBusyDeactive();
+                //this.OnOperationCompleted(DEVICE_OPERATION.UNKNOWN, funcResult);
             }
         }
         //End : Device Count
@@ -79,7 +81,7 @@ namespace GSM.Core.Source.Device
             try
             {
                 this.ErrorReset();
-                funcResult = this.DeviceIdentityWorkFlow(DeviceIndex, ref DeviceNumber, ref IMEI);
+                funcResult = this.DeviceIdentityComplexWorkflow(DeviceIndex, ref DeviceNumber, ref IMEI);
                 if (funcResult == FUNC_RESULT.SUCCESS)
                 {
                     result = true;
@@ -96,6 +98,7 @@ namespace GSM.Core.Source.Device
             finally
             {
                 this.DeviceBusyDeactive();
+                //this.OnOperationCompleted(DEVICE_OPERATION.UNKNOWN, funcResult);
             }
         }
         //Device Identity
@@ -120,7 +123,7 @@ namespace GSM.Core.Source.Device
             try
             {
                 this.ErrorReset();
-                funcResult = this.DeviceNumberChangeWorkFlow(DeviceIndex, DeviceNumberNew);
+                funcResult = this.DeviceNumberChangeComplexWorkflow(DeviceIndex, DeviceNumberNew);
                 if (funcResult == FUNC_RESULT.SUCCESS)
                 {
                     result = true;
@@ -137,6 +140,7 @@ namespace GSM.Core.Source.Device
             finally
             {
                 this.DeviceBusyDeactive();
+                //this.OnOperationCompleted(DEVICE_OPERATION.UNKNOWN, funcResult);
             }
         }
         //End : Device Number Change
@@ -161,7 +165,7 @@ namespace GSM.Core.Source.Device
             try
             {
                 this.ErrorReset();
-                funcResult = this.DeviceUnselectWorkFlow();
+                funcResult = this.DeviceUnselectComplexWorkflow();
                 if (funcResult == FUNC_RESULT.SUCCESS)
                 {
                     result = true;
@@ -178,9 +182,55 @@ namespace GSM.Core.Source.Device
             finally
             {
                 this.DeviceBusyDeactive();
+                //this.OnOperationCompleted(DEVICE_OPERATION.UNKNOWN, funcResult);
             }
         }
         //End : Device Index Unselect
+        
+        //Refresh
+        public bool DeviceRefresh()
+        {
+            return this.DeviceRefresh(true);
+        }
+        public bool DeviceRefresh(bool PowerRestartAllow)
+        {
+            bool result = false;
+            FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
+            if (!this.TrySetBusy())
+            {
+                result = false;
+                this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceRefresh));
+                return result;
+            }
+            if (!this.InternalStatusCheck(INTERNAL_STATUS.SINGLE_DEVICE, nameof(this.DeviceRefresh)))
+            {
+                result = false;
+                this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.DeviceRefresh));
+                return result;
+            }
+            try
+            {
+                funcResult = this.DeviceRefreshComplexWorkFlow(PowerRestartAllow);
+                if (funcResult == FUNC_RESULT.SUCCESS)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = false;
+                }
+                ////////_runtimeFlags Updates
+                ////////_runtimeInfo Updates
+                this.InternalStatusUpdate();
+                return result;
+            }
+            finally
+            {
+                this.DeviceBusyDeactive();
+                //this.OnOperationCompleted(DEVICE_OPERATION.UNKNOWN, funcResult);
+            }
+        }
+        //End : Refresh
 
     }
 }

@@ -91,13 +91,12 @@ namespace GSM.Core.Source.Device
         private enum REFRESH_RESULT
         {
             UNKNOWN_ERROR = 0,
-            INTERNAL_STATUS_FAIL = 1,
-            DEVICE_NOT_SELECT = 2,
-            DEVICE_NUMBER_CHANGED = 3,
-            POWER_OFF = 4,
-            RESTART_NEED = 5,
-            SIM_NOT_READY = 6,
-            SUCCEED = 7
+            DEVICE_NOT_SELECT = 1,
+            DEVICE_NUMBER_CHANGED = 2,
+            POWER_OFF = 3,
+            RESTART_NEED = 4,
+            SIM_NOT_READY = 5,
+            SUCCEED = 6
         }
         //End : Refresh Result
         //Enum Function Result
@@ -142,7 +141,7 @@ namespace GSM.Core.Source.Device
         {
             UNKNOWN = -1,
             FALSE = 0,
-            TRUE = 1
+            TRUE = 1,
         }
         //End : Constants
 
@@ -198,6 +197,7 @@ namespace GSM.Core.Source.Device
             public bool EnableDoubleReadValidation = false;
             public bool TimeoutCheck = true;
             public int TimeoutMaxMs = 30000;
+            public bool PowerON2TimeCheck = true;
         }
         //End : Group 2 : Flags & Counters & information & configuration
 

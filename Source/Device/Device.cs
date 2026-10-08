@@ -133,6 +133,15 @@ namespace GSM.Core.Source.Device
         Device Method Architecture
         ====================================================================
 
+        Common Rules :
+        ------------------------------------------------
+        - Functions output only is FUNC_RESULT
+        - for any other outputs use ref or out parameters
+        - use BOOL_TYPE for boolean outputs (true , false , unkown)
+        - this rules about controllers -> ComplexWorkflow -> Workflow -> Execute -> Base and any Function in this road
+          except Helpers
+        ------------------------------------------------
+
         Controller Layer
         ------------------------------------------------
         Responsibilities:
@@ -703,39 +712,29 @@ namespace GSM.Core.Source.Device
         {
             target = result == FUNC_RESULT.SUCCESS ? successValue : failValue;
         }
-        private void XXXBaseSetValue<T>(T newValue, ref T target)
+        private void XXXBaseSetValue(FUNC_RESULT resultFunc, bool inputResult, ref BOOL_TYPE outResult)
         {
-            target = newValue;
+            outResult = resultFunc == FUNC_RESULT.SUCCESS ? (inputResult ? BOOL_TYPE.TRUE : BOOL_TYPE.FALSE) : BOOL_TYPE.UNKNOWN;
         }
         private void XXXSetValue<T>(FUNC_RESULT result, T successValue, T failValue, ref T outputValue, ref T internalValue, bool internalValueSet)
         {
-            T value = result == FUNC_RESULT.SUCCESS ? successValue  : failValue;
+            T value = result == FUNC_RESULT.SUCCESS ? successValue : failValue;
             outputValue = value;
             if (internalValueSet)
-            {
                 internalValue = value;
-            }
-        }
-        private void XXXSetValue<T>(T newValue, ref T outputValue, ref T internalValue, bool internalValueSet)
-        {
-            outputValue = newValue;
-            if (internalValueSet)
-            {
-                internalValue = newValue;
-            }
         }
         private FUNC_RESULT XXXCheck<T>(FUNC_RESULT Result, FUNC_RESULT Result1, FUNC_RESULT Result2, T Value1, T Value2)
         {
             if (Result == FUNC_RESULT.MAJOR_ERROR)
-            {
                 return FUNC_RESULT.MAJOR_ERROR;
-            }
             if (Result1 == FUNC_RESULT.SUCCESS && Result2 == FUNC_RESULT.SUCCESS && EqualityComparer<T>.Default.Equals(Value1, Value2))
-            {
                 return FUNC_RESULT.SUCCESS;
-            }
             return FUNC_RESULT.FAIL;
         }
+        private bool XXXOutput(BOOL_TYPE value)
+        {
+            return value == BOOL_TYPE.TRUE;
+        }       
         //End : Device Helper
         //End : Helper
     }

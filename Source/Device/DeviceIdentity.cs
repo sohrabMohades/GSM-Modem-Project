@@ -81,16 +81,8 @@ namespace GSM.Core.Source.Device
         }
         private FUNC_RESULT DeviceCountGetBaseDll(ref int DeviceCount)
         {
-            try
-            {
-                DeviceCount = this._dllWrapper.DeviceCount();
-                return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
-            }
-            catch (Exception ex)
-            {
-                this.DllWrapperErrorCheckSetValue($"DeviceCountGetDll Error : {ex.Message}");
-                return FUNC_RESULT.MAJOR_ERROR;
-            }
+            DeviceCount = this._dllWrapper.DeviceCount();
+            return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
         }
         private FUNC_RESULT DeviceCountGetBaseCheck(int DeviceCount)
         {
@@ -123,7 +115,7 @@ namespace GSM.Core.Source.Device
             result = this.DeviceSelectByIndexExecute(DeviceIndex, (int)OPERATION_DELAY_MS.SHORT);
             if (result == FUNC_RESULT.SUCCESS && CheckDeviceNumber)
             {
-                this.DeviceNumberGetExecute((int)TRY_COUNT.NORMAL, (int)OPERATION_DELAY_MS.NORMAL_SHORT, ref result1, ref result2, ref deviceNumber1, ref deviceNumber2);
+                result = this.DeviceNumberGetExecute((int)TRY_COUNT.NORMAL, (int)OPERATION_DELAY_MS.NORMAL_SHORT, ref result1, ref result2, ref deviceNumber1, ref deviceNumber2);
                 result = this.XXXCheck(result, result1, result2, deviceNumber1, deviceNumber2);
             }
             this.XXXSetValue(result, DeviceIndex, DeviceDefinitions.NUMBER_INVALID, ref deviceIndex, ref this._runtimeIdentity.DeviceIndex, InternalValueSet);
@@ -159,16 +151,8 @@ namespace GSM.Core.Source.Device
         }
         private FUNC_RESULT DeviceSelectByIndexBaseDll(int DeviceIndex)
         {
-            try
-            {
-                this._dllWrapper.SelectByDeviceIndex(Convert.ToInt16(DeviceIndex));
-                return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
-            }
-            catch (Exception ex)
-            {
-                this.DllWrapperErrorCheckSetValue($"DeviceSelectByIndexDll Error : {ex.Message}");
-                return FUNC_RESULT.MAJOR_ERROR;
-            }
+            this._dllWrapper.SelectByDeviceIndex(Convert.ToInt16(DeviceIndex));
+            return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
         }
         /*
          * 1. Importan Note : Index limited from 0 to 127 in Manshor software test
@@ -222,16 +206,8 @@ namespace GSM.Core.Source.Device
         }
         private FUNC_RESULT DeviceSelectByDeviceNumberBaseDll(int DeviceNumber)
         {
-            try
-            {
-                this._dllWrapper.SelectByDeviceNumber(Convert.ToInt16(DeviceNumber));
-                return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
-            }
-            catch (Exception ex)
-            {
-                this.DllWrapperErrorCheckSetValue($"DeviceSelectByDeviceNumberDll Error : {ex.Message}");
-                return FUNC_RESULT.MAJOR_ERROR;
-            }
+            this._dllWrapper.SelectByDeviceNumber(Convert.ToInt16(DeviceNumber));
+            return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
         }
         /*
          * 1. Important Note : Device Number from 0 to 127 , after 127 it is changed but can not select by device number
@@ -306,23 +282,12 @@ namespace GSM.Core.Source.Device
         }
         private FUNC_RESULT DeviceNumberGetBaseDll(ref int DeviceNumber)
         {
-            try
-            {
-                if (this._dllWrapper.DeviceNumberGet(ref DeviceNumber))
-                {
-                    return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
-                }
-                else
-                {
-                    this.ErrorSet(ERROR_CODE.DEVICE_NUMBER_GET, "Device Number = " + DeviceNumber.ToString());
-                    return FUNC_RESULT.FAIL;
-                }
-            }
-            catch (Exception ex)
-            {
-                this.DllWrapperErrorCheckSetValue($"DeviceNumberGetDll Error : {ex.Message}");
+            if (this._dllWrapper.DeviceNumberGet(ref DeviceNumber))
+                return FUNC_RESULT.SUCCESS;
+            if (this.DllWrapperHasError(FUNC_RESULT.SUCCESS) == FUNC_RESULT.MAJOR_ERROR)
                 return FUNC_RESULT.MAJOR_ERROR;
-            }
+            this.ErrorSet(ERROR_CODE.DEVICE_NUMBER_GET, "Device Number = " + DeviceNumber.ToString());
+            return FUNC_RESULT.FAIL;
         }
         private FUNC_RESULT DeviceNumberGetBaseCheck(int DeviceNumber)
         {
@@ -336,30 +301,26 @@ namespace GSM.Core.Source.Device
         //End : Device Number Get
 
         //Device Number Set
-        private FUNC_RESULT DeviceNumberSetWorkflow(int DeviceNumber, bool CheckDeviceNumber, bool InternalValueSet)
+        private FUNC_RESULT DeviceNumberSetWorkflow(int DeviceNumber, bool DeviceNumberCheck, bool InternalValueSet)
         {
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN, result1 = FUNC_RESULT.UNKNOWN, result2 = FUNC_RESULT.UNKNOWN;
-            int deviceNumber = DeviceDefinitions.NUMBER_INVALID, deviceIndex = DeviceDefinitions.NUMBER_INVALID;
+            int deviceNumber = DeviceDefinitions.NUMBER_INVALID;
             int deviceNumber1 = DeviceDefinitions.NUMBER_INVALID, deviceNumber2 = DeviceDefinitions.NUMBER_INVALID;
             result = this.DeviceNumberSetExecute(DeviceNumber, (int)OPERATION_DELAY_MS.SHORT);
-            if (result == FUNC_RESULT.SUCCESS && CheckDeviceNumber)
+            if (result == FUNC_RESULT.SUCCESS && DeviceNumberCheck)
             {
                 result = this.DeviceSelectByIndexExecute(this._runtimeIdentity.DeviceIndex, (int)OPERATION_DELAY_MS.AFTER_DEVICE_NUM_CHANGE);
             }
-            if (result == FUNC_RESULT.SUCCESS && CheckDeviceNumber)
+            if (result == FUNC_RESULT.SUCCESS && DeviceNumberCheck)
             {
                 this.DeviceNumberGetExecute((int)TRY_COUNT.NORMAL, (int)OPERATION_DELAY_MS.NORMAL_SHORT, ref result1, ref result2, ref deviceNumber1, ref deviceNumber2);
                 result = this.XXXCheck(result, result1, result2, deviceNumber1, deviceNumber2);
             }
-            this.XXXSetValue(result, DeviceIndex, DeviceDefinitions.NUMBER_INVALID, ref deviceIndex, ref this._runtimeIdentity.DeviceIndex, InternalValueSet);
-            if (CheckDeviceNumber)
+            if (DeviceNumberCheck && (DeviceNumber != deviceNumber1))
             {
-                if ((DeviceNumber != deviceNumber1))
-                {
-                    result = FUNC_RESULT.MAJOR_ERROR;
-                }
-                this.XXXSetValue(result, deviceNumber1, DeviceDefinitions.NUMBER_INVALID, ref deviceNumber, ref this._runtimeIdentity.DeviceNumber, InternalValueSet);
+                result = FUNC_RESULT.MAJOR_ERROR;
             }
+            this.XXXSetValue(result, deviceNumber1, DeviceDefinitions.NUMBER_INVALID, ref deviceNumber, ref this._runtimeIdentity.DeviceNumber, InternalValueSet);
             return result;
         }
         private FUNC_RESULT DeviceNumberSetExecute(int DeviceNumber, int Delay)
@@ -388,16 +349,8 @@ namespace GSM.Core.Source.Device
         }
         private FUNC_RESULT DeviceNumberSetBaseDll(int DeviceNumber)
         {
-            try
-            {
-                this._dllWrapper.DeviceNumberSet(DeviceNumber);
-                return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
-            }
-            catch (Exception ex)
-            {
-                this.DllWrapperErrorCheckSetValue($"DeviceNumberSetDll Error : {ex.Message}");
-                return FUNC_RESULT.MAJOR_ERROR;
-            }
+            this._dllWrapper.DeviceNumberSet(DeviceNumber);
+            return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
         }
         //End : Device Number Set
 
@@ -405,14 +358,18 @@ namespace GSM.Core.Source.Device
         //Device Identity
         private FUNC_RESULT DeviceIdentityComplexWorkflow(int DeviceIndex, ref int DeviceNumber, ref string IMEI)
         {
-            bool internalValueSet = true, checkDeviceNumber = true;
+            bool internalValueSet = true, checkDeviceNumber = true, gsmIsConnect = false;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             string imei = DeviceDefinitions.STRING_INVALID;
             result = this.DeviceSelectByIndexWorkflow(DeviceIndex, checkDeviceNumber, internalValueSet);
             if (result == FUNC_RESULT.SUCCESS)
             {
-                result = this.GSMIsConnectWorkflow(internalValueSet);
-                if (result == FUNC_RESULT.SUCCESS)
+                result = this.GSMIsConnectWorkflow(ref gsmIsConnect, internalValueSet);
+                if (result == FUNC_RESULT.MAJOR_ERROR)
+                {
+                    return FUNC_RESULT.MAJOR_ERROR;
+                }
+                if (gsmIsConnect)
                 {
                     result = this.IMEIGetWorkflow(ref imei, internalValueSet);
                 }
@@ -420,10 +377,10 @@ namespace GSM.Core.Source.Device
                 {
                     if (result == FUNC_RESULT.FAIL)
                     {
-                        result = this.DeviceRestart();
+                        result = this.DeviceRestartComplexWorkFlow();
                         if (result == FUNC_RESULT.SUCCESS)
                         {
-                            result = this.GSMIsConnectWorkflow(internalValueSet);
+                            result = this.GSMIsConnectWorkflow(ref gsmIsConnect, internalValueSet);
                             if (result == FUNC_RESULT.SUCCESS)
                             {
                                 result = this.IMEIGetWorkflow(ref imei, internalValueSet);
