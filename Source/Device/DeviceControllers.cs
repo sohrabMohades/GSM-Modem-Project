@@ -22,36 +22,25 @@ namespace GSM.Core.Source.Device
         }
         public bool DeviceCountGet(ref int DeviceCount, bool InternalValueSet)
         {
-            bool result = false;
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
             if (!this.TrySetBusy())
             {
-                result = false;
                 this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceCountGet));
-                return result;
+                return false;
             }
             if (!this.InternalStatusCheck(INTERNAL_STATUS.BASIC_LEVEL , nameof(this.DeviceCountGet)))
             {
-                result = false;
                 this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.DeviceCountGet));
-                return result;
+                return false;
             }
             try
             {
                 this.ErrorReset();
                 funcResult = this.DeviceCountGetWorkflow(ref DeviceCount, InternalValueSet);
-                if (funcResult == FUNC_RESULT.SUCCESS)
-                {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
-                }
                 ////////_runtimeFlags Updates
                 ////////_runtimeInfo Updates
                 this.InternalStatusUpdate();
-                return result;
+                return this.FuncResult(funcResult);
             }
             finally
             {
@@ -64,36 +53,25 @@ namespace GSM.Core.Source.Device
         //Device Identity
         public bool DeviceIdentity(int DeviceIndex, ref int DeviceNumber, ref string IMEI)
         {
-            bool result = false;
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
             if (!this.TrySetBusy())
             {
-                result = false;
                 this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceIdentity));
-                return result;
+                return false;
             }
             if (!this.InternalStatusCheck(INTERNAL_STATUS.BASIC_LEVEL, nameof(this.DeviceIdentity)))
             {
-                result = false;
                 this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.DeviceIdentity));
-                return result;
+                return false;
             }
             try
             {
                 this.ErrorReset();
                 funcResult = this.DeviceIdentityComplexWorkflow(DeviceIndex, ref DeviceNumber, ref IMEI);
-                if (funcResult == FUNC_RESULT.SUCCESS)
-                {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
-                }
                 ////////_runtimeFlags Updates
                 ////////_runtimeInfo Updates
                 this.InternalStatusUpdate();
-                return result;
+                return this.FuncResult(funcResult);
             }
             finally
             {
@@ -106,36 +84,25 @@ namespace GSM.Core.Source.Device
         //Device Number Change
         public bool DeviceNumberChange(int DeviceNumberNew)
         {
-            bool result = false;
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
             if (!this.TrySetBusy())
             {
-                result = false;
                 this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceNumberChange));
-                return result;
+                return false;
             }
             if (!this.InternalStatusCheck(INTERNAL_STATUS.BASIC_LEVEL, nameof(this.DeviceNumberChange)))
             {
-                result = false;
                 this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.DeviceNumberChange));
-                return result;
+                return false;
             }
             try
             {
                 this.ErrorReset();
                 funcResult = this.DeviceNumberChangeComplexWorkflow(DeviceIndex, DeviceNumberNew);
-                if (funcResult == FUNC_RESULT.SUCCESS)
-                {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
-                }
                 ////////_runtimeFlags Updates
                 ////////_runtimeInfo Updates
                 this.InternalStatusUpdate();
-                return result;
+                return this.FuncResult(funcResult);
             }
             finally
             {
@@ -148,36 +115,25 @@ namespace GSM.Core.Source.Device
         //Device Index Unselect
         public bool DeviceUnselect()
         {
-            bool result = false;
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
             if (!this.TrySetBusy())
             {
-                result = false;
                 this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceUnselect));
-                return result;
+                return false;
             }
             if (!this.InternalStatusCheck(INTERNAL_STATUS.BASIC_LEVEL, nameof(this.DeviceUnselect)))
             {
-                result = false;
                 this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.DeviceUnselect));
-                return result;
+                return false;
             }
             try
             {
                 this.ErrorReset();
                 funcResult = this.DeviceUnselectComplexWorkflow();
-                if (funcResult == FUNC_RESULT.SUCCESS)
-                {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
-                }
                 ////////_runtimeFlags Updates
                 ////////_runtimeInfo Updates
                 this.InternalStatusUpdate();
-                return result;
+                return this.FuncResult(funcResult);
             }
             finally
             {
@@ -194,35 +150,24 @@ namespace GSM.Core.Source.Device
         }
         public bool DeviceRefresh(bool PowerRestartAllow)
         {
-            bool result = false;
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
             if (!this.TrySetBusy())
             {
-                result = false;
                 this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceRefresh));
-                return result;
+                return false;
             }
             if (!this.InternalStatusCheck(INTERNAL_STATUS.SINGLE_DEVICE, nameof(this.DeviceRefresh)))
             {
-                result = false;
                 this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.DeviceRefresh));
-                return result;
+                return false;
             }
             try
             {
                 funcResult = this.DeviceRefreshComplexWorkFlow(PowerRestartAllow);
-                if (funcResult == FUNC_RESULT.SUCCESS)
-                {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
-                }
                 ////////_runtimeFlags Updates
                 ////////_runtimeInfo Updates
                 this.InternalStatusUpdate();
-                return result;
+                return this.FuncResult(funcResult);
             }
             finally
             {
@@ -232,5 +177,53 @@ namespace GSM.Core.Source.Device
         }
         //End : Refresh
 
+        //SMS Send
+        public bool SmsSend(string PhoneNumber, string SmsText, ref List<string> SMSReference)
+        {
+            FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
+            if (!this.TrySetBusy())
+            {
+                this.ErrorSet(ERROR_CODE.BUSY, nameof(this.SmsSend));
+                return false;
+            }
+            if (!this.InternalStatusCheck(INTERNAL_STATUS.SINGLE_DEVICE, nameof(this.SmsSend)))
+            {
+                this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.SmsSend));
+                return false;
+            }
+            try
+            {
+                DeviceDefinitions.SmsSendData smsSendData = null;
+                funcResult = this.SmsSendDataInitial(ref smsSendData, PhoneNumber, SmsText);
+                if (funcResult == FUNC_RESULT.SUCCESS)
+                {
+                    funcResult = this.SendConfigurationSetComplexWorkflow(SMS_CHAR_MODE.UCS2, SMS_TYPE.Persian);
+                }
+                if (funcResult == FUNC_RESULT.SUCCESS)
+                {
+                    funcResult = this.SMSSendWorkflow(smsSendData, ref SMSReference);
+                }
+                ////////_runtimeFlags Updates
+                ////////_runtimeInfo Updates
+                this.InternalStatusUpdate();
+                return this.FuncResult(funcResult);
+            }
+            finally
+            {
+                this.DeviceBusyDeactive();
+                //this.OnOperationCompleted(DEVICE_OPERATION.UNKNOWN, funcResult);
+            }
+        }
+        //SMS Send
+
+        //Helper
+        private bool FuncResult(FUNC_RESULT funcResult)
+        {
+            if (funcResult == FUNC_RESULT.SUCCESS)
+                return true;
+            else
+                return false;
+        }
+        //Helper
     }
 }
