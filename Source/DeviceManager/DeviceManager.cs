@@ -541,7 +541,7 @@ namespace GSM.Core.Source.DeviceManager
             {
                 return;
             }
-            device.DeviceOperationCompleted += DeviceOperationCompleted;
+            //device.DeviceOperationCompleted += DeviceOperationCompleted;
             _devices.Add(device, new DeviceRuntime(device));
         }
     
