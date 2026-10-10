@@ -32,7 +32,7 @@ namespace GSM.Core.Source.Common
         {
             UNKHOWN = 0,
             ENGLISH = 1,
-            Persian = 2
+            PERSIAN = 2
         }
         //End : SMS Type
         //Char Mode
@@ -88,6 +88,8 @@ namespace GSM.Core.Source.Common
         public const int NATIONAL_MOBILE_ID_LEN_MAX = 15;
         public const int SIGNAL_MIN = 0;
         public const int SIGNAL_MAX = 100;
+        public const int AT_COMMAND_DELAY_MIN = 0;
+        public const int AT_COMMAND_DELAY_MAX = 60000;
         public const int DATETIME_YEAR_MIN = 0;
         public const int DATETIME_YEAR_MAX = 99;
         public const int DATETIME_MON_MIN = 1;

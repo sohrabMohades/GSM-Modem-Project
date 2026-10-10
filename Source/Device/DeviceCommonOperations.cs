@@ -14,18 +14,19 @@ namespace GSM.Core.Source.Device
         //Send Configuration Set
         private FUNC_RESULT SendConfigurationSetComplexWorkflow(DeviceDefinitions.SMS_CHAR_MODE CharMode, DeviceDefinitions.SMS_TYPE SmsType, int ATCommandDelay)
         {
+            bool internalValueSet = true;
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
             if (result == FUNC_RESULT.SUCCESS && CharMode != this._runtimeWorkingConfig.SmsCharMode)
             {
-                result = this.CharModeSetWorkflow(CharMode, true);
+                result = this.CharModeSetWorkflow(CharMode, internalValueSet);
             }
             if (result == FUNC_RESULT.SUCCESS && SmsType != this._runtimeWorkingConfig.SmsType)
             {
-                result = this.SmsTypeSetWorkflow(SmsType, true);
+                result = this.SmsTypeSetWorkflow(SmsType, internalValueSet);
             }
             if (result == FUNC_RESULT.SUCCESS && ATCommandDelay != this._runtimeWorkingConfig.AtCommandDelay)
             {
-                result = this.ATCommandDelaySetWorkflow(ATCommandDelay, true);
+                result = this.ATCommandDelaySetWorkflow(ATCommandDelay, internalValueSet);
             }
             return result;
         }
@@ -134,7 +135,19 @@ namespace GSM.Core.Source.Device
         }
         private FUNC_RESULT ATCommandDelaySetBase(int ATCommandDelay)
         {
-            return this.ATCommandDelaySetBaseDll(ATCommandDelay);
+            FUNC_RESULT result = this.ATCommandDelaySetBaseCheck(ATCommandDelay);
+            if(result == FUNC_RESULT.SUCCESS)
+                result = this.ATCommandDelaySetBaseDll(ATCommandDelay);
+            return result;
+        }
+        private FUNC_RESULT ATCommandDelaySetBaseCheck(int ATCommandDelay)
+        {
+            if (ATCommandDelay >= DeviceDefinitions.AT_COMMAND_DELAY_MIN && ATCommandDelay <= DeviceDefinitions.AT_COMMAND_DELAY_MAX)
+            {
+                return FUNC_RESULT.SUCCESS;
+            }
+            this.ErrorSet(ERROR_CODE.INVALID_INPUT, $"ATCommandDelay = {ATCommandDelay}");
+            return FUNC_RESULT.MAJOR_ERROR;
         }
         private FUNC_RESULT ATCommandDelaySetBaseDll(int ATCommandDelay)
         {

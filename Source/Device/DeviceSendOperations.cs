@@ -79,9 +79,7 @@ namespace GSM.Core.Source.Device
             string atCommandSendResultRaw = string.Empty;
             result = this.ATCommandSendBaseDll(ATCommand, ref atCommandSendResultRaw, ref resultLen);
             if (result == FUNC_RESULT.SUCCESS)
-            {
                 result = this.ATCommandSendBaseCheck(atCommandSendResultRaw, resultLen);
-            }
             this.XXXBaseSetValue(result, atCommandSendResultRaw, null, ref ATCommandResult);
             return result;
         }
@@ -93,9 +91,9 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT ATCommandSendBaseCheck(string ATCommandResult, int ResultLen)
         {
             if (string.IsNullOrWhiteSpace(ATCommandResult) || ResultLen <= 0)
-                return FUNC_RESULT.SUCCESS;
-            else
                 return FUNC_RESULT.FAIL;
+            else
+                return FUNC_RESULT.SUCCESS;
         }
         //End : AT Command Send
 

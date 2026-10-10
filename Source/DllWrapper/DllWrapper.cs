@@ -590,7 +590,7 @@ namespace GSM.Core.Source.DllWrapper
             }
             else
             {
-                if (SMS_Type == DeviceDefinitions.SMS_TYPE.Persian)
+                if (SMS_Type == DeviceDefinitions.SMS_TYPE.PERSIAN)
                 {
                     _PDU = true;
                 }
@@ -717,8 +717,12 @@ namespace GSM.Core.Source.DllWrapper
         {
             AtCommandResult result = ExecuteDllFunction(() =>
             {
+                int len = 0;
+                string resultStr = string.Empty;
                 AtCommandResult output = new AtCommandResult();
-                this._gsmSendAT(AT_Input,ref output.OutputLength,out output.Output);
+                this._gsmSendAT(AT_Input,ref len,out resultStr);
+                output.OutputLength = len;
+                output.Output = resultStr;
                 return output;
             }, nameof(ATCommandSend));
 

@@ -197,7 +197,7 @@ namespace GSM.Core.Source.Device
                 funcResult = this.SmsSendDataInitial(ref smsSendData, PhoneNumber, SmsText);
                 if (funcResult == FUNC_RESULT.SUCCESS)
                 {
-                    funcResult = this.SendConfigurationSetComplexWorkflow(SMS_CHAR_MODE.UCS2, SMS_TYPE.Persian);
+                    funcResult = this.SendConfigurationSetComplexWorkflow(SMS_CHAR_MODE.UCS2, SMS_TYPE.PERSIAN);
                 }
                 if (funcResult == FUNC_RESULT.SUCCESS)
                 {
