@@ -30,7 +30,7 @@ namespace GSM.Core.Source.Device
             // if Power is OFF never set FuncResult2 , Solution -> FuncResult2 = FUNC_RESULT.FAIL 
             FuncResult2 = FUNC_RESULT.SUCCESS;
             Result2 = BOOL_TYPE.FALSE;
-            while (loopCount > 0 && (FuncResult1 != FUNC_RESULT.SUCCESS && FuncResult2 != FUNC_RESULT.SUCCESS) && (Result1 != BOOL_TYPE.TRUE && Result2 != BOOL_TYPE.TRUE))
+            while (loopCount > 0 && (FuncResult1 != FUNC_RESULT.SUCCESS || FuncResult2 != FUNC_RESULT.SUCCESS || Result1 != BOOL_TYPE.TRUE || Result2 != BOOL_TYPE.TRUE))
             {
                 Thread.Sleep(Delay);
                 if (FuncResult1 != FUNC_RESULT.SUCCESS && Result1 != BOOL_TYPE.TRUE)
@@ -110,7 +110,7 @@ namespace GSM.Core.Source.Device
         }
         private FUNC_RESULT GSMIsConnectExecute(int loopCount, int Delay, ref FUNC_RESULT FuncResult1, ref BOOL_TYPE Result1)
         {
-            while (loopCount > 0 && (FuncResult1 != FUNC_RESULT.SUCCESS && Result1 != BOOL_TYPE.TRUE))
+            while (loopCount > 0 && (FuncResult1 != FUNC_RESULT.SUCCESS || Result1 != BOOL_TYPE.TRUE))
             {
                 Thread.Sleep(Delay);
                 FuncResult1 = this.GSMIsConnectBase(ref Result1);
@@ -157,7 +157,7 @@ namespace GSM.Core.Source.Device
             {
                 Result2 = BOOL_TYPE.TRUE;
             }
-            while (loopCount > 0 && (FuncResult1 != FUNC_RESULT.SUCCESS && FuncResult2 != FUNC_RESULT.SUCCESS) && (Result1 != BOOL_TYPE.TRUE && Result2 != BOOL_TYPE.TRUE))
+            while (loopCount > 0 && (FuncResult1 != FUNC_RESULT.SUCCESS || FuncResult2 != FUNC_RESULT.SUCCESS) && (Result1 != BOOL_TYPE.TRUE || Result2 != BOOL_TYPE.TRUE))
             {
                 Thread.Sleep(Delay);
                 if (FuncResult1 != FUNC_RESULT.SUCCESS)
@@ -815,48 +815,29 @@ namespace GSM.Core.Source.Device
         }
         private FUNC_RESULT NetworkNameGetExecute(int loopCount, int Delay, ref FUNC_RESULT Result1, ref FUNC_RESULT Result2, ref string NetworkName1, ref string NetworkName2)
         {
-            int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
             if (!this._runtimeConfig.EnableDoubleReadValidation)
-            {
                 Result2 = FUNC_RESULT.SUCCESS;
-            }
             while (loopCount > 0 && (Result1 != FUNC_RESULT.SUCCESS || Result2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (Result1 != FUNC_RESULT.SUCCESS)
-                {
                     Result1 = this.NetworkNameGetBase(ref NetworkName1);
-                    if (Result1 != FUNC_RESULT.SUCCESS)
-                    {
-                        resultCount--;
-                        if (resultCount <= 0)
-                        {
-                            break;
-                        }
-                    }
-                }
                 else
-                {
                     Result2 = this.NetworkNameGetBase(ref NetworkName2);
-                }
                 loopCount--;
                 if (Result1 == FUNC_RESULT.MAJOR_ERROR || Result2 == FUNC_RESULT.MAJOR_ERROR)
-                {
                     return FUNC_RESULT.MAJOR_ERROR;
-                }
             }
             //1 result get or 2 result get and check 1 and 2
             if (!this._runtimeConfig.EnableDoubleReadValidation)
-            {
                 NetworkName2 = NetworkName1;
-            }
             return FUNC_RESULT.SUCCESS;
         }
         private FUNC_RESULT NetworkNameGetBase(ref string NetworkName)
         {
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             string networkName = DeviceDefinitions.STRING_INVALID;
-            result = this.NetworkNameGetBaseDll(ref NetworkName);
+            result = this.NetworkNameGetBaseDll(ref networkName);
             this.XXXBaseSetValue(result, networkName, DeviceDefinitions.STRING_INVALID, ref NetworkName);
             return result;
         }
@@ -1090,7 +1071,7 @@ namespace GSM.Core.Source.Device
             {
                 result = this.GSMStatusGetBaseCheck(gsmStatusValue);
             }
-            this.GSMStatusGetBaseSetValue(result, (int)DeviceDefinitions.GSM_STATUS.ERROR, DeviceDefinitions.STRING_INVALID,
+            this.GSMStatusGetBaseSetValue(result, gsmStatusValue, gsmStatusMessage,
                                               ref GsmStatus, ref GsmStatusValue, ref GsmStatusMessage);
             return result;
         }
@@ -1126,15 +1107,13 @@ namespace GSM.Core.Source.Device
         private void GSMStatusGetBaseSetValue(FUNC_RESULT FuncResult, int GsmStatusValueNewValue, string GsmStatusMessageNewValue, ref DeviceDefinitions.GSM_STATUS GsmStatus,
                                               ref int GsmStatusValue, ref string GsmStatusMessage)
         {
+            GsmStatusValue = GsmStatusValueNewValue;
+            GsmStatusMessage = GsmStatusMessageNewValue;
             if (FuncResult != FUNC_RESULT.SUCCESS)
             {
                 GsmStatus = DeviceDefinitions.GSM_STATUS.UNKHOWN;
-                GsmStatusValue = DeviceDefinitions.NUMBER_INVALID;
-                GsmStatusMessage = DeviceDefinitions.STRING_INVALID;
                 return;
             }
-            GsmStatusValue = GsmStatusValueNewValue;
-            GsmStatusMessage = GsmStatusMessageNewValue;
             switch (GsmStatusValueNewValue)
             {
                 case (int)DeviceDefinitions.GSM_STATUS.READY:
@@ -1256,8 +1235,7 @@ namespace GSM.Core.Source.Device
             result = this.DeviceInformationGetWorkflow(ref tempStr, true);
             refreshResult = this.DeviceRefreshComplexWorkFlowHelperCheck(result, refreshResult, REFRESH_RESULT.UNKNOWN_ERROR);
 
-            result = this.GSMStatusGetWorkflow(ref tempGsmStatus, ref tempInt, ref tempStr, true);
-            refreshResult = this.DeviceRefreshComplexWorkFlowHelperCheck(result, refreshResult, REFRESH_RESULT.UNKNOWN_ERROR);
+            this.GSMStatusGetWorkflow(ref tempGsmStatus, ref tempInt, ref tempStr, true);
             //End : Hardware Data Get
 
             //SIM Data

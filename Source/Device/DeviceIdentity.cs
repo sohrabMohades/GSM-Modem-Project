@@ -109,7 +109,7 @@ namespace GSM.Core.Source.Device
         //Device Select By Index
         private FUNC_RESULT DeviceSelectByIndexWorkflow(int DeviceIndex, bool CheckDeviceNumber, bool InternalValueSet)
         {
-            int deviceIndex = DeviceDefinitions.NUMBER_INVALID , deviceNumber = DeviceDefinitions.NUMBER_INVALID;
+            int deviceIndex = DeviceDefinitions.NUMBER_INVALID, deviceNumber = DeviceDefinitions.NUMBER_INVALID;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN, result1 = FUNC_RESULT.UNKNOWN, result2 = FUNC_RESULT.UNKNOWN;
             int deviceNumber1 = DeviceDefinitions.NUMBER_INVALID, deviceNumber2 = DeviceDefinitions.NUMBER_INVALID;
             result = this.DeviceSelectByIndexExecute(DeviceIndex, (int)OPERATION_DELAY_MS.SHORT);
@@ -120,9 +120,7 @@ namespace GSM.Core.Source.Device
             }
             this.XXXSetValue(result, DeviceIndex, DeviceDefinitions.NUMBER_INVALID, ref deviceIndex, ref this._runtimeIdentity.DeviceIndex, InternalValueSet);
             if (CheckDeviceNumber)
-            {
                 this.XXXSetValue(result, deviceNumber1, DeviceDefinitions.NUMBER_INVALID, ref deviceNumber, ref this._runtimeIdentity.DeviceNumber, InternalValueSet);
-            }
             return result;
         }
         private FUNC_RESULT DeviceSelectByIndexExecute(int DeviceIndex, int Delay)
@@ -162,7 +160,7 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT DeviceSelectByDeviceNumberWorkflow(int DeviceNumber, bool CheckDeviceNumber, bool InternalValueSet)
         {
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN, result1 = FUNC_RESULT.UNKNOWN, result2 = FUNC_RESULT.UNKNOWN;
-            int oldDeviceNumber = this._runtimeIdentity.DeviceNumber , deviceNumber = DeviceDefinitions.NUMBER_INVALID;
+            int oldDeviceNumber = this._runtimeIdentity.DeviceNumber, deviceNumber = DeviceDefinitions.NUMBER_INVALID;
             int deviceNumber1 = DeviceDefinitions.NUMBER_INVALID, deviceNumber2 = DeviceDefinitions.NUMBER_INVALID;
             result = this.DeviceSelectByDeviceNumberExecute(DeviceNumber, (int)OPERATION_DELAY_MS.SHORT);
             if (result == FUNC_RESULT.SUCCESS && CheckDeviceNumber)
@@ -170,14 +168,9 @@ namespace GSM.Core.Source.Device
                 this.DeviceNumberGetExecute((int)TRY_COUNT.NORMAL, (int)OPERATION_DELAY_MS.NORMAL_SHORT, ref result1, ref result2, ref deviceNumber1, ref deviceNumber2);
                 result = this.XXXCheck(result, result1, result2, deviceNumber1, deviceNumber2);
             }
-            if (CheckDeviceNumber)
-            {
-                if((DeviceNumber != oldDeviceNumber))
-                {
-                    result = FUNC_RESULT.MAJOR_ERROR;
-                }
-                this.XXXSetValue(result, deviceNumber1, DeviceDefinitions.NUMBER_INVALID, ref deviceNumber, ref this._runtimeIdentity.DeviceNumber, InternalValueSet);
-            }
+            if (result == FUNC_RESULT.SUCCESS && CheckDeviceNumber && DeviceNumber != oldDeviceNumber)
+                result = FUNC_RESULT.MAJOR_ERROR;
+            this.XXXSetValue(result, deviceNumber1, DeviceDefinitions.NUMBER_INVALID, ref deviceNumber, ref this._runtimeIdentity.DeviceNumber, InternalValueSet);
             return result;
         }
         private FUNC_RESULT DeviceSelectByDeviceNumberExecute(int DeviceNumber, int Delay)
@@ -359,6 +352,8 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT DeviceIdentityComplexWorkflow(int DeviceIndex, ref int DeviceNumber, ref string IMEI)
         {
             bool internalValueSet = true, checkDeviceNumber = true, gsmIsConnect = false;
+            int tempInt = 0;
+            string tempStr = string.Empty;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             string imei = DeviceDefinitions.STRING_INVALID;
             result = this.DeviceSelectByIndexWorkflow(DeviceIndex, checkDeviceNumber, internalValueSet);
@@ -366,15 +361,10 @@ namespace GSM.Core.Source.Device
             {
                 result = this.GSMIsConnectWorkflow(ref gsmIsConnect, internalValueSet);
                 if (result == FUNC_RESULT.MAJOR_ERROR)
-                {
                     return FUNC_RESULT.MAJOR_ERROR;
-                }
                 if (gsmIsConnect)
-                {
                     result = this.IMEIGetWorkflow(ref imei, internalValueSet);
-                }
                 else
-                {
                     if (result == FUNC_RESULT.FAIL)
                     {
                         result = this.DeviceRestartComplexWorkFlow();
@@ -382,42 +372,18 @@ namespace GSM.Core.Source.Device
                         {
                             result = this.GSMIsConnectWorkflow(ref gsmIsConnect, internalValueSet);
                             if (result == FUNC_RESULT.SUCCESS)
-                            {
                                 result = this.IMEIGetWorkflow(ref imei, internalValueSet);
-                            }
                         }
                     }
-                }
             }
-            this.DeviceIdentitySetValue(this.DeviceNumber, this.IMEI, ref DeviceNumber, ref IMEI);
+            this.XXXSetValue(result, this._runtimeIdentity.DeviceNumber, DeviceDefinitions.NUMBER_INVALID, ref DeviceNumber, ref tempInt, internalValueSet);
+            this.XXXSetValue(result, this._runtimeHardware.IMEI, DeviceDefinitions.STRING_INVALID, ref IMEI, ref tempStr, internalValueSet);
             return result;
-        }
-        private void DeviceIdentitySetValue(int DeviceNumberNewValue, string IMEINewValue, ref int DeviceNumber, ref string IMEI)
-        {
-            DeviceNumber = DeviceNumberNewValue;
-            IMEI = IMEINewValue;
         }
         //End : Device Identity
         //End : DeviceManager -> Discovery Scope
 
         //DeviceManager -> Device wroking scope
-        //Device Number Change
-        private FUNC_RESULT DeviceNumberChangeComplexWorkflow(int DeviceIndex, int DeviceNumber)
-        {
-            bool internalValueSet = true, checkDeviceNumber = true;
-            FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-            result = this.DeviceSelectByIndexWorkflow(DeviceIndex, checkDeviceNumber, internalValueSet);
-            if (result == FUNC_RESULT.SUCCESS)
-            {
-                if (this.DeviceNumber == DeviceNumber)
-                {
-                    return FUNC_RESULT.SUCCESS;
-                }
-                result = this.DeviceNumberSetWorkflow(DeviceNumber, checkDeviceNumber, internalValueSet);
-            }
-            return result;
-        }
-        //End : Device Number Change
 
         //Device Index Unselect
         private FUNC_RESULT DeviceUnselectComplexWorkflow()

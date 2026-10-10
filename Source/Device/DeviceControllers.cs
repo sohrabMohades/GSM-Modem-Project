@@ -98,7 +98,7 @@ namespace GSM.Core.Source.Device
             try
             {
                 this.ErrorReset();
-                funcResult = this.DeviceNumberChangeComplexWorkflow(DeviceIndex, DeviceNumberNew);
+                //funcResult = this.DeviceNumberChangeComplexWorkflow(DeviceIndex, DeviceNumberNew);
                 ////////_runtimeFlags Updates
                 ////////_runtimeInfo Updates
                 this.InternalStatusUpdate();
