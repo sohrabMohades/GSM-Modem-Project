@@ -764,7 +764,7 @@ namespace GSM.Core.Source.DllWrapper
         /*
          * Note : result = -1 -> error happen , result = 0 -> Buffer empty , result = 1 to X -> X is last buffer index carry modem response
         */
-        public void GsmMessage(ref int BufferIndex, out string Result, ref int ResultLen)
+        public void BufferRead(ref int BufferIndex, out string Result, ref int ResultLen)
         {
             int bufferIndex = BufferIndex;
             GsmMessageResult result = ExecuteDllFunction(() =>
@@ -773,7 +773,7 @@ namespace GSM.Core.Source.DllWrapper
                 output.Index = bufferIndex;
                 this._gsmMSG(out output.Message, ref output.Index, ref output.ResultLength);
                 return output;
-            }, nameof(GsmMessage));
+            }, nameof(BufferRead));
 
             if (this._errorCode != ERROR_CODE.NO_ERROR)
             {

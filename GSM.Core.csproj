@@ -45,6 +45,7 @@
     <Compile Include="Source\Common\DeviceDefinitions.cs" />
     <Compile Include="Source\DeviceManager\DeviceManager.cs" />
     <Compile Include="Source\Device\Device.cs" />
+    <Compile Include="Source\Device\DeviceBuffer.cs" />
     <Compile Include="Source\Device\DeviceCommonOperations.cs" />
     <Compile Include="Source\Device\DeviceControllers.cs" />
     <Compile Include="Source\Device\DeviceGetOperations.cs" />

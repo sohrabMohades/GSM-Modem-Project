@@ -199,6 +199,7 @@ namespace GSM.Core.Source.Device
             public int TimeoutMaxMs = 30000;
             public bool PowerON2TimeCheck = true;
         }
+        //End : class Device Runtime Configuration
         //End : Group 2 : Flags & Counters & information & configuration
 
         //Group 3 : Device Properties
@@ -288,6 +289,16 @@ namespace GSM.Core.Source.Device
             public bool NewInboxAlarm = false;
         }
         //End : Inbox Configuration
+        //class Device Runtime Buffer
+        private sealed class DeviceRuntimeBuffer
+        {
+            public bool BufferNewData = false;
+            public int BufferLastIndex = DeviceDefinitions.NUMBER_INVALID;
+            public string BufferMessage = DeviceDefinitions.STRING_INVALID;
+            public int BufferMessageLen = DeviceDefinitions.NUMBER_INVALID;
+            public List<string> BufferData = new List<string>();
+        }
+        //End : class Device Runtime Buffer
         //End : Group 4 : Device Working
 
         //Fields
@@ -311,6 +322,7 @@ namespace GSM.Core.Source.Device
         private DeviceRuntimeSmsSendConfiguration _runtimeSmsSendConfig = new DeviceRuntimeSmsSendConfiguration();
         private DeviceRuntimePropertiesInbox _runtimeInboxProperty = new DeviceRuntimePropertiesInbox();
         private DeviceRuntimeInboxConfiguration _runtimeInboxConfig = new DeviceRuntimeInboxConfiguration();
+        private DeviceRuntimeBuffer _runtimeBuffer = new DeviceRuntimeBuffer();
         //End : Variable
     }
 }
