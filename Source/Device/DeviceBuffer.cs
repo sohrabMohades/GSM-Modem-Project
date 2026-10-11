@@ -15,10 +15,13 @@ namespace GSM.Core.Source.Device
         {
             bool tempBool = false;
             int tempInt = DeviceDefinitions.NUMBER_INVALID;
+            string tempStr = DeviceDefinitions.STRING_INVALID;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             result = this.BufferClearExecute((int)OPERATION_DELAY_MS.NORMAL_SHORT);
             this.XXXSetValue(result, DeviceDefinitions.NUMBER_INVALID, DeviceDefinitions.NUMBER_INVALID, ref tempInt, ref this._runtimeBuffer.BufferLastIndex, InternalValueSet);
             this.XXXSetValue(result, false, false, ref tempBool, ref this._runtimeBuffer.BufferNewData, InternalValueSet);
+            this.XXXSetValue(result, DeviceDefinitions.STRING_INVALID, DeviceDefinitions.STRING_INVALID, ref tempStr, ref this._runtimeBuffer.BufferMessage, InternalValueSet);
+            this.XXXSetValue(result, DeviceDefinitions.NUMBER_INVALID, DeviceDefinitions.NUMBER_INVALID, ref tempInt, ref this._runtimeBuffer.BufferMessageLen, InternalValueSet);
             return result;
         }
         private FUNC_RESULT BufferClearExecute(int Delay)
@@ -41,11 +44,14 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT BufferLastIndexGetWorkflow(ref int BufferLastIndex, bool InternalValueSet)
         {
             bool tempBool = false;
-            int lastBufferIndex = DeviceDefinitions.NUMBER_INVALID;
+            int bufferLastIndex = DeviceDefinitions.NUMBER_INVALID, tempInt = DeviceDefinitions.NUMBER_INVALID;
+            string tempStr = DeviceDefinitions.STRING_INVALID;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-            result = this.LastBufferIndexGetExecute((int)OPERATION_DELAY_MS.SHORT, ref lastBufferIndex);
-            this.XXXSetValue(result, lastBufferIndex, DeviceDefinitions.NUMBER_INVALID, ref BufferLastIndex, ref this._runtimeBuffer.BufferLastIndex, InternalValueSet);
+            result = this.LastBufferIndexGetExecute((int)OPERATION_DELAY_MS.SHORT, ref bufferLastIndex);
+            this.XXXSetValue(result, bufferLastIndex, DeviceDefinitions.NUMBER_INVALID, ref BufferLastIndex, ref this._runtimeBuffer.BufferLastIndex, InternalValueSet);
             this.XXXSetValue(result, true, false, ref tempBool, ref this._runtimeBuffer.BufferNewData, InternalValueSet);
+            this.XXXSetValue(result, DeviceDefinitions.STRING_INVALID, DeviceDefinitions.STRING_INVALID, ref tempStr, ref this._runtimeBuffer.BufferMessage, InternalValueSet);
+            this.XXXSetValue(result, DeviceDefinitions.NUMBER_INVALID, DeviceDefinitions.NUMBER_INVALID, ref tempInt, ref this._runtimeBuffer.BufferMessageLen, InternalValueSet);
             return result;
         }
         private FUNC_RESULT LastBufferIndexGetExecute(int Delay, ref int BufferLastIndex)
@@ -57,7 +63,7 @@ namespace GSM.Core.Source.Device
         {
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             int bufferLastIndex = DeviceDefinitions.NUMBER_INVALID;
-            result = this.DeviceCountGetBaseDll(ref bufferLastIndex);
+            result = this.BufferLastIndexGetBaseDll(ref bufferLastIndex);
             if (result == FUNC_RESULT.SUCCESS)
             {
                 result = this.BufferLastIndexGetBaseCheck(bufferLastIndex);

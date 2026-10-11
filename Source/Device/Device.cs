@@ -595,6 +595,24 @@ namespace GSM.Core.Source.Device
             get => this._runtimeInboxConfig.NewInboxAlarm;
         }
         //End : Get Operations
+        //Buffer Manage
+        public bool BufferNewMessage
+        {
+            get => this._runtimeBuffer.BufferNewData;
+        }
+        public int BufferLastIndex
+        {
+            get => this._runtimeBuffer.BufferLastIndex;
+        }
+        public string BufferMessage
+        {
+            get => this._runtimeBuffer.BufferMessage;
+        }
+        public int BufferMessageLength
+        {
+            get => this._runtimeBuffer.BufferMessageLen;
+        }
+        //End : Buffer Manage
         //Check condition
         public int SignalMinValue
         {
