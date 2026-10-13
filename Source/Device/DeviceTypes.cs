@@ -143,6 +143,43 @@ namespace GSM.Core.Source.Device
             FALSE = 0,
             TRUE = 1,
         }
+        //End : bool type
+        //Buffer Action
+        private enum BUFFER_ACTION
+        {
+            UNKNOWN_RESPONSE = 0,   //only "OK" , "ERROR" or such this pattern, call Function is not obvious
+            GSM_STATUS = 1,         //GSM Status -> MODEM:STARTUP , +PBREADY
+            CHAR_MODE = 2,          //AT+CSCS="GSM" -> GSM, HEX, IRA, PCCP437, 8859-1, UCS2
+            PDU_MODE = 3,           //AT+CMGF=0 -> 0 Persian support , 1 only English
+            GSM_MODEL = 4,          //GSM Model -> MS_SMS1402.12.01, Date maybe is another date
+            GSM_DATE_TIME = 5,      //AT+CCLK? (request command), +CCLK: "04/01/01,00:24:49" (GSM response)
+            GSM_CONNECTION = 6,     //GSM Is Connect -> phase 1 : ATE1 , phase2 (with delay) AT
+            GSM_SIGNAL = 7,         //AT+CSQ (GSM Signal request) , +CSQ: 21,1 (response)
+            USSD = 8,               //sample : AT+CUSD=1,"*140*11#",15 (USSD request) , +CUSD: 2, "...",72 (1 sample respose , there is some model respose)
+            SMS_RECEIVED = 9,       //+SMSFLAG: "SM", 1 (sample , another type not see yet, but it is possible)
+            SMS_SEND = 10,          //AT+CMGS=20 (Send start sample) , > , 06918919015000B1000C9189194519210000080B06062A0633 (part of Send data) , +CMGS: 144 (Send response sample)
+            SMS_DELETE = 11,        //AT+CMGD=1,0 / AT+CMGD=X(Inbox slot),Y(0 to 4 -> Command type) (Delete request) , OK / ERROR (execute response, maybe delay)
+            INBOX_READ = 12,        //AT+CMGR=1 (Read command) , +CMGR: 1,,161 (response header sample) , 06918... (response Data)
+            SMS_STORAGE_STATUS = 13,//AT+CPMS? (command request) , +CPMS: "SM",0,50,"SM",0,50,"SM",0,50 (sample response)
+            UNKNOWN = 1000          //Message Not obvious or NULL
+        }
+        //End : Buffer Action
+        //Buffer Action Status
+        private enum BUFFER_ACTION_STATUS
+        {
+            COMMAND_SUCCEEDED = 0,
+            RESULT_SUCCEEDED = 1,
+            COMMAND_FAIL = 2,
+            RESULT_FAIL = 3,
+            COMMAND_NO_RESPONSE = 4,
+            RESULT_NO_RESPONSE = 5,
+            COMMAND_UNKNOWN = 6,
+            RESULT_UNKNOWN = 7,
+            SUCCEEDED = 8,
+            FAIL = 9,
+            UNKNOWN = 1000
+        }
+        //End : Buffer Action Status
         //End : Constants
 
         //Group 1 : Status
@@ -292,13 +329,26 @@ namespace GSM.Core.Source.Device
         //class Device Runtime Buffer
         private sealed class DeviceRuntimeBuffer
         {
+            public bool BufferAutoUpdate = true;
             public bool BufferNewData = false;
             public int BufferLastIndex = DeviceDefinitions.NUMBER_INVALID;
-            public string BufferMessage = DeviceDefinitions.STRING_INVALID;
-            public int BufferMessageLen = DeviceDefinitions.NUMBER_INVALID;
-            public List<string> BufferData = new List<string>();
+            public string BufferMessage = DeviceDefinitions.STRING_INVALID;     //only for singel read or test
+            public int BufferMessageLen = DeviceDefinitions.NUMBER_INVALID;     //only for singel read or test
+            public List<string> BufferDataRaw = new List<string>();             //RAW Message list, without any Analyze, ONLY REMOVE NULL string from this list
+            public List<BufferData> BufferDataFinal = new List<BufferData>();   //this list is Analyze of BufferDataRaw list
         }
         //End : class Device Runtime Buffer
+        //Class Buffer Data -> Analyze RAW Message
+        private sealed class BufferData
+        {
+            public BUFFER_ACTION Action = BUFFER_ACTION.UNKNOWN;
+            public BUFFER_ACTION_STATUS Status = BUFFER_ACTION_STATUS.UNKNOWN;
+            public string Message = DeviceDefinitions.STRING_INVALID;
+            public string MessageAnalyzed = DeviceDefinitions.STRING_INVALID;
+            public string Detail = DeviceDefinitions.STRING_INVALID;
+            public DateTime ReceivedTime = DateTime.MinValue;
+        }
+        //End : Class Buffer Data -> Analyze RAW Message
         //End : Group 4 : Device Working
 
         //Fields
