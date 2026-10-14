@@ -111,6 +111,7 @@ namespace GSM.Core.Source.Device
         //Enum Operation execute Delay ms
         private enum OPERATION_DELAY_MS
         {
+            BUFFER_UPDATE = 0,
             SHORT = 200,
             NORMAL_SHORT = 400,
             NORMAL_LONG = 600,
@@ -144,24 +145,43 @@ namespace GSM.Core.Source.Device
             TRUE = 1,
         }
         //End : bool type
+        //Buffer
         //Buffer Action
         private enum BUFFER_ACTION
         {
-            UNKNOWN_RESPONSE = 0,   //only "OK" , "ERROR" or such this pattern, call Function is not obvious
-            GSM_STATUS = 1,         //GSM Status -> MODEM:STARTUP , +PBREADY
-            CHAR_MODE = 2,          //AT+CSCS="GSM" -> GSM, HEX, IRA, PCCP437, 8859-1, UCS2
-            PDU_MODE = 3,           //AT+CMGF=0 -> 0 Persian support , 1 only English
-            GSM_MODEL = 4,          //GSM Model -> MS_SMS1402.12.01, Date maybe is another date
-            GSM_DATE_TIME = 5,      //AT+CCLK? (request command), +CCLK: "04/01/01,00:24:49" (GSM response)
-            GSM_CONNECTION = 6,     //GSM Is Connect -> phase 1 : ATE1 , phase2 (with delay) AT
-            GSM_SIGNAL = 7,         //AT+CSQ (GSM Signal request) , +CSQ: 21,1 (response)
-            USSD = 8,               //sample : AT+CUSD=1,"*140*11#",15 (USSD request) , +CUSD: 2, "...",72 (1 sample respose , there is some model respose)
-            SMS_RECEIVED = 9,       //+SMSFLAG: "SM", 1 (sample , another type not see yet, but it is possible)
-            SMS_SEND = 10,          //AT+CMGS=20 (Send start sample) , > , 06918919015000B1000C9189194519210000080B06062A0633 (part of Send data) , +CMGS: 144 (Send response sample)
-            SMS_DELETE = 11,        //AT+CMGD=1,0 / AT+CMGD=X(Inbox slot),Y(0 to 4 -> Command type) (Delete request) , OK / ERROR (execute response, maybe delay)
-            INBOX_READ = 12,        //AT+CMGR=1 (Read command) , +CMGR: 1,,161 (response header sample) , 06918... (response Data)
-            SMS_STORAGE_STATUS = 13,//AT+CPMS? (command request) , +CPMS: "SM",0,50,"SM",0,50,"SM",0,50 (sample response)
-            UNKNOWN = 1000          //Message Not obvious or NULL
+            UNKNOWN = 0x00000,                     //NULL
+
+            UNKNOWN_RESPONSE = 0x00001,         //Response Message not obvious
+            OK = 0x00002,                       //"OK" find in message
+            ERROR = 0x00004,                    //"ERROR" find in message
+
+            MODEM_STATUS = 0x00010,             //"MODEM:STARTUP" find in message , +PBREADY
+            PBREADY = 0x00020,                  //"+PBREADY" find in message
+            CHAR_MODE_SET = 0x00040,            //"AT+CSCS=" find in message -> GSM, HEX, IRA, PCCP437, 8859-1, UCS2
+            CHAR_MODE_GET = 0x00080,            //"AT+CSCS?" find in message -> GSM, HEX, IRA, PCCP437, 8859-1, UCS2
+            PDU_MODE_SET = 0x000100,            //"AT+CMGF=" find in message -> 0 : UDU mode (Persian support) , 1 : Text Mode (NOT Persian support)
+            PDU_MODE_GET = 0x000200,            //"AT+CMGF?" find in message -> 0 : UDU mode (Persian support) , 1 : Text Mode (NOT Persian support)
+            GSM_MODEL = 0x000400,               //"MS_SMS" find in message -> MS_SMS1402.12.01, Date maybe is another date
+            GSM_DATE_TIME_GET = 0x000800,       //"AT+CCLK?" find in message -> request command and GSM response : +CCLK: "04/01/01,00:24:49" 
+            GSM_CONNECTION_ATE1 = 0x001000,     //"ATE1" find in message -> GSM Is Connect, phase 1 : ATE1 , phase2 (with delay) AT
+            GSM_CONNECTION_AT = 0x002000,       //"AT" find in message -> GSM Is Connect, phase 1 : ATE1 , phase2 (with delay) AT
+            GSM_SIGNAL = 0x004000,              //"AT+CSQ" find in message -> GSM Signal request, response : +CSQ: 21,1
+            USSD_REQUEST = 0x008000,            //"AT+CUSD=" find in message -> sample : AT+CUSD=1,"*140*11#",15 (USSD request)
+            USSD_RESPONSE = 0x010000,           //"+CUSD:" find in message -> sample : +CUSD: 2, "...",72 (1 sample , there is some model respose)
+            SMS_SEND_COMMAND = 0x020000,        //"AT+CMGS=" find in message -> sample : AT+CMGS=20
+            SIMBOL_ARROW_RIGHT = 0x040000,      //">" find in message -> in SMS Send
+            SMS_SEND_RESPONSE = 0x080000,       //"+CMGS:" find in message -> sample : +CMGS: 144
+                                                //AT+CMGS=20 (Send start sample) , > , 06918919015000B1000C9189194519210000080B06062A0633 (part of Send data) , +CMGS: 144 (Send response sample)
+            SMS_DELETE_ = 0x100000,             //"AT+CMGD=" find in message -> sample : AT+CMGD=1,0
+            SMS_DELETE = 0x200000,              //"AT+CMGD=" find in message -> sample : AT+CMGD=1,0
+                                                //AT+CMGD=1,0 / AT+CMGD=X(Inbox slot),Y(0 to 4 -> Command type) (Delete request) , OK / ERROR (execute response, maybe delay)
+            INBOX_READ_COMMAND = 0x400000,      //"AT+CMGR=" find in message -> sample : AT+CMGR=1
+            INBOX_READ_RESPONSE = 0x800000,     //"+CMGR:" find in message -> sample : +CMGR: 1,,161
+                                                //AT+CMGR=1 (Read command) , +CMGR: 1,,161 (response header sample) , 06918... (response Data)
+            SMS_STORAGE_COMMAND = 0x1000000,    //"AT+CPMS?" find in message -> sample : AT+CPMS?
+            SMS_STORAGE_RESPONSE = 0x2000000,   //"+CPMS:" find in message -> +CPMS: "SM",0,50,"SM",0,50,"SM",0,50 (sample response)
+                                                //AT+CPMS? (command request) , +CPMS: "SM",0,50,"SM",0,50,"SM",0,50 (sample response)
+            SMS_RECEIVED = 0x4000000,           //"+SMSFLAG:"  find in message, after that is number of slot such : 1, 2, 3, ..., MAX
         }
         //End : Buffer Action
         //Buffer Action Status
@@ -179,7 +199,15 @@ namespace GSM.Core.Source.Device
             FAIL = 9,
             UNKNOWN = 1000
         }
-        //End : Buffer Action Status
+        //End : Buffer Action Status 
+        //Buffer Update Source
+        enum BUFFER_UPDATE_SOURCE
+        {
+            WORKFLOW = 1,
+            TIMER = 2
+        }
+        //End : Buffer Update Source
+        //End: Buffer
         //End : Constants
 
         //Group 1 : Status
@@ -334,11 +362,21 @@ namespace GSM.Core.Source.Device
             public int BufferLastIndex = DeviceDefinitions.NUMBER_INVALID;
             public string BufferMessage = DeviceDefinitions.STRING_INVALID;     //only for singel read or test
             public int BufferMessageLen = DeviceDefinitions.NUMBER_INVALID;     //only for singel read or test
+            public DateTime BufferLastUpdate = DateTime.MinValue;
             public List<string> BufferDataRaw = new List<string>();             //RAW Message list, without any Analyze, ONLY REMOVE NULL string from this list
-            public List<BufferData> BufferDataFinal = new List<BufferData>();   //this list is Analyze of BufferDataRaw list
+            public List<BufferDataGroup> BufferDataFinal = new List<BufferDataGroup>();   //this list is Analyze of BufferDataRaw list
+            public bool NewInboxNotifiction = false;
+            public bool ModemStartup = false;
+            public bool ModemReady = false;
+            public List<string> NewInboxSlot = new List<string>();
         }
         //End : class Device Runtime Buffer
         //Class Buffer Data -> Analyze RAW Message
+        private sealed class BufferDataGroup
+        {
+            public string SourceMessage = DeviceDefinitions.STRING_INVALID;
+            public List<BufferData> BufferData = new List<BufferData>();
+        }
         private sealed class BufferData
         {
             public BUFFER_ACTION Action = BUFFER_ACTION.UNKNOWN;

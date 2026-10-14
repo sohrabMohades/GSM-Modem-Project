@@ -357,6 +357,10 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             string imei = DeviceDefinitions.STRING_INVALID;
             result = this.DeviceSelectByIndexWorkflow(DeviceIndex, checkDeviceNumber, internalValueSet);
+            //test
+            result = this.DeviceRestartComplexWorkFlow();
+            return result;
+            //test
             if (result == FUNC_RESULT.SUCCESS)
             {
                 result = this.GSMIsConnectWorkflow(ref gsmIsConnect, internalValueSet);

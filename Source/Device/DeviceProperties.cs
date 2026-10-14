@@ -1293,14 +1293,14 @@ namespace GSM.Core.Source.Device
         //Device Restart
         private FUNC_RESULT DeviceRestartComplexWorkFlow()
         {
-            bool power = false, powerCheck = true, internalValueSet = true;
+            bool power = false, powerCheck = false, internalValueSet = true;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             //Power OFF
-            power = false;
-            result = this.GSMPowerSetWorkflow(power, powerCheck, internalValueSet);
+            //power = false;
+            //result = this.GSMPowerSetWorkflow(power, powerCheck, internalValueSet);
             //End : Power OFF
             //Power ON
-            if (result == FUNC_RESULT.SUCCESS)
+            //if (result == FUNC_RESULT.SUCCESS)
             {
                 power = true;
                 result = this.GSMPowerSetWorkflow(power, powerCheck, internalValueSet);
