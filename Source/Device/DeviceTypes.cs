@@ -1,9 +1,6 @@
 ﻿using GSM.Core.Source.Common;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GSM.Core.Source.Device
 {
@@ -147,7 +144,7 @@ namespace GSM.Core.Source.Device
         //End : bool type
         //Buffer
         //Buffer Action
-        private enum BUFFER_ACTION
+        internal enum BUFFER_ACTION
         {
             UNKNOWN = 0x00000,                     //NULL
 
@@ -185,7 +182,7 @@ namespace GSM.Core.Source.Device
         }
         //End : Buffer Action
         //Buffer Action Status
-        private enum BUFFER_ACTION_STATUS
+        internal enum BUFFER_ACTION_STATUS
         {
             COMMAND_SUCCEEDED = 0,
             RESULT_SUCCEEDED = 1,
@@ -372,12 +369,12 @@ namespace GSM.Core.Source.Device
         }
         //End : class Device Runtime Buffer
         //Class Buffer Data -> Analyze RAW Message
-        private sealed class BufferDataGroup
+        internal sealed class BufferDataGroup
         {
             public string SourceMessage = DeviceDefinitions.STRING_INVALID;
             public List<BufferData> BufferData = new List<BufferData>();
         }
-        private sealed class BufferData
+        internal sealed class BufferData
         {
             public BUFFER_ACTION Action = BUFFER_ACTION.UNKNOWN;
             public BUFFER_ACTION_STATUS Status = BUFFER_ACTION_STATUS.UNKNOWN;

@@ -1,5 +1,4 @@
 ﻿using GSM.Core.Source.Common;
-using GSM.Core.Source.StringAnalyzer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using static GSM.Core.Source.Common.DeviceDefinitions;
-using static GSM.Core.Source.StringAnalyzer.StringAnalyzer;
 
 namespace GSM.Core.Source.Device
 {
@@ -45,14 +43,14 @@ namespace GSM.Core.Source.Device
         }
         private FUNC_RESULT SMSSendBaseCheck(string SmsSendResultRaw, ref List<string> SMSReference)
         {
-            var result = StringAnalyzer.StringAnalyzer.ParseSmsSendResult(SmsSendResultRaw);
+            var result = StringAnalyzer.ParseSmsSendResult(SmsSendResultRaw);
             if (result.Result)
             {
                 SMSReference = result.Data; 
                 return FUNC_RESULT.SUCCESS;
             }
             else
-                if (result.ErrorCode != StringAnalyzer.StringAnalyzer.ERROR_CODE.NO_ERROR)
+                if (result.ErrorCode != StringAnalyzer.ERROR_CODE.NO_ERROR)
                 {
                     this.ErrorSet(ERROR_CODE.SEND_SMS_RESULT, result.ErrorMessage);
                     return FUNC_RESULT.MAJOR_ERROR;
