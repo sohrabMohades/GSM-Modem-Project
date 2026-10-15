@@ -146,55 +146,40 @@ namespace GSM.Core.Source.Device
         //Buffer Action
         internal enum BUFFER_ACTION
         {
-            UNKNOWN = 0x00000,                     //NULL
-
-            UNKNOWN_RESPONSE = 0x00001,         //Response Message not obvious
-            OK = 0x00002,                       //"OK" find in message
-            ERROR = 0x00004,                    //"ERROR" find in message
-
-            MODEM_STATUS = 0x00010,             //"MODEM:STARTUP" find in message , +PBREADY
-            PBREADY = 0x00020,                  //"+PBREADY" find in message
-            CHAR_MODE_SET = 0x00040,            //"AT+CSCS=" find in message -> GSM, HEX, IRA, PCCP437, 8859-1, UCS2
-            CHAR_MODE_GET = 0x00080,            //"AT+CSCS?" find in message -> GSM, HEX, IRA, PCCP437, 8859-1, UCS2
-            PDU_MODE_SET = 0x000100,            //"AT+CMGF=" find in message -> 0 : UDU mode (Persian support) , 1 : Text Mode (NOT Persian support)
-            PDU_MODE_GET = 0x000200,            //"AT+CMGF?" find in message -> 0 : UDU mode (Persian support) , 1 : Text Mode (NOT Persian support)
-            GSM_MODEL = 0x000400,               //"MS_SMS" find in message -> MS_SMS1402.12.01, Date maybe is another date
-            GSM_DATE_TIME_GET = 0x000800,       //"AT+CCLK?" find in message -> request command and GSM response : +CCLK: "04/01/01,00:24:49" 
-            GSM_CONNECTION_ATE1 = 0x001000,     //"ATE1" find in message -> GSM Is Connect, phase 1 : ATE1 , phase2 (with delay) AT
-            GSM_CONNECTION_AT = 0x002000,       //"AT" find in message -> GSM Is Connect, phase 1 : ATE1 , phase2 (with delay) AT
-            GSM_SIGNAL = 0x004000,              //"AT+CSQ" find in message -> GSM Signal request, response : +CSQ: 21,1
-            USSD_REQUEST = 0x008000,            //"AT+CUSD=" find in message -> sample : AT+CUSD=1,"*140*11#",15 (USSD request)
-            USSD_RESPONSE = 0x010000,           //"+CUSD:" find in message -> sample : +CUSD: 2, "...",72 (1 sample , there is some model respose)
-            SMS_SEND_COMMAND = 0x020000,        //"AT+CMGS=" find in message -> sample : AT+CMGS=20
-            SIMBOL_ARROW_RIGHT = 0x040000,      //">" find in message -> in SMS Send
-            SMS_SEND_RESPONSE = 0x080000,       //"+CMGS:" find in message -> sample : +CMGS: 144
-                                                //AT+CMGS=20 (Send start sample) , > , 06918919015000B1000C9189194519210000080B06062A0633 (part of Send data) , +CMGS: 144 (Send response sample)
-            SMS_DELETE_ = 0x100000,             //"AT+CMGD=" find in message -> sample : AT+CMGD=1,0
-            SMS_DELETE = 0x200000,              //"AT+CMGD=" find in message -> sample : AT+CMGD=1,0
-                                                //AT+CMGD=1,0 / AT+CMGD=X(Inbox slot),Y(0 to 4 -> Command type) (Delete request) , OK / ERROR (execute response, maybe delay)
-            INBOX_READ_COMMAND = 0x400000,      //"AT+CMGR=" find in message -> sample : AT+CMGR=1
-            INBOX_READ_RESPONSE = 0x800000,     //"+CMGR:" find in message -> sample : +CMGR: 1,,161
-                                                //AT+CMGR=1 (Read command) , +CMGR: 1,,161 (response header sample) , 06918... (response Data)
-            SMS_STORAGE_COMMAND = 0x1000000,    //"AT+CPMS?" find in message -> sample : AT+CPMS?
-            SMS_STORAGE_RESPONSE = 0x2000000,   //"+CPMS:" find in message -> +CPMS: "SM",0,50,"SM",0,50,"SM",0,50 (sample response)
-                                                //AT+CPMS? (command request) , +CPMS: "SM",0,50,"SM",0,50,"SM",0,50 (sample response)
-            SMS_RECEIVED = 0x4000000,           //"+SMSFLAG:"  find in message, after that is number of slot such : 1, 2, 3, ..., MAX
+            NULL,                       //NULL
+            UNKNOWN,                    //Response Message not obvious
+            MODEM_STATUS,               //"MODEM:STARTUP" find in message , after this wait for +PBREADY
+            MODEM_READY,                //"+PBREADY" find in message, befor this MODEM:STARTUP was appeare
+            CHAR_MODE_SET,              //"AT+CSCS=" find in message -> GSM, HEX, IRA, PCCP437, 8859-1, UCS2
+            PDU_MODE_SET,               //"AT+CMGF=" find in message -> 0 : UDU mode (Persian support) , 1 : Text Mode (NOT Persian support)
+            GSM_MODEL,                  //"MS_SMS" find in message -> MS_SMS1402.12.01, Date maybe is another date
+            GSM_DATE_TIME_GET,          //"AT+CCLK?" find in message -> request command and GSM response : +CCLK: "04/01/01,00:24:49" 
+            GSM_CONNECTION_ATE1,        //"ATE1" find in message -> GSM Is Connect, phase 1 : ATE1 , phase2 (with delay) AT
+            GSM_CONNECTION_AT,          //"AT" find in message -> GSM Is Connect, phase 1 : ATE1 , phase2 (with delay) AT
+            GSM_SIGNAL,                 //"AT+CSQ" find in message -> GSM Signal request, response : +CSQ: 21,1
+            USSD_REQUEST,               //"AT+CUSD=" find in message -> sample : AT+CUSD=1,"*140*11#",15 (USSD request)
+            USSD_RESPONSE,              //"+CUSD:" find in message -> sample : +CUSD: 2, "...",72 (1 sample , there is some model respose)
+            SMS_SEND_COMMAND,           //"AT+CMGS=" find in message -> sample : AT+CMGS=20
+            SYMBOL_ARROW_RIGHT,         //">" find in message -> in SMS Send
+            SMS_SEND_RESPONSE,          //"+CMGS:" find in message -> sample : +CMGS: 144
+                                        //AT+CMGS=20 (Send start sample) , > , 06918919015000B1000C9189194519210000080B06062A0633 (part of Send data) , +CMGS: 144 (Send response sample)
+            SMS_DELETE,                 //"AT+CMGD=" find in message -> sample : AT+CMGD=1,0
+                                        //AT+CMGD=1,0 / AT+CMGD=X(Inbox slot),Y(0 to 4 -> Command type) (Delete request) , OK / ERROR (execute response, maybe delay)
+            INBOX_READ_COMMAND,         //"AT+CMGR=" find in message -> sample : AT+CMGR=1
+            INBOX_READ_RESPONSE,        //"+CMGR:" find in message -> sample : +CMGR: 1,,161
+                                        //AT+CMGR=1 (Read command) , +CMGR: 1,,161 (response header sample) , 06918... (response Data)
+            SMS_STORAGE_COMMAND,        //"AT+CPMS?" find in message -> sample : AT+CPMS?
+            SMS_STORAGE_RESPONSE,       //"+CPMS:" find in message -> +CPMS: "SM",0,50,"SM",0,50,"SM",0,50 (sample response)
+                                        //AT+CPMS? (command request) , +CPMS: "SM",0,50,"SM",0,50,"SM",0,50 (sample response)
+            SMS_RECEIVED,               //"+SMSFLAG:"  find in message, after that is number of slot such : 1, 2, 3, ..., MAX
         }
         //End : Buffer Action
         //Buffer Action Status
         internal enum BUFFER_ACTION_STATUS
         {
-            COMMAND_SUCCEEDED = 0,
-            RESULT_SUCCEEDED = 1,
-            COMMAND_FAIL = 2,
-            RESULT_FAIL = 3,
-            COMMAND_NO_RESPONSE = 4,
-            RESULT_NO_RESPONSE = 5,
-            COMMAND_UNKNOWN = 6,
-            RESULT_UNKNOWN = 7,
-            SUCCEEDED = 8,
-            FAIL = 9,
-            UNKNOWN = 1000
+            UNKNOWN = 0,
+            SUCCEEDED = 1,
+            FAIL = 2
         }
         //End : Buffer Action Status 
         //Buffer Update Source
