@@ -840,9 +840,9 @@ namespace GSM.Core.Source.Device
                                     RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferCmgrResponseRegex = new Regex(@"[ \t]*\+CMGR[ \t]*:[ \t]*(?<header>[\r\n]*)",
                                     RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _bufferOkRegex = new Regex(@"[ \t]*OK[ \t]*$",
+            private static readonly Regex _bufferOkRegex = new Regex(@"(?:OK)",
                                     RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _bufferErrorRegex = new Regex(@"[ \t]*ERROR[ \t]*$",
+            private static readonly Regex _bufferErrorRegex = new Regex(@"(?:ERROR)",
                                     RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             // پایان پاسخ CMGR می‌تواند OK یا ERROR باشد.
             private static readonly Regex _bufferCmgrResponseEndRegex = new Regex(@"(?:OK|ERROR)",
@@ -873,8 +873,6 @@ namespace GSM.Core.Source.Device
             {
             new BufferPattern(BUFFER_ACTION.INBOX_READ_COMMAND, _bufferCmgrCommandRegex),
             new BufferPattern(BUFFER_ACTION.INBOX_READ_RESPONSE, _bufferCmgrResponseRegex, _bufferCmgrResponseEndRegex),
-            new BufferPattern(BUFFER_ACTION.OK, _bufferOkRegex),
-            new BufferPattern(BUFFER_ACTION.ERROR, _bufferErrorRegex)
         };
             // ============================================================
             // Buffer Layer 1 - Main Analyzer
@@ -898,6 +896,39 @@ namespace GSM.Core.Source.Device
                     bool found = BufferFindNextPattern(SourceMessage, position, out pattern, out startMatch);
                     // هیچ الگوی شناخته‌شده دیگری وجود ندارد.
                     // تمام باقی‌مانده به‌عنوان UNKNOWN حفظ می‌شود.
+                    // بررسی نشانگر پایانی از موقعیت فعلی
+                    Match terminalAtPosition = _bufferTerminalRegex.Match(
+                        SourceMessage,
+                        position);
+
+                    // اگر نشانگر پایانی قبل از الگوی شناخته‌شده بعدی باشد،
+                    // یا اصلاً الگوی شناخته‌شده‌ای وجود نداشته باشد،
+                    // نشانگر پایانی را همین‌جا پردازش کن.
+                    if (terminalAtPosition.Success &&
+                        (!found || terminalAtPosition.Index < startMatch.Index))
+                    {
+                        int terminalEnd =
+                            terminalAtPosition.Index + terminalAtPosition.Length;
+
+                        BUFFER_ACTION terminalAction =
+                            terminalAtPosition.Value.Equals(
+                                "OK",
+                                StringComparison.OrdinalIgnoreCase)
+                                ? BUFFER_ACTION.OK
+                                : BUFFER_ACTION.ERROR;
+
+                        string terminalMessage = SourceMessage.Substring(
+                            position,
+                            terminalEnd - position);
+
+                        BufferAddData(
+                            bufferDataGroup,
+                            terminalMessage,
+                            terminalAction);
+
+                        position = terminalEnd;
+                        continue;
+                    }
                     if (!found)
                     {
                         BufferAddData(bufferDataGroup, SourceMessage.Substring(position), BUFFER_ACTION.UNKNOWN);
