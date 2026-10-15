@@ -148,7 +148,7 @@ namespace GSM.Core.Source.Device
         {
             NULL,                       //NULL
             UNKNOWN,                    //Response Message not obvious
-            MODEM_STATUS,               //"MODEM:STARTUP" find in message , after this wait for +PBREADY
+            MODEM_STARTUP,              //"MODEM:STARTUP" find in message , after this wait for +PBREADY
             MODEM_READY,                //"+PBREADY" find in message, befor this MODEM:STARTUP was appeare
             CHAR_MODE_SET,              //"AT+CSCS=" find in message -> GSM, HEX, IRA, PCCP437, 8859-1, UCS2
             PDU_MODE_SET,               //"AT+CMGF=" find in message -> 0 : UDU mode (Persian support) , 1 : Text Mode (NOT Persian support)
@@ -359,13 +359,22 @@ namespace GSM.Core.Source.Device
             public string SourceMessage = DeviceDefinitions.STRING_INVALID;
             public List<BufferData> BufferData = new List<BufferData>();
         }
+        /*
+         * MessageAnalyzed = all string after pattern detection to end of detection
+         * List Detail = all variable in MessageAnalyzed
+         * sample :
+         * AT+CSQ
+         * +CSQ: 15,3
+         * OK
+         * After Analyze -> MessageAnalyzed = +CSQ: 15,3 / Detail[0] = "15" / Detail[1] = "3"
+        */
         internal sealed class BufferData
         {
             public BUFFER_ACTION Action = BUFFER_ACTION.UNKNOWN;
             public BUFFER_ACTION_STATUS Status = BUFFER_ACTION_STATUS.UNKNOWN;
             public string Message = DeviceDefinitions.STRING_INVALID;
             public string MessageAnalyzed = DeviceDefinitions.STRING_INVALID;
-            public string Detail = DeviceDefinitions.STRING_INVALID;
+            public List<string> Detail = new List<string>();
             public DateTime ReceivedTime = DateTime.MinValue;
         }
         //End : Class Buffer Data -> Analyze RAW Message
