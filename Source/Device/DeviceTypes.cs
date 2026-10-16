@@ -160,8 +160,8 @@ namespace GSM.Core.Source.Device
             USSD_REQUEST,               //"AT+CUSD=" find in message -> sample : AT+CUSD=1,"*140*11#",15 (USSD request)
             USSD_RESPONSE,              //"+CUSD:" find in message -> sample : +CUSD: 2, "...",72 (1 sample , there is some model respose)
             SMS_SEND_COMMAND,           //"AT+CMGS=" find in message -> sample : AT+CMGS=20
-            SYMBOL_ARROW_RIGHT,         //">" find in message -> in SMS Send
             SMS_SEND_RESPONSE,          //"+CMGS:" find in message -> sample : +CMGS: 144
+            SMS_SEND_PROMPT,            //">" find in message -> in SMS Send
                                         //AT+CMGS=20 (Send start sample) , > , 06918919015000B1000C9189194519210000080B06062A0633 (part of Send data) , +CMGS: 144 (Send response sample)
             SMS_DELETE,                 //"AT+CMGD=" find in message -> sample : AT+CMGD=1,0
                                         //AT+CMGD=1,0 / AT+CMGD=X(Inbox slot),Y(0 to 4 -> Command type) (Delete request) , OK / ERROR (execute response, maybe delay)
@@ -172,6 +172,7 @@ namespace GSM.Core.Source.Device
             SMS_STORAGE_RESPONSE,       //"+CPMS:" find in message -> +CPMS: "SM",0,50,"SM",0,50,"SM",0,50 (sample response)
                                         //AT+CPMS? (command request) , +CPMS: "SM",0,50,"SM",0,50,"SM",0,50 (sample response)
             SMS_RECEIVED,               //"+SMSFLAG:"  find in message, after that is number of slot such : 1, 2, 3, ..., MAX
+            SMS_DELIVERY_REPORT,        //"+CDS:"  find in message, +CDS: 25(PDU Len) 069189...(PDU)
         }
         //End : Buffer Action
         //Buffer Action Status
@@ -240,6 +241,7 @@ namespace GSM.Core.Source.Device
         //class Device Runtime Configuration
         private sealed class DeviceRuntimeConfiguration
         {
+            public bool BufferCheck = true;
             public int SignalMinAcceptableValue = 10;
             public bool EnableDoubleReadValidation = false;
             public bool TimeoutCheck = true;
@@ -373,7 +375,6 @@ namespace GSM.Core.Source.Device
             public BUFFER_ACTION Action = BUFFER_ACTION.UNKNOWN;
             public BUFFER_ACTION_STATUS Status = BUFFER_ACTION_STATUS.UNKNOWN;
             public string Message = DeviceDefinitions.STRING_INVALID;
-            public string MessageAnalyzed = DeviceDefinitions.STRING_INVALID;
             public List<string> Detail = new List<string>();
             public DateTime ReceivedTime = DateTime.MinValue;
         }

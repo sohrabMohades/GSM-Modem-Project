@@ -36,7 +36,7 @@ namespace GSM.Core.Source.Device
             try
             {
                 this.ErrorReset();
-                funcResult = this.DeviceCountGetWorkflow(ref DeviceCount, InternalValueSet);
+                funcResult = this.DeviceCountGetWorkflow(ref DeviceCount, InternalValueSet, this._runtimeConfig.BufferCheck);
                 ////////_runtimeFlags Updates
                 ////////_runtimeInfo Updates
                 this.InternalStatusUpdate();

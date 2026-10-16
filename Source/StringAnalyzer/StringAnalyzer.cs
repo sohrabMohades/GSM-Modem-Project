@@ -248,7 +248,7 @@ namespace GSM.Core.Source.Device
                 }
                 return _cusdRegex.IsMatch(response);
             }
-            
+
             //Helper
             //USSD response finder and decoder
             private static List<string> ExtractCusdTexts(string response)
@@ -344,14 +344,37 @@ namespace GSM.Core.Source.Device
             private static readonly Regex _bufferUssdResponseRegex = new Regex(@"\+CUSD[ \t]*:", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferUssdResponseResultRegex = new Regex(@"\+CUSD[ \t]*:[ \t]*(?<status>\d+)[ \t]*,[ \t]*""(?<ussdText>[^""]*)""[ \t]*,[ \t]*(?<dcs>\d+)",
                                                                                      RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferSmsSendCommandRegex = new Regex(@"AT\+CMGS[ \t]*=", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferSmsSendCommandResultRegex = new Regex(@"AT\+CMGS[ \t]*=[ \t]*(?<tpduLength>\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+                                                                                       RegexOptions.Compiled);
+            private static readonly Regex _bufferSmsSendPromptRegex = new Regex(@">", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferSmsSendResponseRegex = new Regex(@"\+CMGS[ \t]*:", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferSmsSendResponseResultRegex = new Regex(@"\+CMGS[ \t]*:[ \t]*(?<reference>\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+                                                                                        RegexOptions.Compiled);
+            private static readonly Regex _bufferInboxReadCommandRegex = new Regex(@"AT\+CMGR[ \t]*=", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferInboxReadCommandResultRegex = new Regex(@"AT\+CMGR[ \t]*=[ \t]*(?<index>\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+                                                                                         RegexOptions.Compiled);
+            private static readonly Regex _bufferInboxReadResponseRegex = new Regex(@"\+CMGR[ \t]*:", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferInboxReadResponseResultRegex = new Regex(@"\+CMGR[ \t]*:[ \t]*(?<messageStatus>\d+)[ \t]*,[ \t]*(?<field2>[^,\r\n]*)[ \t]*,[ \t]*
+                                                                                          (?<length>\d+)[ \t]*\r?\n(?<textMessage>[\s\S]*?)(?=OK|ERROR|$)",
+                                                                                          RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferSmsStorageCommandRegex = new Regex(@"AT\+CPMS[ \t]*\?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferSmsStorageResponseRegex = new Regex(@"\+CPMS[ \t]*:", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferSmsStorageResponseResultRegex = new Regex(@"\+CPMS[ \t]*:[ \t]*""(?<storage1>[^""]*)""[ \t]*,[ \t]*(?<used1>\d+)[ \t]*,[ \t]*(?<total1>\d+)[ \t]*
+                                                                                           ,[ \t]*""(?<storage2>[^""]*)""[ \t]*,[ \t]*(?<used2>\d+)[ \t]*,[ \t]*(?<total2>\d+)[ \t]*,[ \t]*""
+                                                                                           (?<storage3>[^""]*)""[ \t]*,[ \t]*(?<used3>\d+)[ \t]*,[ \t]*(?<total3>\d+)",
+                                                                                           RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferSmsDeleteCommandRegex = new Regex(@"AT\+CMGD[ \t]*\=", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            /// /////////////////////////////////////////////check by Chat GPT
+            private static readonly Regex _bufferSmsDeleteCommandResultRegex = new Regex(@"AT\+CMGD[ \t]*\=[ \t]*(?<storageSlot>\d+)[ \t]*,[ \t]*(?<deleteType>\d[ \t]*)",
+                                                                                           RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
             private static readonly Regex _bufferSmsReceivedRegex = new Regex(@"\+SMSFLAG[ \t]*:", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferSmsReceivedResultRegex = new Regex(@"\+SMSFLAG[ \t]*:[ \t]*""(?<storage>[^""]*)""[ \t]*,[ \t]*(?<index>\d+)",
                                                                                     RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-            //private static readonly Regex _bufferCmgrCommandRegex = new Regex(@"[ \t]*AT\+CMGR[ \t]*=[ \t]*(?<index>\d+)[ \t]*",
-            //                        RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            //private static readonly Regex _bufferCmgrResponseRegex = new Regex(@"[ \t]*\+CMGR[ \t]*:[ \t]*(?<header>[\r\n]*)",
-            //                        RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferSmsDeliveryReportRegex = new Regex(@"\+CDS[ \t]*:", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferSmsDeliveryReportResultRegex = new Regex(@"\+CDS[ \t]*:[ \t]*(?<length>\d+)[ \t]*\r?\n(?<pdu>[\s\S]*?)(?=OK|ERROR|$)",
+                                                                                          RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
             private static readonly Regex _bufferOkRegex = new Regex(@"(?:OK)",
                                     RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
@@ -390,9 +413,17 @@ namespace GSM.Core.Source.Device
                 new BufferPattern(BUFFER_ACTION.CHAR_MODE_SET, _bufferCharModeSetRegex),
                 new BufferPattern(BUFFER_ACTION.USSD_REQUEST, _bufferUssdRequestRegex),
                 new BufferPattern(BUFFER_ACTION.USSD_RESPONSE, _bufferUssdResponseRegex),
+                new BufferPattern(BUFFER_ACTION.SMS_SEND_COMMAND, _bufferSmsSendCommandRegex),
+                new BufferPattern(BUFFER_ACTION.SMS_SEND_PROMPT, _bufferSmsSendPromptRegex),
+                new BufferPattern(BUFFER_ACTION.SMS_SEND_RESPONSE, _bufferSmsSendResponseRegex),
+                new BufferPattern(BUFFER_ACTION.INBOX_READ_COMMAND, _bufferInboxReadCommandRegex),
+                new BufferPattern(BUFFER_ACTION.INBOX_READ_RESPONSE, _bufferInboxReadResponseRegex),
+                new BufferPattern(BUFFER_ACTION.SMS_STORAGE_COMMAND, _bufferSmsStorageCommandRegex),
+                new BufferPattern(BUFFER_ACTION.SMS_STORAGE_RESPONSE, _bufferSmsStorageResponseRegex),
+                new BufferPattern(BUFFER_ACTION.SMS_DELETE, _bufferSmsDeleteCommandRegex),
+
                 new BufferPattern(BUFFER_ACTION.SMS_RECEIVED, _bufferSmsReceivedRegex),
-                //new BufferPattern(BUFFER_ACTION.INBOX_READ_COMMAND, _bufferCmgrCommandRegex),
-                //new BufferPattern(BUFFER_ACTION.INBOX_READ_RESPONSE, _bufferCmgrResponseRegex, _bufferCmgrResponseEndRegex),
+                new BufferPattern(BUFFER_ACTION.SMS_DELIVERY_REPORT, _bufferSmsDeliveryReportRegex),
             };
             // ============================================================
             // Buffer Layer 1 - Main Analyzer
@@ -612,6 +643,74 @@ namespace GSM.Core.Source.Device
                             break;
                         }
 
+                    case BUFFER_ACTION.SMS_SEND_COMMAND:
+                        {
+                            Match match = _bufferSmsSendCommandResultRegex.Match(data.Message);
+                            if (match.Success)
+                                data.Detail.Add(match.Groups["tpduLength"].Value);
+                            break;
+                        }
+
+                    case BUFFER_ACTION.SMS_SEND_RESPONSE:
+                        {
+                            Match match = _bufferSmsSendResponseResultRegex.Match(data.Message);
+                            if (match.Success)
+                                data.Detail.Add(match.Groups["reference"].Value);
+                            break;
+                        }
+
+                    case BUFFER_ACTION.INBOX_READ_COMMAND:
+                        {
+                            Match match = _bufferInboxReadCommandResultRegex.Match(data.Message);
+                            if (match.Success)
+                                data.Detail.Add(match.Groups["index"].Value);
+                            break;
+                        }
+
+                    case BUFFER_ACTION.INBOX_READ_RESPONSE:
+                        {
+                            Match match = _bufferInboxReadResponseResultRegex.Match(data.Message);
+                            if (match.Success)
+                            {
+                                data.Detail.Add(match.Groups["messageStatus"].Value);
+                                data.Detail.Add(match.Groups["field2"].Value);
+                                data.Detail.Add(match.Groups["length"].Value);
+                                data.Detail.Add(match.Groups["textMessage"].Value);
+                            }
+                            break;
+                        }
+
+                    case BUFFER_ACTION.SMS_STORAGE_RESPONSE:
+                        {
+                            Match match = _bufferSmsStorageResponseResultRegex.Match(data.Message);
+                            if (match.Success)
+                            {
+                                data.Detail.Add(match.Groups["storage1"].Value);
+                                data.Detail.Add(match.Groups["used1"].Value);
+                                data.Detail.Add(match.Groups["total1"].Value);
+                                data.Detail.Add(match.Groups["storage2"].Value);
+                                data.Detail.Add(match.Groups["used2"].Value);
+                                data.Detail.Add(match.Groups["total2"].Value);
+                                data.Detail.Add(match.Groups["storage3"].Value);
+                                data.Detail.Add(match.Groups["used3"].Value);
+                                data.Detail.Add(match.Groups["total3"].Value);
+                            }
+                            break;
+                        }
+
+                    case BUFFER_ACTION.SMS_DELETE:
+                        {
+                            Match match = _bufferSmsDeleteCommandResultRegex.Match(data.Message);
+                            if (match.Success)
+                            {
+                                data.Detail.Add(match.Groups["storageSlot"].Value);
+                                data.Detail.Add(match.Groups["deleteType"].Value);
+                            }
+                            break;
+                        }
+
+
+                    //Timer Result
                     case BUFFER_ACTION.SMS_RECEIVED:
                         {
                             Match match = _bufferSmsReceivedResultRegex.Match(data.Message);
@@ -623,36 +722,14 @@ namespace GSM.Core.Source.Device
                             break;
                         }
 
-                    case BUFFER_ACTION.INBOX_READ_COMMAND:
+                    case BUFFER_ACTION.SMS_DELIVERY_REPORT:
                         {
-                            /*
-                            Match match = _bufferCmgrCommandRegex.Match(data.Message);
+                            Match match = _bufferSmsDeliveryReportResultRegex.Match(data.Message);
                             if (match.Success)
-                                data.MessageAnalyzed = match.Groups["index"].Value;
-                            */
-                            break;
-                        }
-
-                    case BUFFER_ACTION.INBOX_READ_RESPONSE:
-                        {
-                            /*
-                            Match headerMatch = _bufferCmgrResponseRegex.Match(data.Message);
-                            if (!headerMatch.Success)
-                                break;
-                            // Header: 1,,158
-                            data.Detail = headerMatch.Groups["header"].Value;
-                            // استخراج محتوا از انتهای Header تا نشانگر پایانی.
-                            int bodyStart = headerMatch.Index + headerMatch.Length;
-                            Match endMatch = _bufferCmgrResponseEndRegex.Match(data.Message, bodyStart);
-                            int bodyEnd = endMatch.Success ? endMatch.Index : data.Message.Length;
-                            if (bodyEnd >= bodyStart)
                             {
-                                string body = data.Message.Substring(bodyStart, bodyEnd - bodyStart);
-                                body = body.Trim();
-                                if (!string.IsNullOrEmpty(body))
-                                    data.MessageAnalyzed = body;
+                                data.Detail.Add(match.Groups["length"].Value);
+                                data.Detail.Add(match.Groups["pdu"].Value);
                             }
-                            */
                             break;
                         }
 

@@ -12,16 +12,69 @@ namespace GSM.Core.Source.Device
     public partial class Device : IDisposable
     {
         //Device Count
-        private FUNC_RESULT DeviceCountGetWorkflow(ref int DeviceCount, bool InternalValueSet)
+        private FUNC_RESULT DeviceCountGetWorkflow(ref int DeviceCount, bool InternalValueSet, bool BufferCheck)
         {
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN, result1 = FUNC_RESULT.UNKNOWN, result2 = FUNC_RESULT.UNKNOWN;
             int deviceCount1 = DeviceDefinitions.NUMBER_INVALID, deviceCount2 = DeviceDefinitions.NUMBER_INVALID;
-            result = this.DeviceCountGetExecute((int)TRY_COUNT.FAST, (int)OPERATION_DELAY_MS.SHORT, ref result1, ref result2, ref deviceCount1, ref deviceCount2);
+            result = this.DeviceCountGetExecute((int)TRY_COUNT.FAST, (int)OPERATION_DELAY_MS.SHORT, ref result1, ref result2, ref deviceCount1, ref deviceCount2, BufferCheck);
             result = this.XXXCheck(result, result1, result2, deviceCount1, deviceCount2);
             this.XXXSetValue(result, deviceCount1, DeviceDefinitions.NUMBER_INVALID, ref DeviceCount, ref this._runtimeIdentity.DeviceCount, InternalValueSet);
             return result;
         }
-        private FUNC_RESULT DeviceCountGetExecute(int loopCount,int Delay, ref FUNC_RESULT Result1, ref FUNC_RESULT Result2, ref int DeviceCount1, ref int DeviceCount2)
+        private FUNC_RESULT DeviceCountGetExecute(int loopCount, int Delay, ref FUNC_RESULT Result1, ref FUNC_RESULT Result2, ref int DeviceCount1, ref int DeviceCount2, bool BufferCheck)
+        {
+            if (BufferCheck)
+                return this.DeviceCountGetExecuteBufferCheck((int)TRY_COUNT.FAST, (int)OPERATION_DELAY_MS.SHORT, ref Result1, ref Result2, ref DeviceCount1, ref DeviceCount2);
+            else
+                return this.DeviceCountGetExecuteNormal((int)TRY_COUNT.FAST, (int)OPERATION_DELAY_MS.SHORT, ref Result1, ref Result2, ref DeviceCount1, ref DeviceCount2);
+        }
+        private FUNC_RESULT DeviceCountGetExecuteNormal(int loopCount, int Delay, ref FUNC_RESULT Result1, ref FUNC_RESULT Result2, ref int DeviceCount1, ref int DeviceCount2)
+        {
+            //How Many continues fail accepted
+            int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
+            //1 result get or 2 result get and check 1 and 2
+            if (!this._runtimeConfig.EnableDoubleReadValidation)
+            {
+                Result2 = FUNC_RESULT.SUCCESS;
+            }
+            //try time
+            while (loopCount > 0 && (Result1 != FUNC_RESULT.SUCCESS || Result2 != FUNC_RESULT.SUCCESS))
+            {
+                //delay
+                Thread.Sleep(Delay);
+                //try for first correct result
+                if (Result1 != FUNC_RESULT.SUCCESS)
+                {
+                    Result1 = this.DeviceCountGetBase(ref DeviceCount1);
+                    //continues fail check
+                    if (Result1 != FUNC_RESULT.SUCCESS)
+                    {
+                        resultCount--;
+                        if (resultCount <= 0)
+                        {
+                            break;
+                        }
+                    }
+                }
+                //try for second correct result
+                else
+                {
+                    Result2 = this.DeviceCountGetBase(ref DeviceCount2);
+                }
+                loopCount--;
+                if (Result1 == FUNC_RESULT.MAJOR_ERROR || Result2 == FUNC_RESULT.MAJOR_ERROR)
+                {
+                    return FUNC_RESULT.MAJOR_ERROR;
+                }
+            }
+            //1 result get or 2 result get and check 1 and 2
+            if (!this._runtimeConfig.EnableDoubleReadValidation)
+            {
+                DeviceCount2 = DeviceCount1;
+            }
+            return FUNC_RESULT.SUCCESS;
+        }
+        private FUNC_RESULT DeviceCountGetExecuteBufferCheck(int loopCount, int Delay, ref FUNC_RESULT Result1, ref FUNC_RESULT Result2, ref int DeviceCount1, ref int DeviceCount2)
         {
             //How Many continues fail accepted
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR;

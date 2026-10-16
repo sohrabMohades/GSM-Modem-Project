@@ -168,8 +168,8 @@ namespace GSM.Core.Source.Device
             //End : Buffer Update Raw List
 
             //End : Buffer Update Data List
-            if (result == FUNC_RESULT.SUCCESS)
-                result = this.BufferUpdateDataList();
+            //if (result == FUNC_RESULT.SUCCESS)
+            result = this.BufferUpdateDataList();
             //Buffer Update Data List
 
             return result;
@@ -218,9 +218,10 @@ namespace GSM.Core.Source.Device
                 FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
                 for (int j = 0; j < countTry && result != FUNC_RESULT.SUCCESS; j++)
                     result = this.BufferMessageGetExecute((int)OPERATION_DELAY_MS.BUFFER_UPDATE, i, ref bufferMessage, ref bufferMessageLen);
-                if (result != FUNC_RESULT.SUCCESS)
-                    return FUNC_RESULT.MAJOR_ERROR;
-                this._runtimeBuffer.BufferDataRaw.Add(bufferMessage);
+                //if (result != FUNC_RESULT.SUCCESS)
+                //    return FUNC_RESULT.MAJOR_ERROR;
+                if (result == FUNC_RESULT.SUCCESS)
+                    this._runtimeBuffer.BufferDataRaw.Add(bufferMessage);
             }
             return FUNC_RESULT.SUCCESS;
         }
@@ -229,9 +230,11 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT BufferUpdateDataList()
         {
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-            ///////////////Temp
+            for (int i = 0; i < this._runtimeBuffer.BufferDataRaw.Count; i++)
+            {
+                this._runtimeBuffer.BufferDataFinal.Add(StringAnalyzer.BufferAnalyzeRawMessage(this._runtimeBuffer.BufferDataRaw[i]));
+            }
             result = FUNC_RESULT.SUCCESS;
-            ///////////////End : Temp
             return result;
         }
         //End : Buffer Update Data List
