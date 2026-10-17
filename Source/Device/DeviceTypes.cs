@@ -108,13 +108,15 @@ namespace GSM.Core.Source.Device
         //Enum Operation execute Delay ms
         private enum OPERATION_DELAY_MS
         {
-            BUFFER_UPDATE = 0,
+            BUFFER_CLEAR = 0,
+            BUFFER_UPDATE_CONTINUE = 0,
+            BUFFER_UPDATE = 300,
             SHORT = 200,
             NORMAL_SHORT = 400,
             NORMAL_LONG = 600,
             LONG = 1000,
             AFTER_DEVICE_POWER_ON = 5000,
-            AFTER_DEVICE_NUM_CHANGE = 10000
+            AFTER_DEVICE_NUM_CHANGE = 10000,
         }
         //End : Enum Operation execute Delay ms
         //Enum Try Read times
@@ -134,6 +136,16 @@ namespace GSM.Core.Source.Device
             DEVICE_NUM_ERROR = 2,
         }
         //End : Try Fail read limitation
+        private enum BUFFER_TIME_OUT_MS
+        {
+            MODEM_STARTUP = 10000,
+            MODEM_READY = 20000,
+            SHORT = 1000,
+            NORMAL_SHORT = 2000,
+            NORMAL = 4000,
+            NORMAL_LONG = 6000,
+            LONG = 8000,
+        }
         //bool type
         private enum BOOL_TYPE
         {
@@ -156,7 +168,8 @@ namespace GSM.Core.Source.Device
             GSM_DATE_TIME_GET,          //"AT+CCLK?" find in message -> request command and GSM response : +CCLK: "04/01/01,00:24:49" 
             GSM_CONNECTION_ATE1,        //"ATE1" find in message -> GSM Is Connect, phase 1 : ATE1 , phase2 (with delay) AT
             GSM_CONNECTION_AT,          //"AT" find in message -> GSM Is Connect, phase 1 : ATE1 , phase2 (with delay) AT
-            GSM_SIGNAL,                 //"AT+CSQ" find in message -> GSM Signal request, response : +CSQ: 21,1
+            GSM_SIGNAL_GET,             //"AT+CSQ" find in message -> GSM Signal request, response : +CSQ: 21,1
+            GSM_SIGNAL_RESPONSE,        //"+CSQ:" find in message -> GSM Signal request, response : +CSQ: 21,1
             USSD_REQUEST,               //"AT+CUSD=" find in message -> sample : AT+CUSD=1,"*140*11#",15 (USSD request)
             USSD_RESPONSE,              //"+CUSD:" find in message -> sample : +CUSD: 2, "...",72 (1 sample , there is some model respose)
             SMS_SEND_COMMAND,           //"AT+CMGS=" find in message -> sample : AT+CMGS=20
@@ -186,8 +199,11 @@ namespace GSM.Core.Source.Device
         //Buffer Update Source
         enum BUFFER_UPDATE_SOURCE
         {
-            WORKFLOW = 1,
-            TIMER = 2
+            UNKNOWN = 0,
+            WORKFLOW_START = 1,
+            WORKFLOW = 2,
+            TIMER = 3,
+            DATA_UPDATE_ONLY = 4,
         }
         //End : Buffer Update Source
         //End: Buffer
@@ -344,21 +360,28 @@ namespace GSM.Core.Source.Device
             public bool BufferAutoUpdate = true;
             public bool BufferNewData = false;
             public int BufferLastIndex = DeviceDefinitions.NUMBER_INVALID;
-            public string BufferMessage = DeviceDefinitions.STRING_INVALID;     //only for singel read or test
-            public int BufferMessageLen = DeviceDefinitions.NUMBER_INVALID;     //only for singel read or test
+            public string BufferMessage = DeviceDefinitions.STRING_INVALID;             //only for singel read or test
+            public int BufferMessageLen = DeviceDefinitions.NUMBER_INVALID;             //only for singel read or test
             public DateTime BufferLastUpdate = DateTime.MinValue;
-            public List<string> BufferDataRaw = new List<string>();             //RAW Message list, without any Analyze, ONLY REMOVE NULL string from this list
-            public List<BufferDataGroup> BufferDataFinal = new List<BufferDataGroup>();   //this list is Analyze of BufferDataRaw list
+            public DateTime BufferLastUpdatePerior = DateTime.MinValue;
+            public List<BufferRawData> BufferDataRaw = new List<BufferRawData>();                     //RAW Message list, without any Analyze, ONLY REMOVE NULL string from this list
+            public List<BufferDataGroup> BufferDataGroup = new List<BufferDataGroup>(); //this list is Analyze of BufferDataRaw list
             public bool NewInboxNotifiction = false;
             public bool ModemStartup = false;
             public bool ModemReady = false;
             public List<string> NewInboxSlot = new List<string>();
         }
         //End : class Device Runtime Buffer
-        //Class Buffer Data -> Analyze RAW Message
+
+        public sealed class BufferRawData
+        {
+            public string Message = DeviceDefinitions.STRING_INVALID;
+            public int MessageLen = DeviceDefinitions.NUMBER_INVALID;
+            public DateTime ReceivedTime = DateTime.MinValue;
+        }//Class Buffer Data -> Analyze RAW Message
         internal sealed class BufferDataGroup
         {
-            public string SourceMessage = DeviceDefinitions.STRING_INVALID;
+            public BufferRawData BufferRawData = new BufferRawData();
             public List<BufferData> BufferData = new List<BufferData>();
         }
         /*

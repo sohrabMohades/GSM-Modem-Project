@@ -1,80 +1,22 @@
 ﻿using GSM.Core.Source.Common;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace GSM.Core.Source.Device
 {
     public partial class Device : IDisposable
     {
         //Device Count
-        private FUNC_RESULT DeviceCountGetWorkflow(ref int DeviceCount, bool InternalValueSet, bool BufferCheck)
+        private FUNC_RESULT DeviceCountGetWorkflow(ref int DeviceCount, bool InternalValueSet)
         {
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN, result1 = FUNC_RESULT.UNKNOWN, result2 = FUNC_RESULT.UNKNOWN;
             int deviceCount1 = DeviceDefinitions.NUMBER_INVALID, deviceCount2 = DeviceDefinitions.NUMBER_INVALID;
-            result = this.DeviceCountGetExecute((int)TRY_COUNT.FAST, (int)OPERATION_DELAY_MS.SHORT, ref result1, ref result2, ref deviceCount1, ref deviceCount2, BufferCheck);
+            result = this.DeviceCountGetExecute((int)TRY_COUNT.FAST, (int)OPERATION_DELAY_MS.SHORT, ref result1, ref result2, ref deviceCount1, ref deviceCount2);
             result = this.XXXCheck(result, result1, result2, deviceCount1, deviceCount2);
             this.XXXSetValue(result, deviceCount1, DeviceDefinitions.NUMBER_INVALID, ref DeviceCount, ref this._runtimeIdentity.DeviceCount, InternalValueSet);
             return result;
         }
-        private FUNC_RESULT DeviceCountGetExecute(int loopCount, int Delay, ref FUNC_RESULT Result1, ref FUNC_RESULT Result2, ref int DeviceCount1, ref int DeviceCount2, bool BufferCheck)
-        {
-            if (BufferCheck)
-                return this.DeviceCountGetExecuteBufferCheck((int)TRY_COUNT.FAST, (int)OPERATION_DELAY_MS.SHORT, ref Result1, ref Result2, ref DeviceCount1, ref DeviceCount2);
-            else
-                return this.DeviceCountGetExecuteNormal((int)TRY_COUNT.FAST, (int)OPERATION_DELAY_MS.SHORT, ref Result1, ref Result2, ref DeviceCount1, ref DeviceCount2);
-        }
-        private FUNC_RESULT DeviceCountGetExecuteNormal(int loopCount, int Delay, ref FUNC_RESULT Result1, ref FUNC_RESULT Result2, ref int DeviceCount1, ref int DeviceCount2)
-        {
-            //How Many continues fail accepted
-            int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
-            //1 result get or 2 result get and check 1 and 2
-            if (!this._runtimeConfig.EnableDoubleReadValidation)
-            {
-                Result2 = FUNC_RESULT.SUCCESS;
-            }
-            //try time
-            while (loopCount > 0 && (Result1 != FUNC_RESULT.SUCCESS || Result2 != FUNC_RESULT.SUCCESS))
-            {
-                //delay
-                Thread.Sleep(Delay);
-                //try for first correct result
-                if (Result1 != FUNC_RESULT.SUCCESS)
-                {
-                    Result1 = this.DeviceCountGetBase(ref DeviceCount1);
-                    //continues fail check
-                    if (Result1 != FUNC_RESULT.SUCCESS)
-                    {
-                        resultCount--;
-                        if (resultCount <= 0)
-                        {
-                            break;
-                        }
-                    }
-                }
-                //try for second correct result
-                else
-                {
-                    Result2 = this.DeviceCountGetBase(ref DeviceCount2);
-                }
-                loopCount--;
-                if (Result1 == FUNC_RESULT.MAJOR_ERROR || Result2 == FUNC_RESULT.MAJOR_ERROR)
-                {
-                    return FUNC_RESULT.MAJOR_ERROR;
-                }
-            }
-            //1 result get or 2 result get and check 1 and 2
-            if (!this._runtimeConfig.EnableDoubleReadValidation)
-            {
-                DeviceCount2 = DeviceCount1;
-            }
-            return FUNC_RESULT.SUCCESS;
-        }
-        private FUNC_RESULT DeviceCountGetExecuteBufferCheck(int loopCount, int Delay, ref FUNC_RESULT Result1, ref FUNC_RESULT Result2, ref int DeviceCount1, ref int DeviceCount2)
+        private FUNC_RESULT DeviceCountGetExecute(int loopCount, int Delay, ref FUNC_RESULT Result1, ref FUNC_RESULT Result2, ref int DeviceCount1, ref int DeviceCount2)
         {
             //How Many continues fail accepted
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
@@ -178,8 +120,43 @@ namespace GSM.Core.Source.Device
         }
         private FUNC_RESULT DeviceSelectByIndexExecute(int DeviceIndex, int Delay)
         {
+            if (this._runtimeConfig.BufferCheck)
+                return this.DeviceSelectByIndexExecuteBufferCheck(DeviceIndex, Delay);
+            else
+                return this.DeviceSelectByIndexExecuteNormal(DeviceIndex, Delay);
+        }
+        private FUNC_RESULT DeviceSelectByIndexExecuteNormal(int DeviceIndex, int Delay)
+        {
             Thread.Sleep(Delay);
             return this.DeviceSelectByIndexBase(DeviceIndex);
+        }
+        private FUNC_RESULT DeviceSelectByIndexExecuteBufferCheck(int DeviceIndex, int Delay)
+        {
+            bool internalValueSet = true;
+            FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
+            BUFFER_UPDATE_SOURCE bufferUpdateSource = BUFFER_UPDATE_SOURCE.UNKNOWN;
+            //Buffer Last Data read and insert BufferData
+            bufferUpdateSource = BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY;
+            if (this.BufferUpdate(bufferUpdateSource, nameof(this.DeviceSelectByIndexExecute)) != FUNC_RESULT.SUCCESS)
+                this.BufferClearWorkflow(internalValueSet);
+            //Execute Command
+            Thread.Sleep(Delay);
+            result = this.DeviceSelectByIndexBase(DeviceIndex);
+            if (result != FUNC_RESULT.SUCCESS)
+                return result;
+            else
+                result = FUNC_RESULT.UNKNOWN;
+            //Execute Command
+            //Buffer check
+            bufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
+            while (result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR)
+            {
+                result = this.BufferUpdate(bufferUpdateSource, nameof(this.DeviceSelectByIndexExecute));
+                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START)
+                    bufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW;
+            }
+            //End : Buffer check
+            return result;
         }
         private FUNC_RESULT DeviceSelectByIndexBase(int DeviceIndex)
         {
@@ -410,10 +387,6 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             string imei = DeviceDefinitions.STRING_INVALID;
             result = this.DeviceSelectByIndexWorkflow(DeviceIndex, checkDeviceNumber, internalValueSet);
-            //test
-            result = this.DeviceRestartComplexWorkFlow();
-            return result;
-            //test
             if (result == FUNC_RESULT.SUCCESS)
             {
                 result = this.GSMIsConnectWorkflow(ref gsmIsConnect, internalValueSet);

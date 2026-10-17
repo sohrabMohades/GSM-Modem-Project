@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using GSM.Core.Source.Device;
 
 namespace GSM.Core.Source.Device
 {
@@ -327,7 +326,9 @@ namespace GSM.Core.Source.Device
             private static readonly Regex _bufferGsmConnectionCheckRegex = new Regex(@"AT[ \t]*\r?\n", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             // AT+CSQ -> Signal Get
             private static readonly Regex _bufferSignalGetRegex = new Regex(@"AT\+CSQ", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _bufferSignalResultRegex = new Regex(@"AT\+CSQ[ \t]*:[ \t]*(?<rssi>\d+)[ \t]*,[ \t]*(?<ber>\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+            private static readonly Regex _bufferSignalResponseRegex = new Regex(@"\+CSQ[ \t]*:[ \t]*(?<rssi>\d+)[ \t]*,[ \t]*(?<ber>\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+                                                                               RegexOptions.Compiled);
+            private static readonly Regex _bufferSignalResponseResultRegex = new Regex(@"\+CSQ[ \t]*:[ \t]*(?<rssi>\d+)[ \t]*,[ \t]*(?<ber>\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
                                                                                RegexOptions.Compiled);
             // AT+CMGF= -> PDU Mode Set
             private static readonly Regex _bufferPduModeSetRegex = new Regex(@"AT\+CMGF[ \t]*=", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
@@ -355,14 +356,11 @@ namespace GSM.Core.Source.Device
             private static readonly Regex _bufferInboxReadCommandResultRegex = new Regex(@"AT\+CMGR[ \t]*=[ \t]*(?<index>\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
                                                                                          RegexOptions.Compiled);
             private static readonly Regex _bufferInboxReadResponseRegex = new Regex(@"\+CMGR[ \t]*:", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _bufferInboxReadResponseResultRegex = new Regex(@"\+CMGR[ \t]*:[ \t]*(?<messageStatus>\d+)[ \t]*,[ \t]*(?<field2>[^,\r\n]*)[ \t]*,[ \t]*
-                                                                                          (?<length>\d+)[ \t]*\r?\n(?<textMessage>[\s\S]*?)(?=OK|ERROR|$)",
+            private static readonly Regex _bufferInboxReadResponseResultRegex = new Regex(@"\+CMGR[ \t]*:[ \t]*(?<messageStatus>\d+)[ \t]*,[ \t]*(?<field2>[^,\r\n]*)[ \t]*,[ \t]*(?<length>\d+)[ \t]*\r?\n(?<textMessage>[\s\S]*?)(?=OK|ERROR|$)",
                                                                                           RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferSmsStorageCommandRegex = new Regex(@"AT\+CPMS[ \t]*\?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferSmsStorageResponseRegex = new Regex(@"\+CPMS[ \t]*:", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _bufferSmsStorageResponseResultRegex = new Regex(@"\+CPMS[ \t]*:[ \t]*""(?<storage1>[^""]*)""[ \t]*,[ \t]*(?<used1>\d+)[ \t]*,[ \t]*(?<total1>\d+)[ \t]*
-                                                                                           ,[ \t]*""(?<storage2>[^""]*)""[ \t]*,[ \t]*(?<used2>\d+)[ \t]*,[ \t]*(?<total2>\d+)[ \t]*,[ \t]*""
-                                                                                           (?<storage3>[^""]*)""[ \t]*,[ \t]*(?<used3>\d+)[ \t]*,[ \t]*(?<total3>\d+)",
+            private static readonly Regex _bufferSmsStorageResponseResultRegex = new Regex(@"\+CPMS[ \t]*:[ \t]*""(?<storage1>[^""]*)""[ \t]*,[ \t]*(?<used1>\d+)[ \t]*,[ \t]*(?<total1>\d+)[ \t]*,[ \t]*""(?<storage2>[^""]*)""[ \t]*,[ \t]*(?<used2>\d+)[ \t]*,[ \t]*(?<total2>\d+)[ \t]*,[ \t]*""(?<storage3>[^""]*)""[ \t]*,[ \t]*(?<used3>\d+)[ \t]*,[ \t]*(?<total3>\d+)",
                                                                                            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferSmsDeleteCommandRegex = new Regex(@"AT\+CMGD[ \t]*\=", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             /// /////////////////////////////////////////////check by Chat GPT
@@ -408,7 +406,8 @@ namespace GSM.Core.Source.Device
                 new BufferPattern(BUFFER_ACTION.MODEM_READY, _bufferModemReadyRegex),
                 new BufferPattern(BUFFER_ACTION.GSM_CONNECTION_ATE1, _bufferEchoModeSetRegex),
                 new BufferPattern(BUFFER_ACTION.GSM_CONNECTION_AT, _bufferGsmConnectionCheckRegex),
-                new BufferPattern(BUFFER_ACTION.GSM_SIGNAL, _bufferSignalGetRegex),
+                new BufferPattern(BUFFER_ACTION.GSM_SIGNAL_GET, _bufferSignalGetRegex),
+                new BufferPattern(BUFFER_ACTION.GSM_SIGNAL_RESPONSE, _bufferSignalResponseRegex),
                 new BufferPattern(BUFFER_ACTION.PDU_MODE_SET, _bufferPduModeSetRegex),
                 new BufferPattern(BUFFER_ACTION.CHAR_MODE_SET, _bufferCharModeSetRegex),
                 new BufferPattern(BUFFER_ACTION.USSD_REQUEST, _bufferUssdRequestRegex),
@@ -428,54 +427,59 @@ namespace GSM.Core.Source.Device
             // ============================================================
             // Buffer Layer 1 - Main Analyzer
             // ============================================================
-            public static BufferDataGroup BufferAnalyzeRawMessage(string SourceMessage)
+            public static BufferDataGroup BufferAnalyzeRawMessage(BufferRawData bufferRawData)
             {
-                BufferDataGroup bufferDataGroup = new BufferDataGroup { SourceMessage = SourceMessage };
-                if (string.IsNullOrEmpty(SourceMessage))
+                BufferDataGroup bufferDataGroup = new BufferDataGroup { BufferRawData = bufferRawData };
+                if (bufferRawData == null)
                     return bufferDataGroup;
+                if (string.IsNullOrEmpty(bufferRawData.Message))
+                {
+                    BufferAddData(bufferDataGroup, BUFFER_ACTION.UNKNOWN, string.Empty);
+                    return bufferDataGroup;
+                }
                 int position = 0;
                 BufferPattern nextPattern;
                 Match nextMatch;
-                while (position < SourceMessage.Length)
+                while (position < bufferRawData.Message.Length)
                 {
                     BufferPattern pattern;
                     Match startMatch;
 
-                    bool found = BufferFindNextPattern(SourceMessage, position, out pattern, out startMatch);
+                    bool found = BufferFindNextPattern(bufferRawData.Message, position, out pattern, out startMatch);
                     // هیچ الگوی شناخته‌شده دیگری وجود ندارد.
                     // تمام باقی‌مانده به‌عنوان UNKNOWN حفظ می‌شود.
                     // بررسی نشانگر پایانی از موقعیت فعلی
-                    Match terminalAtPosition = _bufferTerminalRegex.Match(SourceMessage, position);
+                    Match terminalAtPosition = _bufferTerminalRegex.Match(bufferRawData.Message, position);
                     // اگر نشانگر پایانی قبل از الگوی شناخته‌شده بعدی باشد،
                     // یا اصلاً الگوی شناخته‌شده‌ای وجود نداشته باشد،
                     // نشانگر پایانی را همین‌جا پردازش کن.
                     if (terminalAtPosition.Success && (!found || terminalAtPosition.Index < startMatch.Index))
                     {
                         int terminalEnd = terminalAtPosition.Index + terminalAtPosition.Length;
-                        string terminalMessage = SourceMessage.Substring(position, terminalEnd - position);
+                        string terminalMessage = bufferRawData.Message.Substring(position, terminalEnd - position);
                         BufferAddData(bufferDataGroup, BUFFER_ACTION.UNKNOWN, terminalMessage);
                         position = terminalEnd;
                         continue;
                     }
                     if (!found)
                     {
-                        BufferAddData(bufferDataGroup, BUFFER_ACTION.UNKNOWN, SourceMessage.Substring(position));
+                        BufferAddData(bufferDataGroup, BUFFER_ACTION.UNKNOWN, bufferRawData.Message.Substring(position));
                         break;
                     }
                     // متن قبل از الگوی بعدی، یک بخش مستقل است.
                     if (startMatch.Index > position)
                     {
-                        string unknownMessage = SourceMessage.Substring(position, startMatch.Index - position);
+                        string unknownMessage = bufferRawData.Message.Substring(position, startMatch.Index - position);
                         BufferAddData(bufferDataGroup, BUFFER_ACTION.UNKNOWN, unknownMessage);
                     }
                     int segmentStart = startMatch.Index;
-                    int segmentEnd = SourceMessage.Length;
+                    int segmentEnd = bufferRawData.Message.Length;
                     // 1. پیدا کردن الگوی شناخته‌شده بعدی
-                    bool nextFound = BufferFindNextPattern(SourceMessage, startMatch.Index + startMatch.Length, out nextPattern, out nextMatch);
+                    bool nextFound = BufferFindNextPattern(bufferRawData.Message, startMatch.Index + startMatch.Length, out nextPattern, out nextMatch);
                     if (nextFound)
                         segmentEnd = nextMatch.Index;
                     // 2. جست‌وجوی نشانگر پایانی OK یا ERROR
-                    Match terminalMatch = _bufferTerminalRegex.Match(SourceMessage, startMatch.Index + startMatch.Length);
+                    Match terminalMatch = _bufferTerminalRegex.Match(bufferRawData.Message, startMatch.Index + startMatch.Length);
                     if (terminalMatch.Success)
                     {
                         int terminalEnd = terminalMatch.Index + terminalMatch.Length;
@@ -485,7 +489,7 @@ namespace GSM.Core.Source.Device
                     // 2. بررسی پایان اختصاصی الگو، در صورت وجود
                     if (pattern.EndRegex != null)
                     {
-                        Match endMatch = pattern.EndRegex.Match(SourceMessage, startMatch.Index + startMatch.Length);
+                        Match endMatch = pattern.EndRegex.Match(bufferRawData.Message, startMatch.Index + startMatch.Length);
                         if (endMatch.Success)
                         {
                             int endPosition = endMatch.Index + endMatch.Length;
@@ -498,11 +502,11 @@ namespace GSM.Core.Source.Device
                     // محافظت در برابر حلقه بی‌نهایت
                     if (segmentEnd <= segmentStart)
                     {
-                        BufferAddData(bufferDataGroup, BUFFER_ACTION.UNKNOWN, SourceMessage.Substring(segmentStart, 1));
+                        BufferAddData(bufferDataGroup, BUFFER_ACTION.UNKNOWN, bufferRawData.Message.Substring(segmentStart, 1));
                         position = segmentStart + 1;
                         continue;
                     }
-                    string message = SourceMessage.Substring(segmentStart, segmentEnd - segmentStart);
+                    string message = bufferRawData.Message.Substring(segmentStart, segmentEnd - segmentStart);
                     BufferAddData(bufferDataGroup, pattern.Action, message);
                     position = segmentEnd;
                 }
@@ -535,14 +539,17 @@ namespace GSM.Core.Source.Device
             // ============================================================
             private static void BufferAddData(BufferDataGroup bufferDataGroup, BUFFER_ACTION Action, string Message)
             {
-                if (string.IsNullOrWhiteSpace(Message))
+                if (bufferDataGroup == null)
                     return;
-                Message = Message.Trim();
+                if (string.IsNullOrWhiteSpace(Message))
+                    Message = string.Empty;
+                else
+                    Message = Message.Trim();
                 BufferData data = new BufferData
                 {
                     Action = Action,
                     Message = Message,
-                    ReceivedTime = DateTime.Now
+                    ReceivedTime = bufferDataGroup.BufferRawData.ReceivedTime
                 };
                 BufferExtractStatus(data);
                 BufferExtractFields(data);
@@ -592,9 +599,9 @@ namespace GSM.Core.Source.Device
                             break;
                         }
 
-                    case BUFFER_ACTION.GSM_SIGNAL:
+                    case BUFFER_ACTION.GSM_SIGNAL_RESPONSE:
                         {
-                            Match match = _bufferSignalResultRegex.Match(data.Message);
+                            Match match = _bufferSignalResponseResultRegex.Match(data.Message);
                             if (match.Success)
                             {
                                 data.Detail.Add(match.Groups["rssi"].Value);
