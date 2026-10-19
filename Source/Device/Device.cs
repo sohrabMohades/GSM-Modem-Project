@@ -749,6 +749,18 @@ namespace GSM.Core.Source.Device
                 return FUNC_RESULT.SUCCESS;
             return FUNC_RESULT.FAIL;
         }
+        private FUNC_RESULT XXXExecuteReturn<T>(FUNC_RESULT Result1, FUNC_RESULT Result2, T InputValue1, T InputValue2)
+        {
+            if (Result1 == FUNC_RESULT.MAJOR_ERROR || Result2 == FUNC_RESULT.MAJOR_ERROR)
+                return FUNC_RESULT.MAJOR_ERROR;
+            if (this._runtimeConfig.EnableDoubleReadValidation)
+                if (Result1 == FUNC_RESULT.SUCCESS && Result2 == FUNC_RESULT.SUCCESS && EqualityComparer<T>.Default.Equals(InputValue1, InputValue2))
+                    return FUNC_RESULT.SUCCESS;
+                else
+                    return FUNC_RESULT.FAIL;
+            else
+                return Result1;
+        }
         private bool XXXOutput(BOOL_TYPE value)
         {
             return value == BOOL_TYPE.TRUE;

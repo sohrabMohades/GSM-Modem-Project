@@ -130,116 +130,81 @@ namespace GSM.Core.Source.Device
         {
             if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.UNKNOWN)
                 return FUNC_RESULT.MAJOR_ERROR;
-            //Variable Initial
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-            //End : Variable Initial
-
-            //Time Set and Check
-            if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW)
-                this._runtimeBuffer.BufferLastUpdatePerior = this._runtimeBuffer.BufferLastUpdate;
-            this._runtimeBuffer.BufferLastUpdate = DateTime.Now;
-            result = this.BufferTimeoutCheck(BufferUpdateSource , WorkFlowName);
+            result = this.BufferTimeoutCheck(BufferUpdateSource, WorkFlowName);
             if (result != FUNC_RESULT.SUCCESS)
                 return result;
-            //End : Time Set and Check
-
-            //Layer 1
-            result = this.BufferUpdateList();
-            //End : Layer 1
-
-            //Layer 2 -> if Analyze allow
-            if (result == FUNC_RESULT.SUCCESS && BufferUpdateSource != BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY)
-            {
-                result = this.BufferUpdateAnalyze(BufferUpdateSource, WorkFlowName);
-            }
-            //End : Layer 2 -> if Analyze allow
-
+            result = this.BufferUpdateList(BufferUpdateSource);
+            result = this.BufferUpdateAnalyze(result, BufferUpdateSource, WorkFlowName);
             return result;
         }
         //End : Buffer Update Main
         //Buffer Update List
-        private FUNC_RESULT BufferUpdateList()
+        private FUNC_RESULT BufferUpdateList(BUFFER_UPDATE_SOURCE BufferUpdateSource)
         {
-            //Variable Initial
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-            //End : Variable Initial
-
-            //Buffer Update Raw List -> Read ALL Buffer, ADD to BufferDataRaw(List), Clear Buffer. if any error happen Clear Buffer happen and Buffer Remove
-            result = this.BufferUpdateRawList();
-            //End : Buffer Update Raw List
-
-            //End : Buffer Update Data List
-            if (result == FUNC_RESULT.SUCCESS)
-                result = this.BufferUpdateDataList();
-            //Buffer Update Data List
-
+            result = this.BufferUpdateRawList(BufferUpdateSource);
+            result = this.BufferUpdateDataList(result);
             return result;
         }
         //Buffer Update RAW List
-        private FUNC_RESULT BufferUpdateRawList()
+        private FUNC_RESULT BufferUpdateRawList(BUFFER_UPDATE_SOURCE BufferUpdateSource)
         {
-            //Variable Initial
             bool tempBool = false;
             int bufferLastIndex = DeviceDefinitions.NUMBER_INVALID, tempInt = DeviceDefinitions.NUMBER_INVALID;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-            //End : Variable Initial
-
-            //get Buffer data and check data is available
             result = this.LastBufferIndexGetExecute((int)OPERATION_DELAY_MS.BUFFER_UPDATE, ref bufferLastIndex);
-            if (result == FUNC_RESULT.SUCCESS && bufferLastIndex > DeviceDefinitions.BUFFER_LAST_INDEX_INVALID)
-                result = FUNC_RESULT.SUCCESS;
-            else
-                result = FUNC_RESULT.FAIL;
-            if (result == FUNC_RESULT.SUCCESS)
-                result = this.BufferUpdateListCheck(result, bufferLastIndex);
-            //End : get Buffer data and check data is available
-
-            //ADD Buffer RAW List
-            if (result == FUNC_RESULT.SUCCESS)
-                result = this.BufferUpdateListSetData(result, bufferLastIndex);
-            //End : ADD Buffer RAW List
-
-            //Buffer Clear -> buffer must clear with any result
+            this.BufferUpdateTimeSet(result, BufferUpdateSource);
+            result = this.BufferUpdateListCheck(result, bufferLastIndex);
+            result = this.BufferUpdateListSetData(result, bufferLastIndex);
             if (result == FUNC_RESULT.SUCCESS)
                 result = this.BufferClearExecute((int)OPERATION_DELAY_MS.BUFFER_CLEAR);
             else
                 this.BufferClearExecute((int)OPERATION_DELAY_MS.BUFFER_CLEAR);
             this.XXXSetValue(result, false, false, ref tempBool, ref this._runtimeBuffer.BufferNewData, true);
             this.XXXSetValue(result, DeviceDefinitions.NUMBER_INVALID, DeviceDefinitions.NUMBER_INVALID, ref tempInt, ref this._runtimeBuffer.BufferLastIndex, true);
-            //End : Buffer Clear
-
             return result;
         }
         private FUNC_RESULT BufferUpdateListCheck(FUNC_RESULT Result, int BufferLastIndexNew)
         {
-            if (Result == FUNC_RESULT.SUCCESS && BufferLastIndexNew > DeviceDefinitions.NUMBER_INVALID)
-                return FUNC_RESULT.SUCCESS;
-            return FUNC_RESULT.FAIL;
+            if (Result == FUNC_RESULT.SUCCESS)
+                if (BufferLastIndexNew > DeviceDefinitions.BUFFER_LAST_INDEX_INVALID)
+                    return FUNC_RESULT.SUCCESS;
+                else
+                    return FUNC_RESULT.FAIL;
+            else
+                return Result;
         }
         private FUNC_RESULT BufferUpdateListSetData(FUNC_RESULT Result, int BufferLastIndex)
         {
             if (Result != FUNC_RESULT.SUCCESS)
-                return FUNC_RESULT.FAIL;
+                return Result;
             int countTry = 3;
             int bufferMessageLen = DeviceDefinitions.NUMBER_INVALID;
             string bufferMessage = DeviceDefinitions.STRING_INVALID;
             DateTime currentTime = DateTime.Now;
-            for (int i = 1; i <= BufferLastIndex; i++)
+            FUNC_RESULT resultTemp = FUNC_RESULT.UNKNOWN, result = FUNC_RESULT.FAIL;
+            for (int bufferIndex = 1; bufferIndex <= BufferLastIndex; bufferIndex++)
             {
-                FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-                for (int j = 0; j < countTry && result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR; j++)
-                    result = this.BufferMessageGetExecute((int)OPERATION_DELAY_MS.BUFFER_UPDATE_CONTINUE, i, ref bufferMessage, ref bufferMessageLen);
-                if (result == FUNC_RESULT.MAJOR_ERROR)
+                resultTemp = FUNC_RESULT.UNKNOWN;
+                for (int j = 0; j < countTry && resultTemp != FUNC_RESULT.SUCCESS && resultTemp != FUNC_RESULT.MAJOR_ERROR; j++)
+                    resultTemp = this.BufferMessageGetExecute((int)OPERATION_DELAY_MS.BUFFER_UPDATE_CONTINUE, bufferIndex, ref bufferMessage, ref bufferMessageLen);
+                if (resultTemp == FUNC_RESULT.MAJOR_ERROR)
                     return FUNC_RESULT.MAJOR_ERROR;
-                else if (result == FUNC_RESULT.SUCCESS)
+                else if (resultTemp == FUNC_RESULT.SUCCESS)
+                {
                     this._runtimeBuffer.BufferDataRaw.Add(new BufferRawData { Message = bufferMessage, MessageLen = bufferMessageLen, ReceivedTime = currentTime });
+                    result = FUNC_RESULT.SUCCESS;
+                }
             }
-            return FUNC_RESULT.SUCCESS;
+            return result;
         }
         //End : Buffer Update RAW List
         //Buffer Update Data List
-        private FUNC_RESULT BufferUpdateDataList()
+        private FUNC_RESULT BufferUpdateDataList(FUNC_RESULT Result)
         {
+            if (Result != FUNC_RESULT.SUCCESS)
+                return Result;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             for (int i = this._runtimeBuffer.BufferDataRaw.Count -1 ; i >= 0; i--)
             {
@@ -252,9 +217,11 @@ namespace GSM.Core.Source.Device
         //End : Buffer Update Data List
         //End : Buffer Update List
         //Buffer Update Analyze
-        private FUNC_RESULT BufferUpdateAnalyze(BUFFER_UPDATE_SOURCE BufferUpdateSource, string WorkFlowName)
+        private FUNC_RESULT BufferUpdateAnalyze(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, string WorkFlowName)
         {
-            if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY)
+            if (Result != FUNC_RESULT.SUCCESS)
+                return Result;
+            else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY)
                 return FUNC_RESULT.SUCCESS;
             else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW || BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START)
                 return this.BufferUpdateAnalyzeWorkFlow(WorkFlowName);
@@ -296,14 +263,22 @@ namespace GSM.Core.Source.Device
         }
         //End : Buffer Update Analyze
         //Buffer TimeOut Check
+        private void BufferUpdateTimeSet(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource)
+        {
+            if (Result != FUNC_RESULT.SUCCESS)
+                return;
+            this._runtimeBuffer.BufferLastUpdate = DateTime.Now;
+            if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW)
+                this._runtimeBuffer.BufferLastUpdatePerior = this._runtimeBuffer.BufferLastUpdate;
+        }
         private FUNC_RESULT BufferTimeoutCheck(BUFFER_UPDATE_SOURCE BufferUpdateSource, string WorkFlowName)
         {
             if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW)
                 return FUNC_RESULT.SUCCESS;
-            
-            int timeout = (int)(this._runtimeBuffer.BufferLastUpdate - this._runtimeBuffer.BufferLastUpdatePerior).TotalMilliseconds;
+            int timeout = (int)(DateTime.Now - this._runtimeBuffer.BufferLastUpdatePerior).TotalMilliseconds;
             if (timeout > this._runtimeConfig.TimeoutMaxMs)
                 return FUNC_RESULT.MAJOR_ERROR;
+            
             switch (WorkFlowName)
             {
                 case nameof(this.DeviceSelectByIndexExecute):
