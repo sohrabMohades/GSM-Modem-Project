@@ -21,10 +21,10 @@ namespace GSM.Core.Source.Common
         //SIM Status Type
         public enum SIM_STATUS
         {
-            IDENTITY_ERROR = 0,
-            PIN_PUK_ERROR = 1,
-            READY = 2,
-            UNKHOWN_ERROR = 3
+            UNKHOWN = 0,
+            IDENTITY_ERROR = 1,
+            PIN_PUK_ERROR = 2,
+            READY = 3,
         }
         //End : SIM Status Type
         //SMS Type

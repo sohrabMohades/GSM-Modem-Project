@@ -20,20 +20,15 @@ namespace GSM.Core.Source.Device
         {
             try
             {
-                if (this._dllWrapper.ErrorCode == DllWrapper.ERROR_CODE.NO_ERROR)
-                {
-                    return funcResult;
-                }
+                if (this._dllWrapper.ErrorCode == DllWrapper.ERROR_CODE.NO_ERROR) return funcResult;
                 else
                 {
-                    this.DllWrapperErrorCheckSetValue(this._dllWrapper.ErrorMessage);
-                    return FUNC_RESULT.MAJOR_ERROR;
+                    this.DllWrapperErrorCheckSetValue(this._dllWrapper.ErrorMessage); return FUNC_RESULT.MAJOR_ERROR;
                 }
             }
             catch (Exception ex)
             {
-                this.DllWrapperErrorCheckSetValue(ex.Message);
-                return FUNC_RESULT.MAJOR_ERROR;
+                this.DllWrapperErrorCheckSetValue(ex.Message); return FUNC_RESULT.MAJOR_ERROR;
             }
         }
         private void DllWrapperErrorCheckSetValue(string error)
@@ -46,17 +41,6 @@ namespace GSM.Core.Source.Device
             this._state.ErrorCode = ErrorCode;
             this._state.ErrorMessage = ErrorMessage;
             return false;
-        }
-        private bool BaseErrorCheck()
-        {
-            if (this._state.ErrorCode == ERROR_CODE.DLL_WRAPPER || this._state.ErrorCode == ERROR_CODE.INVALID_INPUT)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
         }
         //Error Manager
         //Busy Flag manager
@@ -76,14 +60,8 @@ namespace GSM.Core.Source.Device
         }
         private bool TimeOutEnd()
         {
-            if ((DateTime.Now - this._runtimeInfo.TimeOutCounter).TotalMilliseconds >= this._runtimeConfig.TimeoutMaxMs)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            if ((DateTime.Now - this._runtimeInfo.TimeOutCounter).TotalMilliseconds >= this._runtimeConfig.TimeoutMaxMs) return true;
+            else return false;
         }
         //End : Timeout
         //Internal Status
@@ -91,23 +69,11 @@ namespace GSM.Core.Source.Device
         {
             if (FuncName == nameof(this.DeviceNumberChange))
             {
-                if ((int)this._state.InternalStatus == (int)MinStatusNeed)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                if ((int)this._state.InternalStatus == (int)MinStatusNeed) return true;
+                else return false;
             }
-            if ((int)this._state.InternalStatus >= (int)MinStatusNeed)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            if ((int)this._state.InternalStatus >= (int)MinStatusNeed) return true;
+            else return false;
         }
         private void InternalStatusUpdate()
         {

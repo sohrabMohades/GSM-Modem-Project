@@ -87,22 +87,23 @@ namespace GSM.Core.Source.Device
         //Device Select Type
         private enum REFRESH_RESULT
         {
-            UNKNOWN_ERROR = 0,
-            DEVICE_NOT_SELECT = 1,
-            DEVICE_NUMBER_CHANGED = 2,
-            POWER_OFF = 3,
-            RESTART_NEED = 4,
-            SIM_NOT_READY = 5,
-            SUCCEED = 6
+            SUCCEED = 0,
+            MINOR_ERROR = 1,
+            POWER_OFF_AND_RESTART = 2,
+            SIM_NOT_READY = 3,
+            DEVICE_NOT_SELECT = 4,
+            DEVICE_NUMBER_CHANGED = 5,
+            UNKNOWN_ERROR = 5,
+            UNKNOWN = 5
         }
         //End : Refresh Result
         //Enum Function Result
         private enum FUNC_RESULT
         {
-            UNKNOWN = 0,
-            SUCCESS = 1,
-            FAIL = 2,
-            MAJOR_ERROR = 3
+            UNKNOWN,
+            SUCCESS,
+            FAIL,
+            MAJOR_ERROR
         }
         //End : Enum Function Result
         //Enum Operation execute Delay ms
@@ -257,12 +258,12 @@ namespace GSM.Core.Source.Device
         //class Device Runtime Configuration
         private sealed class DeviceRuntimeConfiguration
         {
-            public bool BufferCheck = true;
+            public bool BufferCheck = false;
             public int SignalMinAcceptableValue = 10;
             public bool EnableDoubleReadValidation = false;
             public bool TimeoutCheck = true;
             public int TimeoutMaxMs = 30000;
-            public bool PowerON2TimeCheck = true;
+            public bool PowerONDoubleCheck = true;
         }
         //End : class Device Runtime Configuration
         //End : Group 2 : Flags & Counters & information & configuration
@@ -293,7 +294,7 @@ namespace GSM.Core.Source.Device
         //SIM
         private sealed class DeviceRuntimePropertiesSIM
         {
-            public DeviceDefinitions.SIM_STATUS SIMStatus = DeviceDefinitions.SIM_STATUS.UNKHOWN_ERROR;
+            public DeviceDefinitions.SIM_STATUS SIMStatus = DeviceDefinitions.SIM_STATUS.UNKHOWN;
             public string SIMID = DeviceDefinitions.STRING_INVALID;
             public string NationalMobileID = DeviceDefinitions.STRING_INVALID;
         }

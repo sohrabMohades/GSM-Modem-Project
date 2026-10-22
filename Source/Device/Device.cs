@@ -749,22 +749,49 @@ namespace GSM.Core.Source.Device
                 return FUNC_RESULT.SUCCESS;
             return FUNC_RESULT.FAIL;
         }
-        private FUNC_RESULT XXXExecuteReturn<T>(FUNC_RESULT Result1, FUNC_RESULT Result2, T InputValue1, T InputValue2)
+        private FUNC_RESULT XXXExecuteReturn<T>(bool DoubleCheck, FUNC_RESULT Result1, FUNC_RESULT Result2, ref T InputValue1, T InputValue2, T InvalidValue)
         {
             if (Result1 == FUNC_RESULT.MAJOR_ERROR || Result2 == FUNC_RESULT.MAJOR_ERROR)
                 return FUNC_RESULT.MAJOR_ERROR;
-            if (this._runtimeConfig.EnableDoubleReadValidation)
+            if (DoubleCheck)
                 if (Result1 == FUNC_RESULT.SUCCESS && Result2 == FUNC_RESULT.SUCCESS && EqualityComparer<T>.Default.Equals(InputValue1, InputValue2))
                     return FUNC_RESULT.SUCCESS;
                 else
+                {
+                    InputValue1 = InvalidValue;
                     return FUNC_RESULT.FAIL;
+                }
             else
                 return Result1;
         }
         private bool XXXOutput(BOOL_TYPE value)
         {
             return value == BOOL_TYPE.TRUE;
-        }       
+        }
+        private BOOL_TYPE BoolType(FUNC_RESULT FuncResult, bool ResultBool)
+        {
+            if (FuncResult == FUNC_RESULT.SUCCESS && ResultBool)
+                return BOOL_TYPE.TRUE;
+            else 
+                return BOOL_TYPE.FALSE;
+        }
+        private FUNC_RESULT XXXBufferCheck(ref BUFFER_UPDATE_SOURCE BufferUpdateSource, string FuncName)
+        {
+            FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
+            do
+            {
+                result = this.BufferUpdate(BufferUpdateSource, FuncName);
+                if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW && BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW_START)
+                    break;
+            }
+            while (result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR);
+
+            if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY)
+                BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
+            else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START)
+                BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW;
+            return result;
+        }
         //End : Device Helper
         //End : Helper
     }

@@ -444,7 +444,7 @@ namespace GSM.Core.Source.DllWrapper
                     }
                     else
                     {
-                        simStatus = DeviceDefinitions.SIM_STATUS.UNKHOWN_ERROR;
+                        simStatus = DeviceDefinitions.SIM_STATUS.UNKHOWN;
                         return false;
                     }
                 }
