@@ -30,13 +30,12 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             BOOL_TYPE resultBool = BOOL_TYPE.FALSE;
             ResultBool = BOOL_TYPE.UNKNOWN;
-            while (loopCount > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS || ResultBool != BOOL_TYPE.TRUE || resultBool != BOOL_TYPE.TRUE))
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS || ResultBool != BOOL_TYPE.TRUE || resultBool != BOOL_TYPE.TRUE))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS || ResultBool != BOOL_TYPE.TRUE) funcResult1 = this.GSMPowerGetBase(ref ResultBool);
                 else if (this._runtimeConfig.PowerONDoubleCheck) funcResult2 = this.GSMPowerGetBase(ref resultBool);
                 else break;
-                loopCount--;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult2 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.PowerONDoubleCheck, funcResult1, funcResult2, ref ResultBool, resultBool, BOOL_TYPE.FALSE);
@@ -105,12 +104,11 @@ namespace GSM.Core.Source.Device
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             ResultBool = BOOL_TYPE.UNKNOWN;
-            while (loopCount > 0 && (result != FUNC_RESULT.SUCCESS || ResultBool != BOOL_TYPE.TRUE))
+            while (loopCount-- > 0 && (result != FUNC_RESULT.SUCCESS || ResultBool != BOOL_TYPE.TRUE))
             {
                 Thread.Sleep(Delay);
                 result = this.GSMIsConnectBase(ref ResultBool);
                 if (result == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
-                loopCount--;
             }
             return result;
         }
@@ -146,13 +144,12 @@ namespace GSM.Core.Source.Device
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             BOOL_TYPE resultBool = BOOL_TYPE.FALSE;
-            while (loopCount > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS || ResultBool != BOOL_TYPE.TRUE || resultBool != BOOL_TYPE.TRUE))
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS || ResultBool != BOOL_TYPE.TRUE || resultBool != BOOL_TYPE.TRUE))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS || ResultBool != BOOL_TYPE.TRUE) funcResult1 = this.GSMIsReadyBase(ref ResultBool);
                 else if (this._runtimeConfig.PowerONDoubleCheck) funcResult2 = this.GSMIsReadyBase(ref resultBool);
                 else break;
-                loopCount--;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult2 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref ResultBool, resultBool, BOOL_TYPE.FALSE);
@@ -191,7 +188,7 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             string imei = DeviceDefinitions.STRING_INVALID;
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
-            while (loopCount > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS)
@@ -200,7 +197,6 @@ namespace GSM.Core.Source.Device
                 }
                 else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.IMEIGetBase(ref imei);
                 else break;
-                loopCount--;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref IMEI, imei, DeviceDefinitions.STRING_INVALID);
@@ -244,7 +240,7 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             string softwareVersion = DeviceDefinitions.STRING_INVALID;
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
-            while (loopCount > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS)
@@ -253,7 +249,6 @@ namespace GSM.Core.Source.Device
                 }
                 else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.SoftwareVersionGetBase(ref softwareVersion);
                 else break;
-                loopCount--;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref SoftwareVersion, softwareVersion, DeviceDefinitions.STRING_INVALID);
@@ -287,7 +282,7 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             string deviceInformation = DeviceDefinitions.STRING_INVALID;
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
-            while (loopCount > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS)
@@ -296,7 +291,6 @@ namespace GSM.Core.Source.Device
                 }
                 else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.DeviceInformationGetBase(ref deviceInformation);
                 else break;
-                loopCount--;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref DeviceInformation, deviceInformation, DeviceDefinitions.STRING_INVALID);
@@ -333,7 +327,7 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             string simID = DeviceDefinitions.STRING_INVALID;
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
-            while (loopCount > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS)
@@ -342,7 +336,6 @@ namespace GSM.Core.Source.Device
                 }
                 else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.SimIDGetBase(ref simID);
                 else break;
-                loopCount--;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref SimID, simID, DeviceDefinitions.STRING_INVALID);
@@ -386,7 +379,7 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             string nationalMobileID = DeviceDefinitions.STRING_INVALID;
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
-            while (loopCount > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS)
@@ -395,7 +388,6 @@ namespace GSM.Core.Source.Device
                 }
                 else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.NationalMobileIDGetBase(ref nationalMobileID);
                 else break;
-                loopCount--;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref NationalMobileID, nationalMobileID, DeviceDefinitions.STRING_INVALID);
@@ -439,7 +431,7 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             DeviceDefinitions.SIM_STATUS simStatus = DeviceDefinitions.SIM_STATUS.UNKHOWN;
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
-            while (loopCount > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS)
@@ -448,7 +440,6 @@ namespace GSM.Core.Source.Device
                 }
                 else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.SimStatusGetBase(ref simStatus);
                 else break;
-                loopCount--;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref SimStatus, simStatus, DeviceDefinitions.SIM_STATUS.IDENTITY_ERROR);
@@ -493,11 +484,10 @@ namespace GSM.Core.Source.Device
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
-            while (loopCount > 0 && funcResult != FUNC_RESULT.SUCCESS)
+            while (loopCount-- > 0 && funcResult != FUNC_RESULT.SUCCESS)
             {
                 Thread.Sleep(Delay);
                 funcResult = this.SignalGetBase(ref Signal);
-                loopCount--;
                 if (funcResult == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return funcResult;
@@ -541,7 +531,7 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             string smsCenter = DeviceDefinitions.STRING_INVALID;
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
-            while (loopCount > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS)
@@ -550,7 +540,6 @@ namespace GSM.Core.Source.Device
                 }
                 else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.SMSCenterGetBase(ref smsCenter);
                 else break;
-                loopCount--;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref SmsCenter, smsCenter, DeviceDefinitions.STRING_INVALID);
@@ -614,13 +603,12 @@ namespace GSM.Core.Source.Device
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             string networkName = DeviceDefinitions.STRING_INVALID;
-            while (loopCount > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS) funcResult1 = this.NetworkNameGetBase(ref NetworkName);
                 else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.NetworkNameGetBase(ref networkName);
                 else break;
-                loopCount--;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref NetworkName, networkName, DeviceDefinitions.STRING_INVALID);
@@ -687,7 +675,7 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             string dateTime = DeviceDefinitions.STRING_INVALID;
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
-            while (loopCount > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS)
@@ -696,7 +684,6 @@ namespace GSM.Core.Source.Device
                 }
                 else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.GSMDateTimeGetBase(ref dateTime);
                 else break;
-                loopCount--;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             //dateTime2 = dateTime1 + x , because we read new data after delay and time increase
@@ -769,102 +756,63 @@ namespace GSM.Core.Source.Device
         //GSM Status Get
         private FUNC_RESULT GSMStatusGetWorkflow(ref DeviceDefinitions.GSM_STATUS GsmStatus, ref int GsmStatusValue, ref string GsmStatusMessage, bool InternalValueSet)
         {
-            FUNC_RESULT result = FUNC_RESULT.UNKNOWN, result1 = FUNC_RESULT.UNKNOWN, result2 = FUNC_RESULT.UNKNOWN;
-            DeviceDefinitions.GSM_STATUS gsmStatus1 = DeviceDefinitions.GSM_STATUS.ERROR, gsmStatus2 = DeviceDefinitions.GSM_STATUS.ERROR;
-            int gsmStatusValue1 = DeviceDefinitions.NUMBER_INVALID, gsmStatusValue2 = DeviceDefinitions.NUMBER_INVALID;
-            string gsmStatusMessage1 = DeviceDefinitions.STRING_INVALID, gsmStatusMessage2 = DeviceDefinitions.STRING_INVALID;
-            result = this.GSMStatusGetExecute((int)TRY_COUNT.NORMAL, (int)OPERATION_DELAY_MS.NORMAL_SHORT, ref result1, ref result2, ref gsmStatus1, ref gsmStatus2,
-                                              ref gsmStatusValue1, ref gsmStatusValue2, ref gsmStatusMessage1, ref gsmStatusMessage2);
-            result = this.XXXCheck(result, result1, result2, gsmStatus1, gsmStatus2);
-            this.XXXSetValue(result, gsmStatus1, DeviceDefinitions.GSM_STATUS.UNKHOWN, ref GsmStatus, ref this._runtimeHardware.GsmStatus, InternalValueSet);
-            this.XXXSetValue(result, gsmStatusValue1, DeviceDefinitions.NUMBER_INVALID, ref GsmStatusValue, ref this._runtimeHardware.GsmStatusValue, InternalValueSet);
-            this.XXXSetValue(result, gsmStatusMessage1, DeviceDefinitions.STRING_INVALID, ref GsmStatusMessage, ref this._runtimeHardware.GsmStatusMessage, InternalValueSet);
+            FUNC_RESULT result = FUNC_RESULT.SUCCESS;
+            result = this.GSMStatusGetExecute(result, (int)TRY_COUNT.NORMAL, (int)OPERATION_DELAY_MS.NORMAL_SHORT, ref GsmStatus, ref GsmStatusValue, ref GsmStatusMessage);
+            this.XXXSetValue(result, GsmStatus, DeviceDefinitions.GSM_STATUS.UNKHOWN, ref GsmStatus, ref this._runtimeHardware.GsmStatus, InternalValueSet);
+            this.XXXSetValue(result, GsmStatusValue, DeviceDefinitions.NUMBER_INVALID, ref GsmStatusValue, ref this._runtimeHardware.GsmStatusValue, InternalValueSet);
+            this.XXXSetValue(result, GsmStatusMessage, DeviceDefinitions.STRING_INVALID, ref GsmStatusMessage, ref this._runtimeHardware.GsmStatusMessage, InternalValueSet);
             return result;
         }
-        private FUNC_RESULT GSMStatusGetExecute(int loopCount, int Delay, ref FUNC_RESULT Result1, ref FUNC_RESULT Result2, ref DeviceDefinitions.GSM_STATUS GsmStatus1,
-                                                ref DeviceDefinitions.GSM_STATUS GsmStatus2, ref int GsmStatusValue1, ref int GsmStatusValue2,
-                                                ref string GsmStatusMessage1, ref string GsmStatusMessage2)
+        private FUNC_RESULT GSMStatusGetExecute(FUNC_RESULT Result, int loopCount, int Delay, ref DeviceDefinitions.GSM_STATUS GsmStatus, ref int GsmStatusValue, ref string GsmStatusMessage)
         {
-            int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
-            if (!this._runtimeConfig.EnableDoubleReadValidation)
-            {
-                Result2 = FUNC_RESULT.SUCCESS;
-            }
-            while (loopCount > 0 && (Result1 != FUNC_RESULT.SUCCESS || Result2 != FUNC_RESULT.SUCCESS))
+            if (Result != FUNC_RESULT.SUCCESS) return Result;
+            FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
+            DeviceDefinitions.GSM_STATUS gsmStatus = DeviceDefinitions.GSM_STATUS.UNKHOWN;
+            int gsmStatusValue = DeviceDefinitions.NUMBER_INVALID, resultCount = (int)FAIL_LIMIT.NUM_ERROR;
+            ;
+            string gsmStatusMessage = DeviceDefinitions.STRING_INVALID;
+            while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
-                if (Result1 != FUNC_RESULT.SUCCESS)
-                {
-                    Result1 = this.GSMStatusGetBase(ref GsmStatus1, ref GsmStatusValue1, ref GsmStatusMessage1);
-                    if (Result1 != FUNC_RESULT.SUCCESS)
-                    {
-                        resultCount--;
-                        if (resultCount <= 0)
-                        {
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    Result2 = this.GSMStatusGetBase(ref GsmStatus2, ref GsmStatusValue2, ref GsmStatusMessage2);
-                }
-                loopCount--;
-                if (Result1 == FUNC_RESULT.MAJOR_ERROR || Result2 == FUNC_RESULT.MAJOR_ERROR)
-                {
-                    return FUNC_RESULT.MAJOR_ERROR;
-                }
+                if (funcResult1 != FUNC_RESULT.SUCCESS) funcResult1 = this.GSMStatusGetBase(ref GsmStatus, ref GsmStatusValue, ref GsmStatusMessage);
+                    if (funcResult1 != FUNC_RESULT.SUCCESS && --resultCount <= 0) break;
+                else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.GSMStatusGetBase(ref gsmStatus, ref gsmStatusValue, ref gsmStatusMessage);
+                else break;
+                if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
-            //1 result get or 2 result get and check 1 and 2
-            if (!this._runtimeConfig.EnableDoubleReadValidation)
-            {
-                GsmStatus2 = GsmStatus1;
-                GsmStatusValue2 = GsmStatusValue1;
-                GsmStatusMessage2 = GsmStatusMessage1;
-            }
-            return FUNC_RESULT.SUCCESS;
+            this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref GsmStatusValue, gsmStatusValue, DeviceDefinitions.NUMBER_INVALID);
+            this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref GsmStatusMessage, gsmStatusMessage, DeviceDefinitions.STRING_INVALID);
+            return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref GsmStatus, gsmStatus, DeviceDefinitions.GSM_STATUS.ERROR);
         }
         private FUNC_RESULT GSMStatusGetBase(ref DeviceDefinitions.GSM_STATUS GsmStatus, ref int GsmStatusValue, ref string GsmStatusMessage)
         {
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             int gsmStatusValue = (int)DeviceDefinitions.GSM_STATUS.ERROR;
             string gsmStatusMessage = DeviceDefinitions.STRING_INVALID;
-            result = this.GSMStatusGetBaseDll(ref gsmStatusValue, ref gsmStatusMessage);
-            if (result == FUNC_RESULT.SUCCESS)
-            {
-                result = this.GSMStatusGetBaseCheck(gsmStatusValue);
-            }
+            result = this.GSMStatusGetBaseDll(result, ref gsmStatusValue, ref gsmStatusMessage);
+            result = this.GSMStatusGetBaseCheck(result, gsmStatusValue);
             this.GSMStatusGetBaseSetValue(result, gsmStatusValue, gsmStatusMessage,
                                               ref GsmStatus, ref GsmStatusValue, ref GsmStatusMessage);
             return result;
         }
-        private FUNC_RESULT GSMStatusGetBaseDll(ref int GsmStatusValue, ref string GsmStatusMessage)
+        private FUNC_RESULT GSMStatusGetBaseDll(FUNC_RESULT Result, ref int GsmStatusValue, ref string GsmStatusMessage)
         {
-            if (this._dllWrapper.GsmStatus(ref GsmStatusValue, out GsmStatusMessage))
-                return FUNC_RESULT.SUCCESS;
-            if (this.DllWrapperHasError(FUNC_RESULT.SUCCESS) == FUNC_RESULT.MAJOR_ERROR)
-                return FUNC_RESULT.MAJOR_ERROR;
-            this.ErrorSet(ERROR_CODE.GSM_STATUS, "GSM Status = " + GsmStatusValue.ToString() + " - GSM Message = " + GsmStatusMessage);
-            return FUNC_RESULT.FAIL;
+            if (Result != FUNC_RESULT.SUCCESS) return Result;
+            if (this._dllWrapper.GsmStatus(ref GsmStatusValue, out GsmStatusMessage)) return FUNC_RESULT.SUCCESS;
+            if (this.DllWrapperHasError(FUNC_RESULT.SUCCESS) == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
+            this.ErrorSet(ERROR_CODE.GSM_STATUS, "GSM Status = " + GsmStatusValue.ToString() + " - GSM Message = " + GsmStatusMessage); return FUNC_RESULT.FAIL;
         }
-        private FUNC_RESULT GSMStatusGetBaseCheck(int GsmStatusValue)
+        private FUNC_RESULT GSMStatusGetBaseCheck(FUNC_RESULT Result, int GsmStatusValue)
         {
+            if (Result != FUNC_RESULT.SUCCESS) return Result;
             try
             {
-                if (GsmStatusValue == (int)DeviceDefinitions.GSM_STATUS.READY || GsmStatusValue == (int)DeviceDefinitions.GSM_STATUS.STARTUP)
-                {
-                    return FUNC_RESULT.SUCCESS;
-                }
-                else
-                {
-                    this.ErrorSet(ERROR_CODE.GSM_STATUS, "Gsm Status Value = " + GsmStatusValue);
-                    return FUNC_RESULT.FAIL;
-                }
+                if (GsmStatusValue == (int)DeviceDefinitions.GSM_STATUS.READY || GsmStatusValue == (int)DeviceDefinitions.GSM_STATUS.STARTUP) return FUNC_RESULT.SUCCESS;
+                else { this.ErrorSet(ERROR_CODE.GSM_STATUS, "Gsm Status Value = " + GsmStatusValue); return FUNC_RESULT.FAIL; }
             }
             catch (Exception ex)
             {
-                this.ErrorSet(ERROR_CODE.GSM_STATUS, "GSMStatusGetBaseCheck Error : " + ex.Message);
-                return FUNC_RESULT.FAIL;
+                this.ErrorSet(ERROR_CODE.GSM_STATUS, "GSMStatusGetBaseCheck Error : " + ex.Message); return FUNC_RESULT.FAIL;
             }
         }
         private void GSMStatusGetBaseSetValue(FUNC_RESULT FuncResult, int GsmStatusValueNewValue, string GsmStatusMessageNewValue, ref DeviceDefinitions.GSM_STATUS GsmStatus,
@@ -872,29 +820,8 @@ namespace GSM.Core.Source.Device
         {
             GsmStatusValue = GsmStatusValueNewValue;
             GsmStatusMessage = GsmStatusMessageNewValue;
-            if (FuncResult != FUNC_RESULT.SUCCESS)
-            {
-                GsmStatus = DeviceDefinitions.GSM_STATUS.UNKHOWN;
-                return;
-            }
-            switch (GsmStatusValueNewValue)
-            {
-                case (int)DeviceDefinitions.GSM_STATUS.READY:
-                    GsmStatus = DeviceDefinitions.GSM_STATUS.READY;
-                    break;
-
-                case (int)DeviceDefinitions.GSM_STATUS.STARTUP:
-                    GsmStatus = DeviceDefinitions.GSM_STATUS.STARTUP;
-                    break;
-
-                case (int)DeviceDefinitions.GSM_STATUS.ERROR:
-                    GsmStatus = DeviceDefinitions.GSM_STATUS.ERROR;
-                    break;
-
-                default:
-                    GsmStatus = DeviceDefinitions.GSM_STATUS.UNKHOWN;
-                    break;
-            }
+            GsmStatus = (FuncResult != FUNC_RESULT.SUCCESS) ? (DeviceDefinitions.GSM_STATUS.ERROR) : ((Enum.IsDefined(typeof(DeviceDefinitions.GSM_STATUS), GsmStatusValueNewValue)) ?
+                ((DeviceDefinitions.GSM_STATUS)GsmStatusValueNewValue) : (DeviceDefinitions.GSM_STATUS.ERROR));
         }
         //End : GSM Status Get
         //End : Property -> UnKnown level
@@ -971,7 +898,7 @@ namespace GSM.Core.Source.Device
             refreshResult = this.DeviceRefreshComplexWorkFlowHelperCheck(result, refreshResult);
             //End : Device Information Get
             //GSM Status Get -> GSMStatus result NOT Trustable, only update
-            this.GSMStatusGetWorkflow(ref tempGsmStatus, ref tempInt, ref tempStr, true);
+            result = this.GSMStatusGetWorkflow(ref tempGsmStatus, ref tempInt, ref tempStr, true);
             //End : GSM Status Get
             //End : Hardware Data Get
 

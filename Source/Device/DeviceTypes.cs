@@ -127,14 +127,15 @@ namespace GSM.Core.Source.Device
             FAST = 3,
             NORMAL = 5,
             POWER = 10,
-            NETWORK_DATA = 30
+            NETWORK_DATA = 30,
+            BUFFER_CHECK = 2
         }
         //End : Enum Try Read times
         //Try Fail read limitation
         private enum FAIL_LIMIT
         {
             NUM_ERROR = 3,
-            DEVICE_NUM_ERROR = 2,
+            DEVICE_NUM_ERROR = 2
         }
         //End : Try Fail read limitation
         private enum BUFFER_TIME_OUT_MS

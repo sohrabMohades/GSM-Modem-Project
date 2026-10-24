@@ -20,7 +20,7 @@ namespace GSM.Core.Source.Device
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             FUNC_RESULT result1 = FUNC_RESULT.UNKNOWN, result2 = FUNC_RESULT.UNKNOWN;
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR, deviceCount = DeviceDefinitions.NUMBER_INVALID;
-            while (loopCount > 0 && (result1 != FUNC_RESULT.SUCCESS || result2 != FUNC_RESULT.SUCCESS))
+            while (loopCount-- > 0 && (result1 != FUNC_RESULT.SUCCESS || result2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (result1 != FUNC_RESULT.SUCCESS)
@@ -29,7 +29,6 @@ namespace GSM.Core.Source.Device
                 }
                 else if (this._runtimeConfig.EnableDoubleReadValidation) result2 = this.DeviceCountGetBase(ref deviceCount);
                 else break;
-                loopCount--;
                 if (result1 == FUNC_RESULT.MAJOR_ERROR || result2 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, result1, result2, ref DeviceCount, deviceCount, DeviceDefinitions.NUMBER_INVALID);
@@ -175,17 +174,12 @@ namespace GSM.Core.Source.Device
         {
             FUNC_RESULT result1 = FUNC_RESULT.UNKNOWN, result2 = FUNC_RESULT.UNKNOWN;
             int deviceNumber = DeviceDefinitions.NUMBER_INVALID;
-            int resultCount = (int)FAIL_LIMIT.DEVICE_NUM_ERROR;
-            while (loopCount > 0 && (result1 != FUNC_RESULT.SUCCESS || result2 != FUNC_RESULT.SUCCESS))
+            while (loopCount-- > 0 && (result1 != FUNC_RESULT.SUCCESS || result2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
-                if (result1 != FUNC_RESULT.SUCCESS)
-                {
-                    result1 = this.DeviceNumberGetBase(ref DeviceNumber); if (result1 != FUNC_RESULT.SUCCESS && --resultCount <= 0) break;
-                }
+                if (result1 != FUNC_RESULT.SUCCESS) result1 = this.DeviceNumberGetBase(ref DeviceNumber);
                 else if (this._runtimeConfig.EnableDoubleReadValidation) result2 = this.DeviceNumberGetBase(ref deviceNumber);
                 else break;
-                loopCount--;
                 if (result1 == FUNC_RESULT.MAJOR_ERROR || result2 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, result1, result2, ref DeviceNumber, deviceNumber, DeviceDefinitions.NUMBER_INVALID);
@@ -193,31 +187,21 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT DeviceNumberGetExecuteBufferCheck(int loopCount, int Delay, ref int DeviceNumber)
         {
             BUFFER_UPDATE_SOURCE bufferUpdateSource = BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY;
-            FUNC_RESULT result1 = FUNC_RESULT.UNKNOWN, result2 = FUNC_RESULT.UNKNOWN;
-            int deviceNumber = DeviceDefinitions.NUMBER_INVALID;
-            int resultCount = (int)FAIL_LIMIT.DEVICE_NUM_ERROR;
-            while (loopCount > 0 && (result1 != FUNC_RESULT.SUCCESS || result2 != FUNC_RESULT.SUCCESS))
+            FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
+            int resultCount = (int)FAIL_LIMIT.BUFFER_CHECK;
+            while (loopCount-- > 0 && result != FUNC_RESULT.SUCCESS)
             {
                 Thread.Sleep(Delay);
-                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY)
-                    this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.DeviceSelectByIndexExecute));
-                if (result1 != FUNC_RESULT.SUCCESS)
+                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.DeviceNumberGetExecuteBufferCheck));
+                if (result != FUNC_RESULT.SUCCESS)
                 {
-                    result1 = this.DeviceNumberGetBase(ref DeviceNumber);
-                    if (result1 != FUNC_RESULT.SUCCESS && --resultCount <= 0)
-                        break;
-                    else
-                        result1 = this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.DeviceNumberGetExecuteBufferCheck));
+                    result = this.DeviceNumberGetBase(ref DeviceNumber);
+                    if (result != FUNC_RESULT.SUCCESS && --resultCount <= 0) break;
+                    else if(result == FUNC_RESULT.SUCCESS) result = this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.DeviceNumberGetExecuteBufferCheck));
                 }
-                else if (this._runtimeConfig.EnableDoubleReadValidation)
-                    result2 = this.DeviceNumberGetBase(ref deviceNumber);
-                else
-                    break;
-                loopCount--;
-                if (result1 == FUNC_RESULT.MAJOR_ERROR || result2 == FUNC_RESULT.MAJOR_ERROR)
-                    return FUNC_RESULT.MAJOR_ERROR;
+                if (result == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
-            return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, result1, result2, ref DeviceNumber, deviceNumber, DeviceDefinitions.NUMBER_INVALID);
+            return result;
         }
         private FUNC_RESULT DeviceNumberGetBase(ref int DeviceNumber)
         {
