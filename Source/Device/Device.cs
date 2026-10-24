@@ -470,6 +470,7 @@ namespace GSM.Core.Source.Device
                 }
             }
         }
+        /*
         public DeviceDefinitions.GSM_STATUS GsmStatus
         {
             get => this._runtimeHardware.GsmStatus;
@@ -482,6 +483,7 @@ namespace GSM.Core.Source.Device
         {
             get => this._runtimeHardware.GsmStatusMessage;
         }
+        */
         public DeviceDefinitions.SIM_STATUS SimStatus
         {
             get => this._runtimeSim.SIMStatus;
@@ -766,13 +768,20 @@ namespace GSM.Core.Source.Device
             do
             {
                 result = this.BufferUpdate(BufferUpdateSource, FuncName);
-                if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW && BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW_START) break;
+                if (FuncName == nameof(this.BufferModemStartupReadyCheck) && result == FUNC_RESULT.SUCCESS)
+                    if (!this._runtimeInfo.GsmStatus.ModemStartup)
+                    { this._runtimeInfo.GsmStatus.ModemStartup = true; BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START; result = FUNC_RESULT.FAIL; }
+                    else if (!this._runtimeInfo.GsmStatus.ModemReady) this._runtimeInfo.GsmStatus.ModemReady = true;
+                if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START) BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW;
             }
-            while (result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR);
-
+            while (result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR && (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW || BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START));
             if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
-            else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START) BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW;
             return result;
+        }
+        private FUNC_RESULT BufferModemStartupReadyCheck(ref BUFFER_UPDATE_SOURCE BufferUpdateSource, FUNC_RESULT Result)
+        {
+            if (Result != FUNC_RESULT.SUCCESS) return Result;
+            return this.XXXBufferCheck(ref BufferUpdateSource, nameof(this.BufferModemStartupReadyCheck));
         }
         //End : Device Helper
         //End : Helper

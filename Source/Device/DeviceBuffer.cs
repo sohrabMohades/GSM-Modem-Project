@@ -122,7 +122,7 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
             result = this.BufferTimeoutCheck(result, BufferUpdateSource, WorkFlowName);
             result = this.BufferUpdateList(result, BufferUpdateSource);
-            result = this.BufferUpdateAnalyze(result, BufferUpdateSource, WorkFlowName);
+            result = this.BufferUpdateAnalyze(result, ref BufferUpdateSource, WorkFlowName);
             return result;
         }
         //End : Buffer Update Main
@@ -192,10 +192,10 @@ namespace GSM.Core.Source.Device
         //End : Buffer Update Data List
         //End : Buffer Update List
         //Buffer Update Analyze
-        private FUNC_RESULT BufferUpdateAnalyze(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, string WorkFlowName)
+        private FUNC_RESULT BufferUpdateAnalyze(FUNC_RESULT Result, ref BUFFER_UPDATE_SOURCE BufferUpdateSource, string WorkFlowName)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
-            else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY)  return FUNC_RESULT.SUCCESS;
+            else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) return FUNC_RESULT.SUCCESS;
             else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW || BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START) return this.BufferUpdateAnalyzeWorkFlow(WorkFlowName);
             else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.TIMER) return this.BufferUpdateAnalyzeTimer();
             else return FUNC_RESULT.MAJOR_ERROR;
@@ -211,6 +211,32 @@ namespace GSM.Core.Source.Device
                         {
                             if (bufferData.Status == BUFFER_ACTION_STATUS.SUCCEEDED) result = FUNC_RESULT.SUCCESS;
                             else result = FUNC_RESULT.FAIL;
+                            break;
+                        }
+
+                    case nameof(this.GSMPowerGetExecuteBufferCheck):
+                        {
+                            if (bufferData.Status == BUFFER_ACTION_STATUS.SUCCEEDED) result = FUNC_RESULT.SUCCESS;
+                            else result = FUNC_RESULT.FAIL;
+                            break;
+                        }
+
+                    case nameof(this.GSMPowerSetExecuteBufferCheck):
+                        {
+                            if (bufferData.Status == BUFFER_ACTION_STATUS.SUCCEEDED) result = FUNC_RESULT.SUCCESS;
+                            else result = FUNC_RESULT.FAIL;
+                            break;
+                        }
+
+                    case nameof(this.BufferModemStartupReadyCheck):
+                        {
+                            if (!this._runtimeInfo.GsmStatus.ModemStartup)
+                                if (bufferData.Action == BUFFER_ACTION.MODEM_STARTUP) result = FUNC_RESULT.SUCCESS;
+                                else result = FUNC_RESULT.FAIL;
+                            else if (!this._runtimeInfo.GsmStatus.ModemReady)
+                                if (bufferData.Action == BUFFER_ACTION.MODEM_READY) result = FUNC_RESULT.SUCCESS;
+                                else result = FUNC_RESULT.FAIL;
+                            else result = FUNC_RESULT.UNKNOWN;
                             break;
                         }
 
@@ -247,9 +273,26 @@ namespace GSM.Core.Source.Device
             switch (WorkFlowName)
             {
                 case nameof(this.DeviceNumberGetExecuteBufferCheck):
-                    if(timeout <= (int)BUFFER_TIME_OUT_MS.NORMAL_LONG) return FUNC_RESULT.SUCCESS;
+                    if(timeout <= (int)BUFFER_TIME_OUT_MS.NORMAL_SHORT) return FUNC_RESULT.SUCCESS;
                     else return FUNC_RESULT.MAJOR_ERROR;
-                
+
+                case nameof(this.GSMPowerGetExecuteBufferCheck):
+                    if (timeout <= (int)BUFFER_TIME_OUT_MS.SHORT) return FUNC_RESULT.SUCCESS;
+                    else return FUNC_RESULT.MAJOR_ERROR;
+
+                case nameof(this.GSMPowerSetExecuteBufferCheck):
+                    if (timeout <= (int)BUFFER_TIME_OUT_MS.SHORT) return FUNC_RESULT.SUCCESS;
+                    else return FUNC_RESULT.MAJOR_ERROR;
+
+                case nameof(this.BufferModemStartupReadyCheck):
+                    if (!this._runtimeInfo.GsmStatus.ModemStartup)
+                        if (timeout <= (int)BUFFER_TIME_OUT_MS.MODEM_STARTUP) return FUNC_RESULT.SUCCESS;
+                        else return FUNC_RESULT.MAJOR_ERROR;
+                    else if (!this._runtimeInfo.GsmStatus.ModemReady)
+                        if (timeout <= (int)BUFFER_TIME_OUT_MS.MODEM_READY) return FUNC_RESULT.SUCCESS;
+                        else return FUNC_RESULT.MAJOR_ERROR;
+                    else return FUNC_RESULT.MAJOR_ERROR;
+
                 default:
                     return FUNC_RESULT.UNKNOWN;
             }

@@ -142,12 +142,13 @@ namespace GSM.Core.Source.Device
         private enum BUFFER_TIME_OUT_MS
         {
             MODEM_STARTUP = 10000,
-            MODEM_READY = 20000,
+            MODEM_READY = 30000,
             SHORT = 1000,
             NORMAL_SHORT = 2000,
             NORMAL = 4000,
             NORMAL_LONG = 6000,
             LONG = 8000,
+            TIMEOUT_MAX_MS = 60000
         }
         //bool type
         private enum BOOL_TYPE
@@ -255,6 +256,14 @@ namespace GSM.Core.Source.Device
             public DateTime LastOperationTime = DateTime.MinValue;
 
             public DateTime TimeOutCounter = DateTime.MinValue;
+
+            public GsmStatus GsmStatus = new GsmStatus();
+        }
+        private sealed class GsmStatus
+        {
+            public bool ModemStartup = false;
+            public bool ModemReady = false;
+            public int ModemATE = DeviceDefinitions.NUMBER_INVALID;
         }
         //End : class for Device information
         //class Device Runtime Configuration
@@ -264,7 +273,7 @@ namespace GSM.Core.Source.Device
             public int SignalMinAcceptableValue = 10;
             public bool EnableDoubleReadValidation = false;
             public bool TimeoutCheck = true;
-            public int TimeoutMaxMs = 30000;
+            public int TimeoutMaxMs = (int)BUFFER_TIME_OUT_MS.TIMEOUT_MAX_MS;
             public bool PowerONDoubleCheck = true;
         }
         //End : class Device Runtime Configuration

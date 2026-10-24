@@ -19,7 +19,7 @@ namespace GSM.Core.Source.Device
         {
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
             BOOL_TYPE resultBool = BOOL_TYPE.UNKNOWN;
-            result = this.GSMPowerGetExecute(result, (int)TRY_COUNT.POWER, (int)OPERATION_DELAY_MS.SHORT, ref resultBool);
+            result = this.GSMPowerGetExecute(result, !this._runtimeConfig.BufferCheck ? (int)TRY_COUNT.POWER : (int)TRY_COUNT.BUFFER_CHECK, (int)OPERATION_DELAY_MS.SHORT, ref resultBool);
             this.XXXSetValue(result, resultBool, BOOL_TYPE.FALSE, ref resultBool, ref this._runtimeHardware.GsmPower, InternalValueSet);
             Result = this.XXXOutput(resultBool);
             return result;
@@ -27,6 +27,11 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT GSMPowerGetExecute(FUNC_RESULT Result, int loopCount, int Delay, ref BOOL_TYPE ResultBool)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
+            if (!this._runtimeConfig.BufferCheck) return this.GSMPowerGetExecuteNormal(loopCount, Delay, ref ResultBool);
+            else return this.GSMPowerGetExecuteBufferCheck(loopCount, Delay, ref ResultBool);
+        }
+        private FUNC_RESULT GSMPowerGetExecuteNormal(int loopCount, int Delay, ref BOOL_TYPE ResultBool)
+        {
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
             BOOL_TYPE resultBool = BOOL_TYPE.FALSE;
             ResultBool = BOOL_TYPE.UNKNOWN;
@@ -39,6 +44,19 @@ namespace GSM.Core.Source.Device
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult2 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.PowerONDoubleCheck, funcResult1, funcResult2, ref ResultBool, resultBool, BOOL_TYPE.FALSE);
+        }
+        private FUNC_RESULT GSMPowerGetExecuteBufferCheck(int loopCount, int Delay, ref BOOL_TYPE ResultBool)
+        {
+            BUFFER_UPDATE_SOURCE bufferUpdateSource = BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY;
+            FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
+            while (loopCount-- > 0 && result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR)
+            {
+                Thread.Sleep(Delay);
+                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.GSMPowerGetExecuteBufferCheck));
+                result = this.GSMPowerGetBase(ref ResultBool);
+                if (result == FUNC_RESULT.SUCCESS) result = this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.GSMPowerGetExecuteBufferCheck));
+            }
+            return result;
         }
         private FUNC_RESULT GSMPowerGetBase(ref BOOL_TYPE Result)
         {
@@ -62,9 +80,9 @@ namespace GSM.Core.Source.Device
         {
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
             BOOL_TYPE resultBool = BOOL_TYPE.UNKNOWN;
-            result = this.GSMPowerSetExecute(result, PowerSet, (int)OPERATION_DELAY_MS.SHORT);
+            result = this.GSMPowerSetExecute(result, PowerSet, (int)TRY_COUNT.BUFFER_CHECK, (int)OPERATION_DELAY_MS.SHORT);
             resultBool = this.BoolType(result, PowerSet);
-            if (PowerCheck)
+            if (PowerCheck && !this._runtimeConfig.BufferCheck)
             {
                 if (PowerSet) Thread.Sleep((int)OPERATION_DELAY_MS.AFTER_DEVICE_POWER_ON);
                 result = this.GSMPowerGetExecute(result, (int)TRY_COUNT.POWER, (int)OPERATION_DELAY_MS.SHORT, ref resultBool);
@@ -72,11 +90,34 @@ namespace GSM.Core.Source.Device
             this.XXXSetValue(result, resultBool, BOOL_TYPE.FALSE, ref resultBool, ref this._runtimeHardware.GsmPower, InternalValueSet);
             return result;
         }
-        private FUNC_RESULT GSMPowerSetExecute(FUNC_RESULT Result, bool Power, int Delay)
+        private FUNC_RESULT GSMPowerSetExecute(FUNC_RESULT Result, bool Power, int loopCount, int Delay)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
+            if (!this._runtimeConfig.BufferCheck) return this.GSMPowerSetExecuteNormal(Power, Delay);
+            else return this.GSMPowerSetExecuteBufferCheck(Power, loopCount, Delay);
+        }
+        private FUNC_RESULT GSMPowerSetExecuteNormal(bool Power, int Delay)
+        {
             Thread.Sleep(Delay);
             return this.GSMPowerSetBase(Power);
+        }
+        private FUNC_RESULT GSMPowerSetExecuteBufferCheck(bool Power, int loopCount, int Delay)
+        {
+            BUFFER_UPDATE_SOURCE bufferUpdateSource = BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY;
+            FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
+            while (loopCount-- > 0 && result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR)
+            {
+                Thread.Sleep(Delay);
+                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.GSMPowerSetExecuteBufferCheck));
+                result = this.GSMPowerSetBase(Power);
+                if (result == FUNC_RESULT.SUCCESS) result = this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.GSMPowerSetExecuteBufferCheck));
+            }
+            if(Power)
+            {
+                bufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
+                result = this.BufferModemStartupReadyCheck(ref bufferUpdateSource, result);
+            }
+            return result;
         }
         private FUNC_RESULT GSMPowerSetBase(bool Power)
         {
@@ -861,8 +902,14 @@ namespace GSM.Core.Source.Device
             }
             else if (tempInt != this._runtimeIdentity.DeviceNumber) return REFRESH_RESULT.DEVICE_NUMBER_CHANGED;
             //End : Device Selection check
-            
-            //Reset internal value
+
+            //Buffer Check
+            result = this.GSMPowerSetWorkflow(true, true, true);
+            //if (this._runtimeConfig.BufferCheck && !(this._runtimeInfo.GsmStatus.ModemStartup && this._runtimeInfo.GsmStatus.ModemReady))
+            //    this.BufferModemStartupReadyCheck(ref bufferUpdateSource , FUNC_RESULT.SUCCESS);
+            //End Buffer Check
+
+                //Reset internal value
             this.InternalValueReset();
             //End : Reset internal value
             
