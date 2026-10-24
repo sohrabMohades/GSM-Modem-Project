@@ -1,5 +1,6 @@
 ﻿using GSM.Core.Source.Common;
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -160,15 +161,15 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT DeviceNumberGetWorkflow(ref int DeviceNumber, bool InternalValueSet)
         {
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
-            result = this.DeviceNumberGetExecute(result, (int)TRY_COUNT.NORMAL, (int)OPERATION_DELAY_MS.NORMAL_SHORT, ref DeviceNumber);
+            result = this.DeviceNumberGetExecute(result, !this._runtimeConfig.BufferCheck ? (int)TRY_COUNT.NORMAL : (int)TRY_COUNT.BUFFER_CHECK, (int)OPERATION_DELAY_MS.NORMAL_SHORT, ref DeviceNumber);
             this.XXXSetValue(result, DeviceNumber, DeviceDefinitions.NUMBER_INVALID, ref DeviceNumber, ref this._runtimeIdentity.DeviceNumber, InternalValueSet);
             return result;
         }
         private FUNC_RESULT DeviceNumberGetExecute(FUNC_RESULT Result, int loopCount, int Delay, ref int DeviceNumber)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
-            if (this._runtimeConfig.BufferCheck) return this.DeviceNumberGetExecuteBufferCheck(loopCount, Delay, ref DeviceNumber);
-            else return this.DeviceNumberGetExecuteNormal(loopCount, Delay, ref DeviceNumber);
+            if (!this._runtimeConfig.BufferCheck) return this.DeviceNumberGetExecuteNormal(loopCount, Delay, ref DeviceNumber); 
+            else return this.DeviceNumberGetExecuteBufferCheck(loopCount, Delay, ref DeviceNumber);
         }
         private FUNC_RESULT DeviceNumberGetExecuteNormal(int loopCount, int Delay, ref int DeviceNumber)
         {
@@ -188,18 +189,12 @@ namespace GSM.Core.Source.Device
         {
             BUFFER_UPDATE_SOURCE bufferUpdateSource = BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-            int resultCount = (int)FAIL_LIMIT.BUFFER_CHECK;
-            while (loopCount-- > 0 && result != FUNC_RESULT.SUCCESS)
+            while (loopCount-- > 0 && result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR)
             {
                 Thread.Sleep(Delay);
                 if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.DeviceNumberGetExecuteBufferCheck));
-                if (result != FUNC_RESULT.SUCCESS)
-                {
-                    result = this.DeviceNumberGetBase(ref DeviceNumber);
-                    if (result != FUNC_RESULT.SUCCESS && --resultCount <= 0) break;
-                    else if(result == FUNC_RESULT.SUCCESS) result = this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.DeviceNumberGetExecuteBufferCheck));
-                }
-                if (result == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
+                result = this.DeviceNumberGetBase(ref DeviceNumber);
+                if (result == FUNC_RESULT.SUCCESS) result = this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.DeviceNumberGetExecuteBufferCheck));
             }
             return result;
         }

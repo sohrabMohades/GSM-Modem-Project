@@ -736,33 +736,20 @@ namespace GSM.Core.Source.Device
         }
         private void XXXSetValue<T>(FUNC_RESULT result, T successValue, T failValue, ref T outputValue, ref T internalValue, bool internalValueSet)
         {
-            T value = result == FUNC_RESULT.SUCCESS ? successValue : failValue;
-            outputValue = value;
-            if (internalValueSet)
-                internalValue = value;
+            outputValue = result == FUNC_RESULT.SUCCESS ? successValue : failValue;
+            if (internalValueSet) internalValue = outputValue;
         }
-        private FUNC_RESULT XXXCheck<T>(FUNC_RESULT Result, FUNC_RESULT Result1, FUNC_RESULT Result2, T Value1, T Value2)
+        private void XXXSetValue<T>(T NewValue, ref T internalValue, bool internalValueSet)
         {
-            if (Result == FUNC_RESULT.MAJOR_ERROR)
-                return FUNC_RESULT.MAJOR_ERROR;
-            if (Result1 == FUNC_RESULT.SUCCESS && Result2 == FUNC_RESULT.SUCCESS && EqualityComparer<T>.Default.Equals(Value1, Value2))
-                return FUNC_RESULT.SUCCESS;
-            return FUNC_RESULT.FAIL;
+            if (internalValueSet) internalValue = NewValue;
         }
         private FUNC_RESULT XXXExecuteReturn<T>(bool DoubleCheck, FUNC_RESULT Result1, FUNC_RESULT Result2, ref T InputValue1, T InputValue2, T InvalidValue)
         {
-            if (Result1 == FUNC_RESULT.MAJOR_ERROR || Result2 == FUNC_RESULT.MAJOR_ERROR)
-                return FUNC_RESULT.MAJOR_ERROR;
+            if (Result1 == FUNC_RESULT.MAJOR_ERROR || Result2 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             if (DoubleCheck)
-                if (Result1 == FUNC_RESULT.SUCCESS && Result2 == FUNC_RESULT.SUCCESS && EqualityComparer<T>.Default.Equals(InputValue1, InputValue2))
-                    return FUNC_RESULT.SUCCESS;
-                else
-                {
-                    InputValue1 = InvalidValue;
-                    return FUNC_RESULT.FAIL;
-                }
-            else
-                return Result1;
+                if (Result1 == FUNC_RESULT.SUCCESS && Result2 == FUNC_RESULT.SUCCESS && EqualityComparer<T>.Default.Equals(InputValue1, InputValue2)) return FUNC_RESULT.SUCCESS;
+                else { InputValue1 = InvalidValue; return FUNC_RESULT.FAIL; }
+            else return Result1;
         }
         private bool XXXOutput(BOOL_TYPE value)
         {
@@ -770,10 +757,8 @@ namespace GSM.Core.Source.Device
         }
         private BOOL_TYPE BoolType(FUNC_RESULT FuncResult, bool ResultBool)
         {
-            if (FuncResult == FUNC_RESULT.SUCCESS && ResultBool)
-                return BOOL_TYPE.TRUE;
-            else 
-                return BOOL_TYPE.FALSE;
+            if (FuncResult == FUNC_RESULT.SUCCESS && ResultBool) return BOOL_TYPE.TRUE;
+            else return BOOL_TYPE.FALSE;
         }
         private FUNC_RESULT XXXBufferCheck(ref BUFFER_UPDATE_SOURCE BufferUpdateSource, string FuncName)
         {
@@ -781,15 +766,12 @@ namespace GSM.Core.Source.Device
             do
             {
                 result = this.BufferUpdate(BufferUpdateSource, FuncName);
-                if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW && BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW_START)
-                    break;
+                if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW && BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW_START) break;
             }
             while (result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR);
 
-            if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY)
-                BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
-            else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START)
-                BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW;
+            if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
+            else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START) BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW;
             return result;
         }
         //End : Device Helper

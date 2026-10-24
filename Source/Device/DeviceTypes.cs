@@ -128,7 +128,8 @@ namespace GSM.Core.Source.Device
             NORMAL = 5,
             POWER = 10,
             NETWORK_DATA = 30,
-            BUFFER_CHECK = 2
+            BUFFER_CHECK = 2,
+            BUFFER_COUNT_TRY = 3
         }
         //End : Enum Try Read times
         //Try Fail read limitation
