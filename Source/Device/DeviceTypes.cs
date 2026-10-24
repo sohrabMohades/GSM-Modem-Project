@@ -260,7 +260,7 @@ namespace GSM.Core.Source.Device
         //class Device Runtime Configuration
         private sealed class DeviceRuntimeConfiguration
         {
-            public bool BufferCheck = false;
+            public bool BufferCheck = true;
             public int SignalMinAcceptableValue = 10;
             public bool EnableDoubleReadValidation = false;
             public bool TimeoutCheck = true;

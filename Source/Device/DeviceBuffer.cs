@@ -181,11 +181,11 @@ namespace GSM.Core.Source.Device
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-            for (int i = this._runtimeBuffer.BufferDataRaw.Count -1 ; i >= 0; i--)
+            for (int i = 0 ; i < this._runtimeBuffer.BufferDataRaw.Count; i++)
             {
                 this._runtimeBuffer.BufferDataGroup.Add(StringAnalyzer.BufferAnalyzeRawMessage(this._runtimeBuffer.BufferDataRaw[i]));
-                this._runtimeBuffer.BufferDataRaw.RemoveAt(i);
             }
+            this._runtimeBuffer.BufferDataRaw.Clear();
             result = FUNC_RESULT.SUCCESS;
             return result;
         }

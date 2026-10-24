@@ -297,7 +297,7 @@ namespace GSM.Core.Source.Device
         }
         private FUNC_RESULT DeviceInformationGetBase(ref string DeviceInformation)
         {
-            FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
+            FUNC_RESULT result = FUNC_RESULT.SUCCESS;
             result = this.DeviceInformationGetBaseDll(result, ref DeviceInformation);
             this.XXXBaseSetValue(result, DeviceInformation, DeviceDefinitions.STRING_INVALID, ref DeviceInformation);
             return result;
