@@ -192,9 +192,9 @@ namespace GSM.Core.Source.Device
             while (loopCount-- > 0 && result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR)
             {
                 Thread.Sleep(Delay);
-                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.DeviceNumberGetExecuteBufferCheck));
+                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(FUNC_RESULT.SUCCESS, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.DEVICE_NUMBER_GET);
                 result = this.DeviceNumberGetBase(ref DeviceNumber);
-                if (result == FUNC_RESULT.SUCCESS) result = this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.DeviceNumberGetExecuteBufferCheck));
+                result = this.XXXBufferCheck(result, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.DEVICE_NUMBER_GET);
             }
             return result;
         }

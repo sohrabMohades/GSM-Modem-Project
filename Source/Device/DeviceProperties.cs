@@ -52,9 +52,9 @@ namespace GSM.Core.Source.Device
             while (loopCount-- > 0 && result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR)
             {
                 Thread.Sleep(Delay);
-                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.GSMPowerGetExecuteBufferCheck));
+                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(FUNC_RESULT.SUCCESS, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_GET);
                 result = this.GSMPowerGetBase(ref ResultBool);
-                if (result == FUNC_RESULT.SUCCESS) result = this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.GSMPowerGetExecuteBufferCheck));
+                result = this.XXXBufferCheck(result, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_GET);
             }
             return result;
         }
@@ -108,14 +108,14 @@ namespace GSM.Core.Source.Device
             while (loopCount-- > 0 && result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR)
             {
                 Thread.Sleep(Delay);
-                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.GSMPowerSetExecuteBufferCheck));
+                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(FUNC_RESULT.SUCCESS, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_SET);
                 result = this.GSMPowerSetBase(Power);
-                if (result == FUNC_RESULT.SUCCESS) result = this.XXXBufferCheck(ref bufferUpdateSource, nameof(this.GSMPowerSetExecuteBufferCheck));
+                result = this.XXXBufferCheck(result, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_SET);
             }
             if(Power)
             {
-                bufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
-                result = this.BufferModemStartupReadyCheck(ref bufferUpdateSource, result);
+                bufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW;
+                result = this.XXXBufferCheck(result, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY);
             }
             return result;
         }
@@ -310,45 +310,45 @@ namespace GSM.Core.Source.Device
         }
         //End : Software Version Get
         //Device Information Get
-        private FUNC_RESULT DeviceInformationGetWorkflow(ref string DeviceInformation, bool InternalValueSet)
+        private FUNC_RESULT HardwareModelGetWorkflow(ref string HardwareModel, bool InternalValueSet)
         {
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
-            result = this.DeviceInformationGetExecute(result, (int)TRY_COUNT.FAST, (int)OPERATION_DELAY_MS.SHORT, ref DeviceInformation);
-            this.XXXSetValue(result, DeviceInformation, DeviceDefinitions.STRING_INVALID, ref DeviceInformation, ref this._runtimeHardware.DeviceInformation, InternalValueSet);
+            result = this.HardwareModelGetExecute(result, (int)TRY_COUNT.FAST, (int)OPERATION_DELAY_MS.SHORT, ref HardwareModel);
+            this.XXXSetValue(result, HardwareModel, DeviceDefinitions.STRING_INVALID, ref HardwareModel, ref this._runtimeHardware.HardwareModel, InternalValueSet);
             return result;
         }
-        private FUNC_RESULT DeviceInformationGetExecute(FUNC_RESULT Result, int loopCount, int Delay, ref string DeviceInformation)
+        private FUNC_RESULT HardwareModelGetExecute(FUNC_RESULT Result, int loopCount, int Delay, ref string HardwareModel)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             FUNC_RESULT funcResult1 = FUNC_RESULT.UNKNOWN, funcResult2 = FUNC_RESULT.UNKNOWN;
-            string deviceInformation = DeviceDefinitions.STRING_INVALID;
+            string hardwareModel = DeviceDefinitions.STRING_INVALID;
             int resultCount = (int)FAIL_LIMIT.NUM_ERROR;
             while (loopCount-- > 0 && (funcResult1 != FUNC_RESULT.SUCCESS || funcResult2 != FUNC_RESULT.SUCCESS))
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS)
                 {
-                    funcResult1 = this.DeviceInformationGetBase(ref DeviceInformation); if (funcResult1 != FUNC_RESULT.SUCCESS && --resultCount <= 0) break;
+                    funcResult1 = this.HardwareModelGetBase(ref HardwareModel); if (funcResult1 != FUNC_RESULT.SUCCESS && --resultCount <= 0) break;
                 }
-                else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.DeviceInformationGetBase(ref deviceInformation);
+                else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.HardwareModelGetBase(ref hardwareModel);
                 else break;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
-            return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref DeviceInformation, deviceInformation, DeviceDefinitions.STRING_INVALID);
+            return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref HardwareModel, hardwareModel, DeviceDefinitions.STRING_INVALID);
         }
-        private FUNC_RESULT DeviceInformationGetBase(ref string DeviceInformation)
+        private FUNC_RESULT HardwareModelGetBase(ref string HardwareModel)
         {
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
-            result = this.DeviceInformationGetBaseDll(result, ref DeviceInformation);
-            this.XXXBaseSetValue(result, DeviceInformation, DeviceDefinitions.STRING_INVALID, ref DeviceInformation);
+            result = this.HardwareModelGetBaseDll(result, ref HardwareModel);
+            this.XXXBaseSetValue(result, HardwareModel, DeviceDefinitions.STRING_INVALID, ref HardwareModel);
             return result;
         }
-        private FUNC_RESULT DeviceInformationGetBaseDll(FUNC_RESULT Result, ref string DeviceInformation)
+        private FUNC_RESULT HardwareModelGetBaseDll(FUNC_RESULT Result, ref string HardwareModel)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
-            if (this._dllWrapper.DeviceInfo(out DeviceInformation)) return FUNC_RESULT.SUCCESS;
+            if (this._dllWrapper.DeviceInfo(out HardwareModel)) return FUNC_RESULT.SUCCESS;
             if (this.DllWrapperHasError(FUNC_RESULT.SUCCESS) == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
-            this.ErrorSet(ERROR_CODE.DEVICE_INFORMATION, "Device Information = " + DeviceInformation); return FUNC_RESULT.FAIL;
+            this.ErrorSet(ERROR_CODE.HARDWARE_MODEL, "Hardware Moedel = " + HardwareModel); return FUNC_RESULT.FAIL;
         }
         //End : Device Information Get
         //End : Hardware Property
@@ -794,7 +794,8 @@ namespace GSM.Core.Source.Device
             return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
         }
         //End : GSMDateTime Set
-        //GSM Status Get
+        //GSM Status Get -> it is NOT work correctly
+        /*
         private FUNC_RESULT GSMStatusGetWorkflow(ref DeviceDefinitions.GSM_STATUS GsmStatus, ref int GsmStatusValue, ref string GsmStatusMessage, bool InternalValueSet)
         {
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
@@ -864,6 +865,7 @@ namespace GSM.Core.Source.Device
             GsmStatus = (FuncResult != FUNC_RESULT.SUCCESS) ? (DeviceDefinitions.GSM_STATUS.ERROR) : ((Enum.IsDefined(typeof(DeviceDefinitions.GSM_STATUS), GsmStatusValueNewValue)) ?
                 ((DeviceDefinitions.GSM_STATUS)GsmStatusValueNewValue) : (DeviceDefinitions.GSM_STATUS.ERROR));
         }
+        */
         //End : GSM Status Get
         //End : Property -> UnKnown level
 
@@ -889,9 +891,9 @@ namespace GSM.Core.Source.Device
             int tempInt = DeviceDefinitions.NUMBER_INVALID;
             string tempStr = DeviceDefinitions.STRING_INVALID;
             DeviceDefinitions.SIM_STATUS tempSimStatus = DeviceDefinitions.SIM_STATUS.UNKHOWN;
-            DeviceDefinitions.GSM_STATUS tempGsmStatus = DeviceDefinitions.GSM_STATUS.UNKHOWN;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             REFRESH_RESULT refreshResult = REFRESH_RESULT.SUCCEED;
+            
             //Device Selection check
             result = this.DeviceNumberGetWorkflow(ref tempInt, false);
             if (result == FUNC_RESULT.MAJOR_ERROR) return REFRESH_RESULT.DEVICE_NOT_SELECT;
@@ -904,12 +906,12 @@ namespace GSM.Core.Source.Device
             //End : Device Selection check
 
             //Buffer Check
-            result = this.GSMPowerSetWorkflow(true, true, true);
             //if (this._runtimeConfig.BufferCheck && !(this._runtimeInfo.GsmStatus.ModemStartup && this._runtimeInfo.GsmStatus.ModemReady))
-            //    this.BufferModemStartupReadyCheck(ref bufferUpdateSource , FUNC_RESULT.SUCCESS);
+            //    result = this.BufferModemStartupReadyCheck(ref bufferUpdateSource , result);
+            //if(result != FUNC_RESULT.SUCCESS) result = this.GSMPowerSetWorkflow(true, true, true);
             //End Buffer Check
 
-                //Reset internal value
+            //Reset internal value
             this.InternalValueReset();
             //End : Reset internal value
             
@@ -941,11 +943,11 @@ namespace GSM.Core.Source.Device
             refreshResult = this.DeviceRefreshComplexWorkFlowHelperCheck(result, refreshResult);
             //End : Software Version Get
             //Device Information Get
-            result = this.DeviceInformationGetWorkflow(ref tempStr, true);
+            result = this.HardwareModelGetWorkflow(ref tempStr, true);
             refreshResult = this.DeviceRefreshComplexWorkFlowHelperCheck(result, refreshResult);
             //End : Device Information Get
             //GSM Status Get -> GSMStatus result NOT Trustable, only update
-            result = this.GSMStatusGetWorkflow(ref tempGsmStatus, ref tempInt, ref tempStr, true);
+            //result = this.GSMStatusGetWorkflow(ref tempGsmStatus, ref tempInt, ref tempStr, true);
             //End : GSM Status Get
             //End : Hardware Data Get
 
@@ -1022,7 +1024,7 @@ namespace GSM.Core.Source.Device
             this._runtimeSim.SIMID = DeviceDefinitions.STRING_INVALID;
             this._runtimeNetwork.ModemSignal = DeviceDefinitions.NUMBER_INVALID;
             this._runtimeHardware.SoftwareVersion = DeviceDefinitions.STRING_INVALID;
-            this._runtimeHardware.DeviceInformation = DeviceDefinitions.STRING_INVALID;
+            this._runtimeHardware.HardwareModel = DeviceDefinitions.STRING_INVALID;
             this._runtimeUngroup.GsmDateTime = DeviceDefinitions.STRING_INVALID;
             this._runtimeNetwork.SMSCenter = DeviceDefinitions.STRING_INVALID;
             this._runtimeNetwork.NetworkName = DeviceDefinitions.STRING_INVALID;

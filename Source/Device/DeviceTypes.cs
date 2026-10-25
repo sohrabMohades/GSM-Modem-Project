@@ -53,7 +53,7 @@ namespace GSM.Core.Source.Device
             SIM_ID = 15,            //SIM ID get has error
             GSM_SIGNAL = 16,        //GSM signal get has error
             SOFTWARE_VERSION = 17,  //software version get has error
-            DEVICE_INFORMATION = 18,//device information get has error
+            HARDWARE_MODEL = 18,    //device information get has error
             GSM_DATE_TIME_GET = 19, //GSM date time get has error
             GSM_DATE_TIME_SET = 20, //GSM date time set has error
             NETWORK_NAME_GET = 21,  //Network name get has error
@@ -210,6 +210,41 @@ namespace GSM.Core.Source.Device
             DATA_UPDATE_ONLY = 4,
         }
         //End : Buffer Update Source
+        //Buffer Function (call Buffer Update)
+        internal enum BUFFER_UPDATE_TYPE
+        {
+            DEVICE_NUMBER_GET,
+            DEVICE_NUMBER_SET,
+            GSM_POWER_GET,
+            GSM_POWER_SET,
+            GSM_IS_CONNECT,
+            GSM_IS_READY,
+            IMEI_GET,
+            SOFTWARE_VERSION_GET,
+            HARDWARE_MODEL_GET,
+            SIM_ID_GET,
+            NATIONAL_MOBILE_ID_GET,
+            SIM_STATUS_GET,
+            SIGNAL_GET,
+            SMS_CENTER_GET,
+            SMS_CENTER_SET,
+            NETWORK_NAME_GET,
+            NETWORK_NAME_SET,
+            GSM_DATE_TIME_GET,
+            GSM_DATE_TIME_SET,
+            SMS_TYPE_SET,
+            CHAR_MODE_SET,
+            SMS_SEND,
+            USSD_SEND,
+            USSD_RESPONSE,
+            MODEM_STARTUP,
+            MODEM_READY,
+            MODEM_STARTUP_READY,
+            INBOX_SMS_RECEIVED,
+            INBOX_SMS_DELIVERY_REPORT,
+            SMS_DELIVERY_REPORT,
+        }
+        //End : Buffer Function (call Buffer Update)
         //End: Buffer
         //End : Constants
 
@@ -293,7 +328,7 @@ namespace GSM.Core.Source.Device
         {
             public string IMEI = DeviceDefinitions.STRING_INVALID;
             public string SoftwareVersion = DeviceDefinitions.STRING_INVALID;
-            public string DeviceInformation = DeviceDefinitions.STRING_INVALID;
+            public string HardwareModel = DeviceDefinitions.STRING_INVALID;
             public BOOL_TYPE GsmPower = BOOL_TYPE.UNKNOWN;
             public BOOL_TYPE GsmIsConnect = BOOL_TYPE.UNKNOWN;
             public BOOL_TYPE GsmIsReady = BOOL_TYPE.UNKNOWN;

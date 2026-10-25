@@ -504,9 +504,9 @@ namespace GSM.Core.Source.Device
         {
             get => this._runtimeHardware.SoftwareVersion;
         }
-        public string DeviceModel
+        public string HardwareModel
         {
-            get => this._runtimeHardware.DeviceInformation;
+            get => this._runtimeHardware.HardwareModel;
         }
         public string SMSCenter
         {
@@ -761,27 +761,6 @@ namespace GSM.Core.Source.Device
         {
             if (FuncResult == FUNC_RESULT.SUCCESS && ResultBool) return BOOL_TYPE.TRUE;
             else return BOOL_TYPE.FALSE;
-        }
-        private FUNC_RESULT XXXBufferCheck(ref BUFFER_UPDATE_SOURCE BufferUpdateSource, string FuncName)
-        {
-            FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-            do
-            {
-                result = this.BufferUpdate(BufferUpdateSource, FuncName);
-                if (FuncName == nameof(this.BufferModemStartupReadyCheck) && result == FUNC_RESULT.SUCCESS)
-                    if (!this._runtimeInfo.GsmStatus.ModemStartup)
-                    { this._runtimeInfo.GsmStatus.ModemStartup = true; BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START; result = FUNC_RESULT.FAIL; }
-                    else if (!this._runtimeInfo.GsmStatus.ModemReady) this._runtimeInfo.GsmStatus.ModemReady = true;
-                if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START) BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW;
-            }
-            while (result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR && (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW || BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START));
-            if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
-            return result;
-        }
-        private FUNC_RESULT BufferModemStartupReadyCheck(ref BUFFER_UPDATE_SOURCE BufferUpdateSource, FUNC_RESULT Result)
-        {
-            if (Result != FUNC_RESULT.SUCCESS) return Result;
-            return this.XXXBufferCheck(ref BufferUpdateSource, nameof(this.BufferModemStartupReadyCheck));
         }
         //End : Device Helper
         //End : Helper
