@@ -411,7 +411,7 @@ namespace GSM.Core.Source.Device
             public int BufferMessageLen = DeviceDefinitions.NUMBER_INVALID;             //only for singel read or test
             public DateTime BufferLastUpdate = DateTime.MinValue;
             public DateTime BufferLastUpdatePerior = DateTime.MinValue;
-            public List<BufferRawData> BufferDataRaw = new List<BufferRawData>();                     //RAW Message list, without any Analyze, ONLY REMOVE NULL string from this list
+            public List<BufferRawData> BufferDataRaw = new List<BufferRawData>();       //RAW Message list, without any Analyze, ONLY REMOVE NULL string from this list
             public List<BufferDataGroup> BufferDataGroup = new List<BufferDataGroup>(); //this list is Analyze of BufferDataRaw list
             public bool NewInboxNotifiction = false;
             public bool ModemStartup = false;
@@ -419,14 +419,15 @@ namespace GSM.Core.Source.Device
             public List<string> NewInboxSlot = new List<string>();
         }
         //End : class Device Runtime Buffer
-
-        public sealed class BufferRawData
+        //Class Buffer Data -> Analyze RAW Message
+        private sealed class BufferRawData
         {
             public string Message = DeviceDefinitions.STRING_INVALID;
             public int MessageLen = DeviceDefinitions.NUMBER_INVALID;
             public DateTime ReceivedTime = DateTime.MinValue;
-        }//Class Buffer Data -> Analyze RAW Message
-        internal sealed class BufferDataGroup
+        }
+        //End : Class Buffer Data
+        private sealed class BufferDataGroup
         {
             public BufferRawData BufferRawData = new BufferRawData();
             public List<BufferData> BufferData = new List<BufferData>();
@@ -440,7 +441,7 @@ namespace GSM.Core.Source.Device
          * OK
          * After Analyze -> MessageAnalyzed = +CSQ: 15,3 / Detail[0] = "15" / Detail[1] = "3"
         */
-        internal sealed class BufferData
+        private sealed class BufferData
         {
             public BUFFER_ACTION Action = BUFFER_ACTION.UNKNOWN;
             public BUFFER_ACTION_STATUS Status = BUFFER_ACTION_STATUS.UNKNOWN;
