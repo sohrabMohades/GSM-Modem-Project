@@ -189,7 +189,7 @@ namespace GSM.Core.Source.Device
             {
                 Thread.Sleep(Delay);
                 if (funcResult1 != FUNC_RESULT.SUCCESS || ResultBool != BOOL_TYPE.TRUE) funcResult1 = this.GSMIsReadyBase(ref ResultBool);
-                else if (this._runtimeConfig.PowerONDoubleCheck) funcResult2 = this.GSMIsReadyBase(ref resultBool);
+                else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.GSMIsReadyBase(ref resultBool);
                 else break;
                 if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult2 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
@@ -238,7 +238,7 @@ namespace GSM.Core.Source.Device
                 }
                 else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.IMEIGetBase(ref imei);
                 else break;
-                if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
+                if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult2 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref IMEI, imei, DeviceDefinitions.STRING_INVALID);
         }
@@ -290,7 +290,7 @@ namespace GSM.Core.Source.Device
                 }
                 else if (this._runtimeConfig.EnableDoubleReadValidation) funcResult2 = this.SoftwareVersionGetBase(ref softwareVersion);
                 else break;
-                if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult1 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
+                if (funcResult1 == FUNC_RESULT.MAJOR_ERROR || funcResult2 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
             }
             return this.XXXExecuteReturn(this._runtimeConfig.EnableDoubleReadValidation, funcResult1, funcResult2, ref SoftwareVersion, softwareVersion, DeviceDefinitions.STRING_INVALID);
         }
@@ -872,11 +872,11 @@ namespace GSM.Core.Source.Device
         //Refresh
         private FUNC_RESULT DeviceRefreshComplexWorkFlow(bool PowerOnAllow)
         {
-            bool MajorErrorStop = true;
+            bool MajorErrorStop = true, power = true, powerCheck = true, internalValueSet = true;
             REFRESH_RESULT refreshResult = REFRESH_RESULT.UNKNOWN_ERROR;
             refreshResult = this.DeviceRefreshComplexWorkFlowHelper(MajorErrorStop);
             if (refreshResult == REFRESH_RESULT.POWER_OFF_AND_RESTART && PowerOnAllow) 
-                if (this.DeviceRestartComplexWorkFlow() == FUNC_RESULT.SUCCESS) refreshResult = this.DeviceRefreshComplexWorkFlowHelper(true);
+                if (this.GSMPowerSetWorkflow(power, powerCheck, internalValueSet) == FUNC_RESULT.SUCCESS) refreshResult = this.DeviceRefreshComplexWorkFlowHelper(true);
             return this.DeviceRefreshComplexWorkFlowCheck(refreshResult);
         }
         private FUNC_RESULT DeviceRefreshComplexWorkFlowCheck(REFRESH_RESULT RefreshResult)
@@ -1003,14 +1003,6 @@ namespace GSM.Core.Source.Device
         }
 
         //End : Refresh
-
-        //Device Restart
-        private FUNC_RESULT DeviceRestartComplexWorkFlow()
-        {
-            bool power = true, powerCheck = true, internalValueSet = true;
-            return this.GSMPowerSetWorkflow(power, powerCheck, internalValueSet);
-        }
-        //Device Restart
 
         //Helper
         private void InternalValueReset()

@@ -84,6 +84,10 @@
     <None Include="Docs\Architecture\GSM_Architecture_v1.1_FA.docx" />
     <None Include="Docs\Design\GSM_Design_v1.1_FA.docx" />
     <None Include="Docs\Requirements\GSM_Project_Definition_v1.1_FA.docx" />
+    <None Include="Source\Device\تجزیه_و_تحلیل_Device.md" />
+    <None Include="Source\Device\طراحی Device.md" />
+    <None Include="Source\Device\معماری Device.md" />
+    <None Include="Source\StringAnalyzer\معماری پردازش رشته.md" />
     <None Include="Tools\ModemBufferParserProbe.ps1" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

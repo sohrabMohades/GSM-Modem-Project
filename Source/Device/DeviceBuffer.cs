@@ -128,7 +128,7 @@ namespace GSM.Core.Source.Device
         {
             if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.UNKNOWN) return FUNC_RESULT.MAJOR_ERROR;
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
-            if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW) this.BufferUpdateAnalyzeRemoveExtra(result , null);
+            if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW) this.BufferDataRemoveExtra(result , null);
             result = this.BufferTimeoutCheck(result, BufferUpdateSource, BufferUpdateType);
             result = this.BufferUpdateList(result, BufferUpdateSource);
             result = this.BufferUpdateAnalyze(result, BufferUpdateSource, ref BufferUpdateType);
@@ -136,10 +136,10 @@ namespace GSM.Core.Source.Device
         }
         //End : Buffer Update Main
         //Remove Null and Not Usable BufferGroup[...].BaferData[...]
-        private void BufferUpdateAnalyzeRemoveExtra(FUNC_RESULT Result, BufferData targetBufferData)
+        private void BufferDataRemoveExtra(FUNC_RESULT Result, BufferData targetBufferData)
         {
             if (Result != FUNC_RESULT.SUCCESS && targetBufferData == null) return;
-            this.BufferUpdateAnalyzeRemoveAllNull();
+            this.BufferDataRemoveNulls();
             if (targetBufferData == null)
                 foreach (BufferDataGroup group in this._runtimeBuffer.BufferDataGroup.AsEnumerable().Reverse())
                 {
@@ -166,7 +166,7 @@ namespace GSM.Core.Source.Device
                     if (!IsPreservedAction(group.BufferData[dataIndex].Action)) group.BufferData.RemoveAt(dataIndex);
             }
         }
-        private void BufferUpdateAnalyzeRemoveAllNull()
+        private void BufferDataRemoveNulls()
         {
             for (int groupIndex = this._runtimeBuffer.BufferDataGroup.Count - 1; groupIndex >= 0; groupIndex--)
                 for (int dataIndex = this._runtimeBuffer.BufferDataGroup[groupIndex].BufferData.Count - 1; dataIndex >= 0; dataIndex--)
@@ -267,7 +267,8 @@ namespace GSM.Core.Source.Device
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             for (int i = 0 ; i < this._runtimeBuffer.BufferDataRaw.Count; i++)
             {
-                this._runtimeBuffer.BufferDataGroup.Add(StringAnalyzer.BufferAnalyzeRawMessage(this._runtimeBuffer.BufferDataRaw[i]));
+                try
+                {this._runtimeBuffer.BufferDataGroup.Add(StringAnalyzer.BufferAnalyzeRawMessage(this._runtimeBuffer.BufferDataRaw[i]));} catch { }
             }
             this._runtimeBuffer.BufferDataRaw.Clear();
             result = FUNC_RESULT.SUCCESS;
@@ -309,17 +310,18 @@ namespace GSM.Core.Source.Device
             BufferData successBufferData = new BufferData();
             if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) result = FUNC_RESULT.SUCCESS;
             else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW || BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START)
-            { result = this.BufferUpdateAnalyzeWorkFlow(ref BufferUpdateType, out successBufferData); this.BufferUpdateAnalyzeRemoveExtra(result , successBufferData); }
+            { result = this.BufferUpdateAnalyzeWorkFlow(ref BufferUpdateType, out successBufferData); this.BufferDataRemoveExtra(result , successBufferData); }
             else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.TIMER) result = this.BufferUpdateAnalyzeTimer();
             else result = FUNC_RESULT.MAJOR_ERROR;
-            this.BufferUpdateAnalyzeRemoveExtra(result , successBufferData);
+            this.BufferDataRemoveExtra(result , successBufferData);
             return result;
         }
         private FUNC_RESULT BufferUpdateAnalyzeWorkFlow(ref BUFFER_UPDATE_TYPE BufferUpdateType, out BufferData SuccessBufferData)
         {
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             SuccessBufferData = null;
-            foreach (BufferData bufferData in this._runtimeBuffer.BufferDataGroup.SelectMany(group => group.BufferData).Where(data => data.ReceivedTime >= this._runtimeBuffer.BufferLastUpdatePerior))
+            foreach (BufferData bufferData in this._runtimeBuffer.BufferDataGroup.SelectMany(group => group.BufferData).Where(data => 
+                                                                                data != null && data.ReceivedTime >= this._runtimeBuffer.BufferLastUpdatePerior))
             {
                 switch (BufferUpdateType)
                 {
@@ -375,7 +377,7 @@ namespace GSM.Core.Source.Device
                     {
                         case BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY:
                         case BUFFER_UPDATE_TYPE.MODEM_READY:
-                            { this._runtimeInfo.GsmStatus.ModemStartup = true; this._runtimeInfo.GsmStatus.ModemStartup = true; break; }
+                            { this._runtimeInfo.GsmStatus.ModemStartup = true; this._runtimeInfo.GsmStatus.ModemReady = true; break; }
 
                         case BUFFER_UPDATE_TYPE.MODEM_STARTUP:
                             {

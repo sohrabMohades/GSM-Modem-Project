@@ -120,47 +120,29 @@ namespace GSM.Core.Source.Device
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             resultStr = null;
-            if (string.IsNullOrWhiteSpace(PhoneNumber))
-            {
-                this.ErrorSet(ERROR_CODE.SEND_SMS_INPUT, nameof(this.SmsSend) + " - Phone Number = " + PhoneNumber + " . INVALID"); return FUNC_RESULT.MAJOR_ERROR;
-            }
+            if (string.IsNullOrWhiteSpace(PhoneNumber)) { this.ErrorSet(ERROR_CODE.SEND_SMS_INPUT, nameof(this.SmsSend) + " - Phone Number = " + PhoneNumber + " . INVALID"); return FUNC_RESULT.MAJOR_ERROR; }
             PhoneNumber = PhoneNumber.Trim();
             switch (PhoneNumber.Length)
             {
                 // 9121234567 -> +989121234567
                 case 10:
-                    if (PhoneNumber.All(char.IsDigit) && PhoneNumber[0] != '0')
-                    {
-                        resultStr = countryCodeStr + PhoneNumber; return FUNC_RESULT.SUCCESS;
-                    }
+                    if (PhoneNumber.All(char.IsDigit) && PhoneNumber[0] != '0') { resultStr = countryCodeStr + PhoneNumber; return FUNC_RESULT.SUCCESS; }
                     break;
                 // 09121234567 -> +989121234567
                 case 11:
-                    if (PhoneNumber.All(char.IsDigit) && PhoneNumber[0] == '0')
-                    {
-                        resultStr = countryCodeStr + PhoneNumber.Substring(1); return FUNC_RESULT.SUCCESS;
-                    }
+                    if (PhoneNumber.All(char.IsDigit) && PhoneNumber[0] == '0') { resultStr = countryCodeStr + PhoneNumber.Substring(1); return FUNC_RESULT.SUCCESS; }
                     break;
                 // 989121234567 -> +989121234567
                 case 12:
-                    if (PhoneNumber.All(char.IsDigit))
-                    {
-                        resultStr = "+" + PhoneNumber; return FUNC_RESULT.SUCCESS;
-                    }
+                    if (PhoneNumber.All(char.IsDigit)) { resultStr = "+" + PhoneNumber; return FUNC_RESULT.SUCCESS; }
                     break;
                 // +989121234567 -> +989121234567
                 case 13:
-                    if (PhoneNumber[0] == '+' && PhoneNumber.Skip(1).All(char.IsDigit))
-                    {
-                        resultStr = PhoneNumber; return FUNC_RESULT.SUCCESS;
-                    }
+                    if (PhoneNumber[0] == '+' && PhoneNumber.Skip(1).All(char.IsDigit)) { resultStr = PhoneNumber; return FUNC_RESULT.SUCCESS; }
                     break;
                 // 00989121234567 -> +989121234567
                 case 14:
-                    if (PhoneNumber.StartsWith("00") && PhoneNumber.Skip(2).All(char.IsDigit))
-                    {
-                        resultStr = "+" + PhoneNumber.Substring(2); return FUNC_RESULT.SUCCESS;
-                    }
+                    if (PhoneNumber.StartsWith("00") && PhoneNumber.Skip(2).All(char.IsDigit)) { resultStr = "+" + PhoneNumber.Substring(2); return FUNC_RESULT.SUCCESS; }
                     break;
             }
             this.ErrorSet(ERROR_CODE.SEND_SMS_INPUT, nameof(this.SmsSend) + " - Phone Number = " + PhoneNumber + " . INVALID"); return FUNC_RESULT.MAJOR_ERROR;

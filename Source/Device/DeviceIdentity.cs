@@ -109,7 +109,7 @@ namespace GSM.Core.Source.Device
             return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
         }
         /*
-         * 1. Importan Note : Index limited from 0 to 127 in Manshor software test
+         * 1. Important Note : Index limited from 0 to 127 in Manshour software test
         */
         //End : Device Select By Index
         //Device Select By Device Number
@@ -274,7 +274,7 @@ namespace GSM.Core.Source.Device
         //Device Identity
         private FUNC_RESULT DeviceIdentityComplexWorkflow(int DeviceIndex, ref int DeviceNumber, ref string IMEI)
         {
-            bool internalValueSet = true, checkDeviceNumber = true, gsmIsConnect = false;
+            bool internalValueSet = true, checkDeviceNumber = true, gsmIsConnect = false, power = true, powerCheck = true;
             int tempInt = 0;
             string tempStr = string.Empty;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
@@ -286,7 +286,7 @@ namespace GSM.Core.Source.Device
                     result = this.IMEIGetWorkflow(ref IMEI, internalValueSet);
                 else if (result == FUNC_RESULT.FAIL)
                     {
-                        result = this.DeviceRestartComplexWorkFlow();
+                    result = this.GSMPowerSetWorkflow(power, powerCheck, internalValueSet);
                         if (result == FUNC_RESULT.SUCCESS)
                         {
                             result = this.GSMIsConnectWorkflow(ref gsmIsConnect, internalValueSet);

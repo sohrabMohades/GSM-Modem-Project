@@ -197,7 +197,13 @@ namespace GSM.Core.Source.Device
         {
             UNKNOWN = 0,
             SUCCEEDED = 1,
-            FAIL = 2
+            FAIL = 2,
+            OK_BEL = 3,
+            OK_LF = 4,
+            OK_MODEM_STATUS = 5,
+            OK_CR_CR_LF = 6,
+            OK_CR_LF = 7,
+            OK_DEVICE_NUMBER_GET = 8,
         }
         //End : Buffer Action Status 
         //Buffer Update Source
