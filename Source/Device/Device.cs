@@ -1,5 +1,6 @@
 ﻿using GSM.Core.Source.Common;
 using GSM.Core.Source.DllWrapper;
+using GSM.Core.Source.Device.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;

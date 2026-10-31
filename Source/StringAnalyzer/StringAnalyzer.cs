@@ -26,226 +26,126 @@ namespace GSM.Core.Source.Device
             }
             public class AnalyzerResult<T>
             {
-                public bool Result { get; set; }
-                public T Data { get; set; }
-                public ERROR_CODE ErrorCode { get; set; }
-                public string ErrorMessage { get; set; }
+                public bool Result = false;
+                public T Data = default(T);
+                public ERROR_CODE ErrorCode = ERROR_CODE.NO_ERROR;
+                public string ErrorMessage = string.Empty;
             }
             public class BalanceData
             {
-                public string Value { get; set; }
-                public string ProviderDomain { get; set; }
-                public string UssdText { get; set; }
+                public string Value = string.Empty;
+                public string ProviderDomain = string.Empty;
+                public string UssdText = string.Empty;
             }
             public class MobileData
             {
-                public string Value { get; set; }
-                public string UssdText { get; set; }
+                public string Value = string.Empty;
+                public string UssdText = string.Empty;
             }
 
-            private static readonly Regex _cusdRegex = new Regex(@"\+CUSD:\s*(?<status>[012])\s*,\s*""(?<payload>[^""]*)""\s*,\s*72",
-                RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _cusdRegex = new Regex(@"\+CUSD:\s*(?<status>[012])\s*,\s*""(?<payload>[^""]*)""\s*,\s*72", RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _hexPayloadRegex = new Regex(@"\A[0-9A-Fa-f]+\z", RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _whitespaceRegex = new Regex(@"\s+", RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
             private static readonly Regex _smsSendResultRegex = new Regex(@"R(?<index>\d+):(?<reference>\d+)--", RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _smsSendResultFullRegex = new Regex(@"^\s*(R\d+:\d+--)+\s*$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _balanceTextRegex = new Regex(@"(?<balance>[0-9]+)\s*ریال", RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _balanceQuestionMarkRegex = new Regex(@"(?<balance>[0-9]{1,})\?+", RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _providerDomainRegex = new Regex(@"(?<domain>SHOP\.MCI\.IR|MCI\.IR|IRANCELL\.IR|MTN\.IR)",
-                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _providerDomainRegex = new Regex(@"(?<domain>SHOP\.MCI\.IR|MCI\.IR|IRANCELL\.IR|MTN\.IR)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+                                                                                                                                     RegexOptions.Compiled);
             private static readonly Regex _mobileNumberRegex = new Regex(@"[01]\.(?<mobileNumber>09[0-9]{9})", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
             public static AnalyzerResult<List<string>> ParseSmsSendResult(string smsSendResult)
             {
                 if (string.IsNullOrWhiteSpace(smsSendResult))
-                {
-                    return new AnalyzerResult<List<string>>
-                    {
-                        Result = false,
-                        Data = null,
-                        ErrorCode = ERROR_CODE.NO_ERROR,
-                        ErrorMessage = string.Empty
-                    };
-                }
-
+                    return new AnalyzerResult<List<string>> { Result = false, Data = null, ErrorCode = ERROR_CODE.NO_ERROR, ErrorMessage = string.Empty };
                 try
                 {
+                    int r;
+                    string reference;
                     MatchCollection matches = _smsSendResultRegex.Matches(smsSendResult);
                     if (matches.Count == 0 || !_smsSendResultFullRegex.IsMatch(smsSendResult))
-                    {
-                        return new AnalyzerResult<List<string>>
-                        {
-                            Result = false,
-                            Data = null,
-                            ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR,
-                            ErrorMessage = smsSendResult + SMS_SEND_RESULT_SAMPLE
-                        };
-                    }
-
+                        return new AnalyzerResult<List<string>> { Result = false, Data = null, ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR, ErrorMessage = smsSendResult + SMS_SEND_RESULT_SAMPLE };
                     var items = new List<(int R, string Reference)>();
-                    foreach (Match match in matches)
-                    {
-                        int r = int.Parse(match.Groups["index"].Value);
-                        string reference = match.Groups["reference"].Value;
-                        items.Add((r, reference));
-                    }
-
+                    foreach (Match match in matches) { r = int.Parse(match.Groups["index"].Value); reference = match.Groups["reference"].Value; items.Add((r, reference)); }
+                    //Item count check
+                    if (items.Count == 0)
+                        return new AnalyzerResult<List<string>> { Result = false, Data = null, ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR, ErrorMessage = "items.Count is 0" };
                     // شماره R تکراری
                     if (items.GroupBy(x => x.R).Any(g => g.Count() > 1))
-                    {
-                        return new AnalyzerResult<List<string>>
-                        {
-                            Result = false,
-                            Data = null,
-                            ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR,
-                            ErrorMessage = smsSendResult + SMS_SEND_RESULT_SAME
-                        };
-                    }
-
+                        return new AnalyzerResult<List<string>> { Result = false, Data = null, ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR, ErrorMessage = smsSendResult + SMS_SEND_RESULT_SAME };
                     // مرتب سازی
                     items = items.OrderBy(x => x.R).ToList();
                     // باید از R1 شروع شود
                     if (items[0].R != 1)
-                    {
-                        return new AnalyzerResult<List<string>>
-                        {
-                            Result = false,
-                            Data = null,
-                            ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR,
-                            ErrorMessage = smsSendResult + SMS_SEND_RESULT_START
-                        };
-                    }
-
+                        return new AnalyzerResult<List<string>> { Result = false, Data = null, ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR, ErrorMessage = smsSendResult + SMS_SEND_RESULT_START };
                     // بررسی نبود شکاف
                     for (int i = 0; i < items.Count; i++)
                     {
                         int expectedR = i + 1;
-
                         if (items[i].R != expectedR)
-                        {
-                            return new AnalyzerResult<List<string>>
-                            {
-                                Result = false,
-                                Data = null,
-                                ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR,
-                                ErrorMessage = smsSendResult + SMS_SEND_RESULT_GAP
-                            };
-                        }
+                            return new AnalyzerResult<List<string>> { Result = false, Data = null, ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR, ErrorMessage = smsSendResult + SMS_SEND_RESULT_GAP };
                     }
-
-                    return new AnalyzerResult<List<string>>
-                    {
-                        Result = true,
-                        Data = items.Select(x => x.Reference).ToList(),
-                        ErrorCode = ERROR_CODE.NO_ERROR,
-                        ErrorMessage = string.Empty
-                    };
+                    return new AnalyzerResult<List<string>> { Result = true, Data = items.Select(x => x.Reference).ToList(), ErrorCode = ERROR_CODE.NO_ERROR,ErrorMessage = string.Empty };
                 }
-                catch
+                catch(Exception ex)
                 {
-                    return new AnalyzerResult<List<string>>
-                    {
-                        Result = false,
-                        Data = null,
-                        ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR,
-                        ErrorMessage = smsSendResult
-                    };
+                    return new AnalyzerResult<List<string>> { Result = false, Data = null, ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR, ErrorMessage = ex.Message };
                 }
             }
 
             public static AnalyzerResult<BalanceData> TryParseCusdBalance(string response)
             {
                 if (string.IsNullOrWhiteSpace(response))
+                    return new AnalyzerResult<BalanceData> { Result = false, Data = null, ErrorCode = ERROR_CODE.NO_ERROR, ErrorMessage = string.Empty };
+                try
                 {
-                    return new AnalyzerResult<BalanceData>
+                    string balance, providerDomain;
+                    List<string> ussdTexts = ExtractCusdTexts(response);
+                    Match balanceMatch, domainMatch;
+                    foreach (string ussdText in ussdTexts)
                     {
-                        Result = false,
-                        Data = null,
-                        ErrorCode = ERROR_CODE.NO_ERROR,
-                        ErrorMessage = string.Empty
-                    };
-                }
-                List<string> ussdTexts = ExtractCusdTexts(response);
-                foreach (string ussdText in ussdTexts)
-                {
-                    Match balanceMatch = _balanceQuestionMarkRegex.Match(ussdText);
-                    if (!balanceMatch.Success)
-                    {
-                        balanceMatch = _balanceTextRegex.Match(ussdText);
+                        balanceMatch = _balanceQuestionMarkRegex.Match(ussdText);
                         if (!balanceMatch.Success)
                         {
-                            continue;
+                            balanceMatch = _balanceTextRegex.Match(ussdText);
+                            if (!balanceMatch.Success) continue;
                         }
+                        balance = balanceMatch.Groups["balance"].Value.Trim();
+                        domainMatch = _providerDomainRegex.Match(ussdText);
+                        if (domainMatch.Success) providerDomain = domainMatch.Groups["domain"].Value;
+                        else providerDomain = string.Empty;
+                        return new AnalyzerResult<BalanceData> { Result = true, Data = new BalanceData { Value = balance, ProviderDomain = providerDomain, UssdText = ussdText },
+                                                                 ErrorCode = ERROR_CODE.NO_ERROR, ErrorMessage = string.Empty };
                     }
-                    string balance = balanceMatch.Groups["balance"].Value.Trim();
-                    string providerDomain = string.Empty;
-                    Match domainMatch = _providerDomainRegex.Match(ussdText);
-                    if (domainMatch.Success)
-                    {
-                        providerDomain = domainMatch.Groups["domain"].Value;
-                    }
-                    return new AnalyzerResult<BalanceData>
-                    {
-                        Result = true,
-                        Data = new BalanceData { Value = balance, ProviderDomain = providerDomain, UssdText = ussdText },
-                        ErrorCode = ERROR_CODE.NO_ERROR,
-                        ErrorMessage = string.Empty
-                    };
+                    return new AnalyzerResult<BalanceData> { Result = false, Data = null, ErrorCode = ERROR_CODE.USSD_BALANCE_PARSE_ERROR, ErrorMessage = response };
                 }
-                return new AnalyzerResult<BalanceData>
+                catch(Exception ex)
                 {
-                    Result = false,
-                    Data = null,
-                    ErrorCode = ERROR_CODE.USSD_BALANCE_PARSE_ERROR,
-                    ErrorMessage = response
-                };
+                    return new AnalyzerResult<BalanceData> { Result = false, Data = null, ErrorCode = ERROR_CODE.USSD_BALANCE_PARSE_ERROR, ErrorMessage = ex.Message };
+                }
             }
 
             public static AnalyzerResult<MobileData> TryParseCusdMobileNumber(string response)
             {
                 if (string.IsNullOrWhiteSpace(response))
+                    return new AnalyzerResult<MobileData> { Result = false, Data = null, ErrorCode = ERROR_CODE.NO_ERROR, ErrorMessage = string.Empty };
+                try
                 {
-                    return new AnalyzerResult<MobileData>
+                    List<string> ussdTexts = ExtractCusdTexts(response);
+                    Match mobileMatch;
+                    foreach (string ussdText in ussdTexts)
                     {
-                        Result = false,
-                        Data = null,
-                        ErrorCode = ERROR_CODE.NO_ERROR,
-                        ErrorMessage = string.Empty
-                    };
-                }
-                List<string> ussdTexts = ExtractCusdTexts(response);
-                foreach (string ussdText in ussdTexts)
-                {
-                    Match mobileMatch = _mobileNumberRegex.Match(ussdText);
-                    if (!mobileMatch.Success)
-                    {
-                        continue;
+                        mobileMatch = _mobileNumberRegex.Match(ussdText);
+                        if (!mobileMatch.Success) continue;
+                        return new AnalyzerResult<MobileData> { Result = true, Data = new MobileData { Value = mobileMatch.Groups["mobileNumber"].Value, UssdText = ussdText },
+                                                                ErrorCode = ERROR_CODE.NO_ERROR, ErrorMessage = string.Empty };
                     }
-                    return new AnalyzerResult<MobileData>
-                    {
-                        Result = true,
-                        Data = new MobileData { Value = mobileMatch.Groups["mobileNumber"].Value, UssdText = ussdText },
-                        ErrorCode = ERROR_CODE.NO_ERROR,
-                        ErrorMessage = string.Empty
-                    };
+                    return new AnalyzerResult<MobileData> { Result = false, Data = null, ErrorCode = ERROR_CODE.USSD_MOBILE_NUMBER_PARSE_ERROR, ErrorMessage = string.Empty };
                 }
-                return new AnalyzerResult<MobileData>
+                catch (Exception ex)
                 {
-                    Result = false,
-                    Data = null,
-                    ErrorCode = ERROR_CODE.USSD_MOBILE_NUMBER_PARSE_ERROR,
-                    ErrorMessage = string.Empty
-                };
-            }
-
-            public static bool UssdResponseDetection(string response)
-            {
-                if (string.IsNullOrWhiteSpace(response))
-                {
-                    return false;
+                    return new AnalyzerResult<MobileData> { Result = false, Data = null, ErrorCode = ERROR_CODE.USSD_MOBILE_NUMBER_PARSE_ERROR, ErrorMessage = ex.Message };
                 }
-                return _cusdRegex.IsMatch(response);
             }
 
             //Helper
@@ -253,23 +153,14 @@ namespace GSM.Core.Source.Device
             private static List<string> ExtractCusdTexts(string response)
             {
                 List<string> result = new List<string>();
-                if (string.IsNullOrWhiteSpace(response))
-                {
-                    return result;
-                }
+                if (string.IsNullOrWhiteSpace(response)) return result;
                 MatchCollection cusdMatches = _cusdRegex.Matches(response);
+                string payload, decodedText;
                 foreach (Match cusdMatch in cusdMatches)
                 {
-                    string payload = cusdMatch.Groups["payload"].Value;
-                    string decodedText;
-                    if (TryDecodeCusdHexPayload(payload, out decodedText))
-                    {
-                        result.Add(decodedText);
-                    }
-                    else
-                    {
-                        result.Add(payload);
-                    }
+                    payload = cusdMatch.Groups["payload"].Value;
+                    if (TryDecodeCusdHexPayload(payload, out decodedText)) result.Add(decodedText);
+                    else result.Add(payload);
                 }
                 return result;
             }
@@ -277,33 +168,18 @@ namespace GSM.Core.Source.Device
             //Hex Decoder
             private static bool TryDecodeCusdHexPayload(string payload, out string decodedText)
             {
-                decodedText = null;
-                if (string.IsNullOrWhiteSpace(payload))
-                {
-                    return false;
-                }
+                decodedText = string.Empty;
+                if (string.IsNullOrWhiteSpace(payload)) return false;
                 string hexPayload = _whitespaceRegex.Replace(payload, string.Empty);
-                if (hexPayload.Length == 0)
-                {
-                    return false;
-                }
+                if (hexPayload.Length == 0) return false;
                 //Hex String contain 4 code for every character, such : "F0E1" or "123F089A"
-                if (hexPayload.Length % 4 != 0)
-                {
-                    return false;
-                }
+                if (hexPayload.Length % 4 != 0) return false;
                 //try to decode the hex string to text
-                if (!_hexPayloadRegex.IsMatch(hexPayload))
-                {
-                    return false;
-                }
+                if (!_hexPayloadRegex.IsMatch(hexPayload)) return false;
                 StringBuilder decoded = new StringBuilder(hexPayload.Length / 4);
                 for (int index = 0; index < hexPayload.Length; index += 4)
                 {
-                    if (!ushort.TryParse(hexPayload.Substring(index, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ushort codeUnit))
-                    {
-                        return false;
-                    }
+                    if (!ushort.TryParse(hexPayload.Substring(index, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ushort codeUnit)) return false;
                     decoded.Append((char)codeUnit);
                 }
                 decodedText = decoded.ToString();
@@ -644,16 +520,15 @@ namespace GSM.Core.Source.Device
             // ============================================================
             private static void BufferExtractFields(BufferData data)
             {
-
+                Match match;
                 if (data.Status == BUFFER_ACTION_STATUS.OK_MODEM_STATUS)
                 {
-                    Match match = _bufferOkModemStatusRegex.Match(data.Message);
+                    match = _bufferOkModemStatusRegex.Match(data.Message);
                     if (match.Success) { int modemStatus = (int)match.Groups["modemStatus"].Value[0]; data.Detail.Add(modemStatus.ToString()); }
                 }
-
                 if (data.Status == BUFFER_ACTION_STATUS.OK_DEVICE_NUMBER_GET)
                 {
-                    Match match = _bufferOkDeviceNumberRegex.Match(data.Message);
+                    match = _bufferOkDeviceNumberRegex.Match(data.Message);
                     if (match.Success) { int deviceNumber = (int)match.Groups["deviceNumber"].Value[0]; data.Detail.Add(deviceNumber.ToString()); }
                 }
                 switch (data.Action)
@@ -670,7 +545,7 @@ namespace GSM.Core.Source.Device
 
                     case BUFFER_ACTION.GSM_CONNECTION_ATE1:
                         {
-                            Match match = _bufferEchoModeResultRegex.Match(data.Message);
+                            match = _bufferEchoModeResultRegex.Match(data.Message);
                             if (match.Success) data.Detail.Add(match.Groups["echoMode"].Value);
                             break;
                         }
@@ -682,28 +557,28 @@ namespace GSM.Core.Source.Device
 
                     case BUFFER_ACTION.GSM_SIGNAL_RESPONSE:
                         {
-                            Match match = _bufferSignalResponseResultRegex.Match(data.Message);
+                            match = _bufferSignalResponseResultRegex.Match(data.Message);
                             if (match.Success) { data.Detail.Add(match.Groups["rssi"].Value); data.Detail.Add(match.Groups["ber"].Value); }
                             break;
                         }
 
                     case BUFFER_ACTION.PDU_MODE_SET:
                         {
-                            Match match = _bufferPduModeResultRegex.Match(data.Message);
+                            match = _bufferPduModeResultRegex.Match(data.Message);
                             if (match.Success) data.Detail.Add(match.Groups["mode"].Value);
                             break;
                         }
 
                     case BUFFER_ACTION.CHAR_MODE_SET:
                         {
-                            Match match = _bufferCharModeResultRegex.Match(data.Message);
+                            match = _bufferCharModeResultRegex.Match(data.Message);
                             if (match.Success) data.Detail.Add(match.Groups["charType"].Value);
                             break;
                         }
 
                     case BUFFER_ACTION.USSD_REQUEST:
                         {
-                            Match match = _bufferUssdRequestResultRegex.Match(data.Message);
+                            match = _bufferUssdRequestResultRegex.Match(data.Message);
                             if (match.Success)
                             { data.Detail.Add(match.Groups["mode"].Value); data.Detail.Add(match.Groups["ussdCode"].Value); data.Detail.Add(match.Groups["dcs"].Value); }
                             break;
@@ -711,7 +586,7 @@ namespace GSM.Core.Source.Device
 
                     case BUFFER_ACTION.USSD_RESPONSE:
                         {
-                            Match match = _bufferUssdResponseResultRegex.Match(data.Message);
+                            match = _bufferUssdResponseResultRegex.Match(data.Message);
                             if (match.Success)
                             { data.Detail.Add(match.Groups["status"].Value); data.Detail.Add(match.Groups["ussdText"].Value); data.Detail.Add(match.Groups["dcs"].Value);}
                             break;
@@ -719,28 +594,28 @@ namespace GSM.Core.Source.Device
 
                     case BUFFER_ACTION.SMS_SEND_COMMAND:
                         {
-                            Match match = _bufferSmsSendCommandResultRegex.Match(data.Message);
+                            match = _bufferSmsSendCommandResultRegex.Match(data.Message);
                             if (match.Success) data.Detail.Add(match.Groups["tpduLength"].Value);
                             break;
                         }
 
                     case BUFFER_ACTION.SMS_SEND_RESPONSE:
                         {
-                            Match match = _bufferSmsSendResponseResultRegex.Match(data.Message);
+                            match = _bufferSmsSendResponseResultRegex.Match(data.Message);
                             if (match.Success) data.Detail.Add(match.Groups["reference"].Value);
                             break;
                         }
 
                     case BUFFER_ACTION.INBOX_READ_COMMAND:
                         {
-                            Match match = _bufferInboxReadCommandResultRegex.Match(data.Message);
+                            match = _bufferInboxReadCommandResultRegex.Match(data.Message);
                             if (match.Success) data.Detail.Add(match.Groups["index"].Value);
                             break;
                         }
 
                     case BUFFER_ACTION.INBOX_READ_RESPONSE:
                         {
-                            Match match = _bufferInboxReadResponseResultRegex.Match(data.Message);
+                            match = _bufferInboxReadResponseResultRegex.Match(data.Message);
                             if (match.Success)
                             { data.Detail.Add(match.Groups["messageStatus"].Value); data.Detail.Add(match.Groups["field2"].Value); data.Detail.Add(match.Groups["length"].Value);
                               data.Detail.Add(match.Groups["textMessage"].Value); }
@@ -749,7 +624,7 @@ namespace GSM.Core.Source.Device
 
                     case BUFFER_ACTION.SMS_STORAGE_RESPONSE:
                         {
-                            Match match = _bufferSmsStorageResponseResultRegex.Match(data.Message);
+                            match = _bufferSmsStorageResponseResultRegex.Match(data.Message);
                             if (match.Success)
                             { data.Detail.Add(match.Groups["storage1"].Value); data.Detail.Add(match.Groups["used1"].Value); data.Detail.Add(match.Groups["total1"].Value);
                               data.Detail.Add(match.Groups["storage2"].Value); data.Detail.Add(match.Groups["used2"].Value); data.Detail.Add(match.Groups["total2"].Value);
@@ -759,7 +634,7 @@ namespace GSM.Core.Source.Device
 
                     case BUFFER_ACTION.SMS_DELETE:
                         {
-                            Match match = _bufferSmsDeleteCommandResultRegex.Match(data.Message);
+                            match = _bufferSmsDeleteCommandResultRegex.Match(data.Message);
                             if (match.Success) { data.Detail.Add(match.Groups["storageSlot"].Value); data.Detail.Add(match.Groups["deleteType"].Value); }
                             break;
                         }
@@ -768,14 +643,14 @@ namespace GSM.Core.Source.Device
                     //Timer Result
                     case BUFFER_ACTION.SMS_RECEIVED:
                         {
-                            Match match = _bufferSmsReceivedResultRegex.Match(data.Message);
+                            match = _bufferSmsReceivedResultRegex.Match(data.Message);
                             if (match.Success) { data.Detail.Add(match.Groups["storage"].Value); data.Detail.Add(match.Groups["index"].Value); }
                             break;
                         }
 
                     case BUFFER_ACTION.SMS_DELIVERY_REPORT:
                         {
-                            Match match = _bufferSmsDeliveryReportResultRegex.Match(data.Message);
+                            match = _bufferSmsDeliveryReportResultRegex.Match(data.Message);
                             if (match.Success) { data.Detail.Add(match.Groups["length"].Value); data.Detail.Add(match.Groups["pdu"].Value); }
                             break;
                         }
