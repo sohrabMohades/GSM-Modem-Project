@@ -19,7 +19,7 @@ namespace GSM.Core.Source.Device.Logging
         private readonly string _deviceId;
         private bool _disposed = false;
         private static readonly object _instancesLock = new object();
-
+        //test
         private DeviceLogger(string deviceId)
         {
             _deviceId = deviceId;
