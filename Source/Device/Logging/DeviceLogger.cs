@@ -91,6 +91,7 @@ namespace GSM.Core.Source.Device.Logging
             _logger.Error(ex, "❌ OPERATION_FAILED | Operation={Operation} | CorrelationId={CorrelationId} | Duration={DurationMs}ms | Error={ErrorMessage}", context.OperationName,
                           context.CorrelationId, duration.TotalMilliseconds, ex?.Message ?? "Unknown");
         }
+
         // ================== ERROR LOGGING ==================
         /// <summary>
         /// Log error with code and message
