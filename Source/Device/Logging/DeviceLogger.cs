@@ -63,7 +63,7 @@ namespace GSM.Core.Source.Device.Logging
             /// <summary>
             /// Gets or sets additional information about the operation.
             /// </summary>
-            public Dictionary<string, object> Metadata { get; set; } = new Dictionary<string, object>();
+            //public Dictionary<string, object> Metadata { get; set; } = new Dictionary<string, object>();
             /// <summary>
             /// Returns a short text representation of the operation context.
             /// </summary>
@@ -80,10 +80,7 @@ namespace GSM.Core.Source.Device.Logging
         /// <summary>
         /// Gets the error tracer associated with this device logger.
         /// </summary>
-        public ErrorTracer Errors
-        {
-            get { return _errorTracer; }
-        }
+        public ErrorTracer Errors { get => this._errorTracer; }
 
         /// <summary>
         /// Initializes a new DeviceLogger for the specified device.
@@ -96,8 +93,7 @@ namespace GSM.Core.Source.Device.Logging
             string safeDeviceId = new string(deviceId.Select(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' ? c : '_').ToArray());
             if (string.IsNullOrWhiteSpace(safeDeviceId)) safeDeviceId = "DEFAULT";
             // Log directory
-            string logsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-            Directory.CreateDirectory(logsDirectory);
+            string logsDirectory = InitializeLogging();
             // Log file paths
             string textLogPath = Path.Combine(logsDirectory, $"device-{safeDeviceId}-.txt");
             string jsonLogPath = Path.Combine(logsDirectory, $"device-{safeDeviceId}-structured-.json");
@@ -114,6 +110,16 @@ namespace GSM.Core.Source.Device.Logging
             // Log initialization
             this._logger.Information("Logger initialized for Device: {DeviceId}", deviceId);
             _errorTracer = new ErrorTracer(this);
+        }
+        /// <summary>
+        /// Initializes the logging directory.
+        /// </summary>
+        /// <returns>The full path of the logging directory.</returns>
+        private static string InitializeLogging()
+        {
+            string logsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+            Directory.CreateDirectory(logsDirectory);
+            return logsDirectory;
         }
         /// <summary>
         /// Gets the existing DeviceLogger or creates a new instance.
@@ -167,7 +173,7 @@ namespace GSM.Core.Source.Device.Logging
         /// <param name="status">The failure status.</param>
         /// <param name="errorCode">The error code, if available.</param>
         /// <param name="errorMessage">The error description.</param>
-        public void OperationFailed( LogContext context, Exception ex = null, string status = "FAIL", string errorCode = null, string errorMessage = null)
+        public void OperationFailed(LogContext context, Exception ex = null, string status = "FAIL", string errorCode = null, string errorMessage = null)
         {
             if (context == null) return;
             if (string.IsNullOrWhiteSpace(status)) status = "FAIL";
@@ -186,7 +192,7 @@ namespace GSM.Core.Source.Device.Logging
         /// <param name="ex">The related exception, if available.</param>
         public void LogError(string errorCode, string errorMessage, string operation, Exception ex = null)
         {
-            if (string.IsNullOrWhiteSpace(errorCode))  errorCode = "UNKNOWN";
+            if (string.IsNullOrWhiteSpace(errorCode)) errorCode = "UNKNOWN";
             if (string.IsNullOrWhiteSpace(operation)) operation = "UNKNOWN";
             if (string.IsNullOrWhiteSpace(errorMessage)) errorMessage = ex != null ? ex.Message : "No error message provided.";
             this._logger.Error(ex, "ERROR | ErrorCode={ErrorCode} | ErrorMessage={ErrorMessage} | Operation={Operation}", errorCode, errorMessage, operation);
@@ -257,6 +263,49 @@ namespace GSM.Core.Source.Device.Logging
             if (this._disposed) return;
             (this._logger as IDisposable)?.Dispose();
             this._disposed = true;
+        }
+
+        /// <summary>
+        /// Executes an operation and logs its start, completion, or failure.
+        /// </summary>
+        /// <typeparam name="T">The type of the operation result.</typeparam>
+        /// <param name="operation">The operation to execute.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <returns>The result returned by the operation.</returns>
+        public T LogOperation<T>(Func<T> operation, string operationName)
+        {
+            var context = this.OperationStart(operationName);
+            try
+            {
+                var result = operation.Invoke();
+                this.OperationComplete(context, "SUCCESS", new { Result = result });
+                return result;
+            }
+            catch (Exception ex)
+            {
+                this.OperationFailed(context, ex);
+                throw;
+            }
+        }
+        /// <summary>
+        /// Executes an operation without a return value and logs its
+        /// start, completion, or failure.
+        /// </summary>
+        /// <param name="operation">The operation to execute.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        public void LogOperation(Action operation, string operationName)
+        {
+            var context = this.OperationStart(operationName);
+            try
+            {
+                operation.Invoke();
+                this.OperationComplete(context, "SUCCESS");
+            }
+            catch (Exception ex)
+            {
+                this.OperationFailed(context, ex);
+                throw;
+            }
         }
 
         public class ErrorTracer
@@ -391,16 +440,22 @@ namespace GSM.Core.Source.Device.Logging
             /// </summary>
             /// <returns>The number of stored errors.</returns>
             public int GetTotalErrorCount() { lock (this._historyLock) return this._errorHistory.Count; }
-           
+            /// <summary>
+            /// Generates a report containing error statistics and recent errors.
+            /// </summary>
+            /// <returns>A formatted error report.</returns>
             public string GenerateErrorReport()
             {
-                var patterns = GetErrorPatterns();
+                List<ErrorRecord> snapshot;
+                lock (this._historyLock) snapshot = this._errorHistory.ToList();
+                var patterns = snapshot.GroupBy(e => e.ErrorCode).Select(g => (Code: g.Key, Count: g.Count(), FirstOccurrence: g.Min(x => x.Timestamp), LastOccurrence: g.Max(x => x.Timestamp),
+                                    LastMessage: g.OrderByDescending(x => x.Timestamp).First().ErrorMessage)).OrderByDescending(x => x.Count).ToList();
                 var sb = new StringBuilder();
                 sb.AppendLine("════════════════════════════════════════════════════════════");
                 sb.AppendLine("                      ERROR REPORT                          ");
                 sb.AppendLine("════════════════════════════════════════════════════════════");
                 sb.AppendLine($"Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}");
-                sb.AppendLine($"Total Errors: {_errorHistory.Count}");
+                sb.AppendLine($"Total Errors: {snapshot.Count}");
                 sb.AppendLine($"Unique Error Codes: {patterns.Count}");
                 sb.AppendLine();
                 sb.AppendLine("Top 10 Error Patterns:");
@@ -415,7 +470,7 @@ namespace GSM.Core.Source.Device.Logging
                     index++;
                 }
                 sb.AppendLine("Recent 5 Errors:");
-                var recent = GetRecentErrors(5);
+                var recent = snapshot.OrderByDescending(e => e.Timestamp).Take(5).ToList();
                 for (int i = 0; i < recent.Count; i++)
                 {
                     var err = recent[i];
@@ -429,103 +484,30 @@ namespace GSM.Core.Source.Device.Logging
                 return sb.ToString();
             }
             /// <summary>
-            /// Clear error history
+            /// Clears all errors from the in-memory history.
             /// </summary>
-            public void ClearHistory() { _errorHistory.Clear(); }
+            public void ClearHistory() { lock (this._historyLock) this._errorHistory.Clear(); }
             /// <summary>
-            /// Export error history as CSV
+            /// Exports the error history as a CSV-formatted string.
             /// </summary>
+            /// <returns>A CSV string containing all recorded errors.</returns>
             public string ExportAsCSV()
             {
+                List<ErrorRecord> snapshot;
+                lock (this._historyLock) snapshot = this._errorHistory.ToList();
                 var sb = new StringBuilder();
                 sb.AppendLine("Timestamp,ErrorCode,Operation,Layer,Message");
-                foreach (var error in _errorHistory.OrderBy(e => e.Timestamp))
-                    sb.AppendLine($"\"{error.Timestamp:yyyy-MM-dd HH:mm:ss.fff}\",\"{error.ErrorCode}\",\"{error.Operation}\",\"{error.LayerName}\",\"{error.ErrorMessage}\"");
+                foreach (var error in snapshot.OrderBy(e => e.Timestamp))
+                    sb.AppendLine($"\"{error.Timestamp:yyyy-MM-dd HH:mm:ss.fff}\",\"{EscapeCsv(error.ErrorCode)}\",\"{EscapeCsv(error.Operation)}\",\"{EscapeCsv(error.LayerName)}\"," +
+                                  $"\"{EscapeCsv(error.ErrorMessage)}\"");
                 return sb.ToString();
             }
+            /// <summary>
+            /// Escapes a value for safe inclusion in a CSV field.
+            /// </summary>
+            /// <param name="value">The value to escape.</param>
+            /// <returns>The escaped value.</returns>
+            private string EscapeCsv(string value) { return (value ?? string.Empty).Replace("\"", "\"\""); }
         }
     }
-    /// <summary>
-    /// Tracks error history and provides error analysis utilities.
-    /// </summary>
-    public static class LoggingInitializer
-    {
-        private static bool _initialized = false;
-        /// <summary>
-        /// Initialize logging system
-        /// Call this once at application startup
-        /// </summary>
-        public static void Initialize()
-        {
-            if (_initialized) return;
-            try
-            {
-                // Create logs directory if it doesn't exist
-                string logsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-                if (!Directory.Exists(logsDirectory)) Directory.CreateDirectory(logsDirectory);
-                _initialized = true;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to initialize logging: {ex.Message}");
-            }
-        }
-        /// <summary>
-        /// Check if logging is initialized
-        /// </summary>
-        public static bool IsInitialized => _initialized;
-    }
-    public static class LoggingExtensions
-    {
-        /// <summary>
-        /// Wraps a returning operation with automatic logging
-        /// Usage: return device.LogOperation(() => operation(), "OperationName");
-        /// </summary>
-        public static T LogOperation<T>(this Device device, Func<T> operation, string operationName)
-        {
-            if (string.IsNullOrEmpty(operationName)) throw new ArgumentException("Operation name cannot be null or empty", nameof(operationName));
-            var logger = DeviceLogger.GetInstance(device?.DllFileName ?? "Device");
-            var context = logger.OperationStart(operationName);
-            try
-            {
-                var result = operation.Invoke();
-                logger.OperationComplete(context, "SUCCESS", new { Result = result });
-                return result;
-            }
-            catch (Exception ex)
-            {
-                logger.OperationFailed(context, ex);
-                throw;
-            }
-        }
-        /// <summary>
-        /// Wraps a void operation with automatic logging
-        /// Usage: device.LogOperation(() => DoSomething(), "OperationName");
-        /// </summary>
-        public static void LogOperation(this Device device, Action operation, string operationName)
-        {
-            if (string.IsNullOrEmpty(operationName)) throw new ArgumentException("Operation name cannot be null or empty", nameof(operationName));
-            var logger = DeviceLogger.GetInstance(device?.DllFileName ?? "Device");
-            var context = logger.OperationStart(operationName);
-            try
-            {
-                operation.Invoke();
-                logger.OperationComplete(context, "SUCCESS");
-            }
-            catch (Exception ex)
-            {
-                logger.OperationFailed(context, ex);
-                throw;
-            }
-        }
-        /// <summary>
-        /// Get logger instance for the device
-        /// </summary>
-        public static DeviceLogger GetLogger(this Device device) { return DeviceLogger.GetInstance(device?.DllFileName ?? "Device"); }
-        /// <summary>
-        /// Get error tracer instance for the device
-        /// </summary>
-        public static ErrorTracer GetErrorTracer(this Device device) { var logger = GetLogger(device); return ErrorTracer.GetInstance(logger); }
-    }
-
 }
