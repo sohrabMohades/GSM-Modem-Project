@@ -11,30 +11,24 @@ namespace GSM.Core.Source.Device
     public partial class Device : IDisposable
     {
         //Error Manager
-        private void ErrorReset()
-        {
-            this._state.ErrorCode = ERROR_CODE.NO_ERROR;
-            this._state.ErrorMessage = string.Empty;
-        }
+        private void ErrorReset() { this._state.ErrorCode = ERROR_CODE.NO_ERROR; this._state.ErrorMessage = string.Empty; }
         private FUNC_RESULT DllWrapperHasError(FUNC_RESULT funcResult)
         {
             try
             {
                 if (this._dllWrapper.ErrorCode == DllWrapper.ERROR_CODE.NO_ERROR) return funcResult;
-                else
-                {
-                    this.DllWrapperErrorCheckSetValue(this._dllWrapper.ErrorMessage); return FUNC_RESULT.MAJOR_ERROR;
-                }
+                else { this.DllWrapperErrorCheckSetValue(this._dllWrapper.ErrorMessage); return FUNC_RESULT.MAJOR_ERROR; }
             }
             catch (Exception ex)
             {
                 this.DllWrapperErrorCheckSetValue(ex.Message); return FUNC_RESULT.MAJOR_ERROR;
             }
         }
-        private void DllWrapperErrorCheckSetValue(string error)
+        private bool DllWrapperErrorCheckSetValue(string error)
         {
             this._state.ErrorCode = ERROR_CODE.DLL_WRAPPER;
             this._state.ErrorMessage = error;
+            return false;
         }
         private bool ErrorSet(ERROR_CODE ErrorCode, string ErrorMessage)
         {
@@ -44,36 +38,19 @@ namespace GSM.Core.Source.Device
         }
         //Error Manager
         //Busy Flag manager
-        private bool TrySetBusy()
-        {
-            return Interlocked.CompareExchange(ref this._state.Busy, 1, 0) == 0;
-        }
-        private void DeviceBusyDeactive()
-        {
-            Interlocked.Exchange(ref this._state.Busy, 0);
-        }
+        private bool TrySetBusy() { return Interlocked.CompareExchange(ref this._state.Busy, 1, 0) == 0; }
+        private void DeviceBusyDeactive() => Interlocked.Exchange(ref this._state.Busy, 0); 
         //Busy Flag manager
         //Timeout
-        private void TimeOutStart()
-        {
-            this._runtimeInfo.TimeOutCounter = DateTime.Now;
-        }
+        private void TimeOutStart() => this._runtimeInfo.TimeOutCounter = DateTime.Now;
         private bool TimeOutEnd()
-        {
-            if ((DateTime.Now - this._runtimeInfo.TimeOutCounter).TotalMilliseconds >= this._runtimeConfig.TimeoutMaxMs) return true;
-            else return false;
-        }
+        { if ((DateTime.Now - this._runtimeInfo.TimeOutCounter).TotalMilliseconds >= this._runtimeConfig.TimeoutMaxMs) return true; else return false; }
         //End : Timeout
         //Internal Status
         private bool InternalStatusCheck(INTERNAL_STATUS MinStatusNeed, string FuncName)
         {
-            if (FuncName == nameof(this.DeviceNumberChange))
-            {
-                if ((int)this._state.InternalStatus == (int)MinStatusNeed) return true;
-                else return false;
-            }
-            if ((int)this._state.InternalStatus >= (int)MinStatusNeed) return true;
-            else return false;
+            if (FuncName == nameof(this.DeviceNumberChange)) { if ((int)this._state.InternalStatus == (int)MinStatusNeed) return true; else return false; }
+            if ((int)this._state.InternalStatus >= (int)MinStatusNeed) return true; else return false;
         }
         private void InternalStatusUpdate()
         {

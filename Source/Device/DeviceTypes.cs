@@ -480,6 +480,8 @@ namespace GSM.Core.Source.Device
         private DeviceRuntimePropertiesInbox _runtimeInboxProperty = new DeviceRuntimePropertiesInbox();
         private DeviceRuntimeInboxConfiguration _runtimeInboxConfig = new DeviceRuntimeInboxConfiguration();
         private DeviceRuntimeBuffer _runtimeBuffer = new DeviceRuntimeBuffer();
+
+        private DeviceLogger _logger;
         //End : Variable
     }
 }

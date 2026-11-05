@@ -1,13 +1,6 @@
 ﻿using GSM.Core.Source.Common;
-using GSM.Core.Source.DllWrapper;
-using GSM.Core.Source.Device.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using static GSM.Core.Source.Common.DeviceDefinitions;
 
 namespace GSM.Core.Source.Device
 {
@@ -294,13 +287,16 @@ namespace GSM.Core.Source.Device
         ------------------------------------------------
 
         ------------------------------------------------
-        Controller
-            ├─ Workflow
-            ├─ Workflow
-            └─ ComplexWorkflow
-                  ├─ Workflow
-                  ├─ Workflow
-                  └─ Workflow
+           Controller
+        ├── Workflow
+        ├── Workflow
+        └── ComplexWorkflow
+              ├── Workflow
+              ├── Workflow
+              └── Workflow
+                    ├── Execute
+                    ├── Execute
+                    └── Execute
         ------------------------------------------------
 
         ====================================================================
@@ -634,50 +630,23 @@ namespace GSM.Core.Source.Device
         //constructor
         public Device(string DllFileName)
         {
-            this.ErrorReset();
+            this._logger = new DeviceLogger();
             this._dllFileName = DllFileName;
-            bool result = true;
-            if (result)
-            {
-                result = this.DllLoad();
-            }
-
-            if (result)
-            {
-                result = this.DllLoadCheck();
-            }
+            this.ErrorReset();
+            bool result = this.DllLoad();
             this.ConstructorStatusSet(result);
         }
         //End : constructor
 
         //Deconstructor
-        ~Device()
-        {
-            Dispose(false);
-        }
-        public void Dispose()
-        {
-            Dispose(true);
-
-            GC.SuppressFinalize(this);
-        }
+        ~Device() { Dispose(false); }
+        public void Dispose() { Dispose(true); GC.SuppressFinalize(this); }
         protected virtual void Dispose(bool disposing)
         {
-            if (_disposed)
-            {
-                return;
-            }
-
-            if (disposing)
-            {
-                if (_dllWrapper != null)
-                {
-                    _dllWrapper.Dispose();
-                    _dllWrapper = null;
-                }
-            }
-
-            _disposed = true;
+            if (this._disposed) return;
+            if (disposing && this._dllWrapper != null) { this._dllWrapper.Dispose(); this._dllWrapper = null; }
+            if (disposing && this._logger != null) { this._logger.Dispose(); this._logger = null; }
+            this._disposed = true;
         }
         //End : Deconstructor
 
@@ -685,67 +654,38 @@ namespace GSM.Core.Source.Device
         //Constructor Helper
         private bool DllLoad()
         {
-            try
-            {
-                this._dllWrapper = new DllWrapper.ManshoorGsmDllWrapper(this._dllFileName);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                DllWrapperErrorCheckSetValue($"Device Constructor Error : {ex.Message}");
-                return false;
-            }
+            try { this._dllWrapper = new DllWrapper.ManshoorGsmDllWrapper(this._dllFileName); return this.DllLoadCheck(); }
+            catch (Exception ex) { return DllWrapperErrorCheckSetValue($"Device Constructor Error : {ex.Message}"); }
         }
         private bool DllLoadCheck()
         {
             try
             {
-                if (this._dllWrapper.ErrorCode == DllWrapper.ERROR_CODE.NO_ERROR)
-                {
-                    return true;
-                }
-                else
-                {
-                    DllWrapperErrorCheckSetValue("DllWrapper ErrorCode = " + this._dllWrapper.ErrorCode.ToString() + " - ErrorMessage = " + this._dllWrapper.ErrorMessage);
-                    return false;
-                }
+                if (this._dllWrapper.ErrorCode == DllWrapper.ERROR_CODE.NO_ERROR) return true;
+                else return DllWrapperErrorCheckSetValue("DllWrapper ErrorCode = " + this._dllWrapper.ErrorCode.ToString() + " - ErrorMessage = " + this._dllWrapper.ErrorMessage);
             }
             catch (Exception ex)
             {
-                DllWrapperErrorCheckSetValue($"Device Constructor Error : {ex.Message}");
-                return false;
+                return DllWrapperErrorCheckSetValue($"Device Constructor Error : {ex.Message}");
             }
         }
         private void ConstructorStatusSet(bool result)
         {
-            if (result)
-            {
-                this._state.InternalStatus = INTERNAL_STATUS.BASIC_LEVEL;
-            }
-            else
-            {
-                this._state.InternalStatus = INTERNAL_STATUS.INVALID;
-            }
+            if (result) this._state.InternalStatus = INTERNAL_STATUS.BASIC_LEVEL;
+            else this._state.InternalStatus = INTERNAL_STATUS.INVALID;
         }
         //Constructor Helper
         //Device Helper
         private void XXXBaseSetValue<T>(FUNC_RESULT result, T successValue, T failValue, ref T target)
-        {
-            target = result == FUNC_RESULT.SUCCESS ? successValue : failValue;
-        }
+        { target = result == FUNC_RESULT.SUCCESS ? successValue : failValue; }
         private void XXXBaseSetValue(FUNC_RESULT resultFunc, bool inputResult, ref BOOL_TYPE outResult)
-        {
-            outResult = resultFunc == FUNC_RESULT.SUCCESS ? (inputResult ? BOOL_TYPE.TRUE : BOOL_TYPE.FALSE) : BOOL_TYPE.UNKNOWN;
-        }
+        { outResult = resultFunc == FUNC_RESULT.SUCCESS ? (inputResult ? BOOL_TYPE.TRUE : BOOL_TYPE.FALSE) : BOOL_TYPE.UNKNOWN; }
         private void XXXSetValue<T>(FUNC_RESULT result, T successValue, T failValue, ref T outputValue, ref T internalValue, bool internalValueSet)
         {
             outputValue = result == FUNC_RESULT.SUCCESS ? successValue : failValue;
             if (internalValueSet) internalValue = outputValue;
         }
-        private void XXXSetValue<T>(T NewValue, ref T internalValue, bool internalValueSet)
-        {
-            if (internalValueSet) internalValue = NewValue;
-        }
+        private void XXXSetValue<T>(T NewValue, ref T internalValue, bool internalValueSet) { if (internalValueSet) internalValue = NewValue; }
         private FUNC_RESULT XXXExecuteReturn<T>(bool DoubleCheck, FUNC_RESULT Result1, FUNC_RESULT Result2, ref T InputValue1, T InputValue2, T InvalidValue)
         {
             if (Result1 == FUNC_RESULT.MAJOR_ERROR || Result2 == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.MAJOR_ERROR;
@@ -754,15 +694,9 @@ namespace GSM.Core.Source.Device
                 else { InputValue1 = InvalidValue; return FUNC_RESULT.FAIL; }
             else return Result1;
         }
-        private bool XXXOutput(BOOL_TYPE value)
-        {
-            return value == BOOL_TYPE.TRUE;
-        }
+        private bool XXXOutput(BOOL_TYPE value) { return value == BOOL_TYPE.TRUE; }
         private BOOL_TYPE BoolType(FUNC_RESULT FuncResult, bool ResultBool)
-        {
-            if (FuncResult == FUNC_RESULT.SUCCESS && ResultBool) return BOOL_TYPE.TRUE;
-            else return BOOL_TYPE.FALSE;
-        }
+        { if (FuncResult == FUNC_RESULT.SUCCESS && ResultBool) return BOOL_TYPE.TRUE; else return BOOL_TYPE.FALSE; }
         //End : Device Helper
         //End : Helper
     }
