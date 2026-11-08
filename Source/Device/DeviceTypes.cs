@@ -106,6 +106,14 @@ namespace GSM.Core.Source.Device
             MAJOR_ERROR
         }
         //End : Enum Function Result
+        //Enum Function Type
+        private enum FUNC_TYPE
+        {
+            WORKFLOW,           // Represents a standard workflow function.
+            COMPLEX_WORKFLOW,   // Represents a complex workflow function.
+            EXECUTE             // Represents a low-level execution function.
+        }
+        //End : Enum Function Type
         //Enum Operation execute Delay ms
         private enum OPERATION_DELAY_MS
         {
@@ -481,6 +489,7 @@ namespace GSM.Core.Source.Device
         private DeviceRuntimeInboxConfiguration _runtimeInboxConfig = new DeviceRuntimeInboxConfiguration();
         private DeviceRuntimeBuffer _runtimeBuffer = new DeviceRuntimeBuffer();
 
+        private ErrorTracer _errorTracer;
         private DeviceLogger _logger;
         //End : Variable
     }

@@ -1,4 +1,4 @@
-using Serilog;
+﻿using Serilog;
 using Serilog.Formatting.Compact;
 using System;
 using System.Collections.Generic;
@@ -20,190 +20,29 @@ namespace GSM.Core.Source.Device
             /// <summary>
             /// Provides logging methods for the current device.
             /// </summary>
-            //private readonly DeviceLogger _logger;
             private readonly ILogger _logger;
             /// <summary>
             /// Indicates whether this logger has been disposed.
             /// </summary>
             private bool _disposed = false;
             /// <summary>
-            /// Provides error tracking for the current device.
+            /// Stores active function logging contexts in nested execution order.
             /// </summary>
-            private readonly ErrorTracer _errorTracer;
-
-            /*
-            /// <summary>
-            /// Stores information about a device operation for logging and tracking.
-            /// </summary>
-            internal class LogContext
-            {
-                /// <summary>
-                /// Gets or sets the unique identifier of the operation.
-                /// </summary>
-                public string CorrelationId { get; set; }
-                /// <summary>
-                /// Gets or sets the name of the operation.
-                /// </summary>
-                public string OperationName { get; set; }
-                /// <summary>
-                /// Gets or sets the operation start time in UTC.
-                /// </summary>
-                public DateTime StartTime { get; set; }
-                /// <summary>
-                /// Gets or sets the parameters provided when the operation started.
-                /// </summary>
-                public object Parameters { get; set; }
-                private bool _isCompleted;
-                private readonly object _completionLock = new object();
-                /// <summary>
-                /// Returns a short text representation of the operation context.
-                /// </summary>
-                /// <returns>The correlation ID and operation name.</returns>
-                public override string ToString() { return $"[{CorrelationId}] {OperationName}"; }
-                /// <summary>
-                /// Gets the elapsed time since the operation started.
-                /// </summary>
-                /// <returns>The elapsed time as a TimeSpan value.</returns>
-                public TimeSpan GetDuration() { return DateTime.UtcNow - StartTime; }
-                /// <summary>
-                /// Attempts to mark the operation as completed.
-                /// Returns false if the operation has already been completed.
-                /// This prevents duplicate completion or failure logging.
-                /// </summary>
-                internal bool TryComplete()
-                {
-                    lock (this._completionLock)
-                    {
-                        if (this._isCompleted) return false;
-                        this._isCompleted = true;
-                        return true;
-                    }
-                }
-            }
-            */
-
+            private readonly Stack<FuncLogContext> _funcContextStack;
 
             /// <summary>
-            /// Represents the logging context of the main Device operation.
-            /// Manages operation information and the nested function execution contexts.
-            /// </summary>
-            private sealed class LogContext
-            {
-                /// <summary>
-                /// Gets the unique identifier of the main operation.
-                /// </summary>
-                public string CorrelationId { get; private set; }
-                /// <summary>
-                /// Gets the name of the main operation.
-                /// </summary>
-                public string OperationName { get; private set; }
-                /// <summary>
-                /// Gets the UTC time when the operation started.
-                /// </summary>
-                public DateTime StartTime { get; private set; }
-                /// <summary>
-                /// Gets the UTC time when the operation ended.
-                /// </summary>
-                public DateTime? EndTime { get; private set; }
-                /// <summary>
-                /// Gets the parameters associated with the main operation.
-                /// </summary>
-                public object Parameters { get; private set; }
-                /// <summary>
-                /// Stores the active function contexts in nested execution order.
-                /// </summary>
-                private readonly Stack<FuncLogContext> _funcContexts;
-                /// <summary>
-                /// Initializes a new logging context for the specified operation.
-                /// </summary>
-                /// <param name="operationName">The name of the main operation.</param>
-                /// <param name="parameters">The parameters associated with the operation.</param>
-                public LogContext(string operationName, object parameters = null)
-                {
-                    this.CorrelationId = Guid.NewGuid().ToString("N");
-                    this.OperationName = operationName;
-                    this.StartTime = DateTime.UtcNow;
-                    this.Parameters = parameters;
-                    this._funcContexts = new Stack<FuncLogContext>();
-                }
-                /// <summary>
-                /// Marks the operation as completed by recording its end time.
-                /// </summary>
-                public void Complete() => this.EndTime = DateTime.UtcNow;
-                /// <summary>
-                /// Gets the operation duration.
-                /// If the operation has ended, calculates the duration using its end time;
-                /// otherwise, calculates the duration up to the current time.
-                /// </summary>
-                /// <returns>The duration of the operation.</returns>
-                public TimeSpan GetDuration() { DateTime endTime = this.EndTime ?? DateTime.UtcNow; return endTime - this.StartTime; }
-                /// <summary>
-                /// Creates and activates a new function logging context.
-                /// The current active function, if any, becomes the parent function.
-                /// </summary>
-                /// <param name="functionName">The name of the function.</param>
-                /// <param name="functionType">The type of the function.</param>
-                /// <param name="parameters">The parameters associated with the function.</param>
-                /// <returns>The newly created function logging context.</returns>
-                public FuncLogContext StartFunc(string functionName, string functionType, object parameters = null)
-                {
-                    string parentFuncId = null;
-                    if (this._funcContexts.Count > 0) parentFuncId = this._funcContexts.Peek().FuncId;
-                    FuncLogContext context = new FuncLogContext(this.CorrelationId, functionName, functionType, parentFuncId, parameters);
-                    this._funcContexts.Push(context);
-                    return context;
-                }
-                /// <summary>
-                /// Gets the currently active function logging context.
-                /// </summary>
-                /// <returns>The active function context, or null if no function is active.</returns>
-                public FuncLogContext GetActiveFuncContext() { if (this._funcContexts.Count == 0) return null; return this._funcContexts.Peek(); }
-                /// <summary>
-                /// Completes the active function if its identifier matches the specified FuncId.
-                /// Only the function at the top of the stack can be completed.
-                /// </summary>
-                /// <param name="funcId">The identifier of the function to complete.</param>
-                /// <param name="funcResult">The final result of the function.</param>
-                /// <param name="completedContext">Receives the completed function context.</param>
-                /// <returns>True if the function was successfully completed; otherwise, false.</returns>
-                public bool TryCompleteFunc(string funcId, FUNC_RESULT funcResult, out FuncLogContext completedContext)
-                {
-                    completedContext = null;
-                    if (this._funcContexts.Count == 0) return false;
-                    FuncLogContext activeContext = this._funcContexts.Peek();
-                    if (activeContext.FuncId != funcId) return false;
-                    if (!activeContext.TryComplete(funcResult)) return false;
-                    completedContext = this._funcContexts.Pop();
-                    return true;
-                }
-                /// <summary>
-                /// Gets whether one or more function contexts are still active.
-                /// </summary>
-                public bool HasActiveFuncs { get => this._funcContexts.Count > 0; }
-                /// <summary>
-                /// Returns a string containing the operation identifier and name.
-                /// </summary>
-                /// <returns>The formatted operation context.</returns>
-                public override string ToString() => $"[{this.CorrelationId}] {this.OperationName}";
-            }
-
-            /// <summary>
-            /// Represents the logging context of a single function execution
-            /// within a main Device operation.
+            /// Represents the logging context of a single function execution.
+            /// Each context is uniquely identified and linked to its parent function.
             /// </summary>
             private sealed class FuncLogContext
             {
-                /// <summary>
-                /// Gets the identifier of the parent operation.
-                /// </summary>
-                public string CorrelationId { get; private set; }
                 /// <summary>
                 /// Gets the unique identifier of this function execution.
                 /// </summary>
                 public string FuncId { get; private set; }
                 /// <summary>
-                /// Gets the identifier of the parent function execution.
-                /// Null if this function is directly under the main operation.
+                /// Gets the identifier of the parent function.
+                /// Null if this function is a root function.
                 /// </summary>
                 public string ParentFuncId { get; private set; }
                 /// <summary>
@@ -212,95 +51,84 @@ namespace GSM.Core.Source.Device
                 public string FunctionName { get; private set; }
                 /// <summary>
                 /// Gets the type of the function.
-                /// Examples include Workflow, ComplexWorkflow, and Execute.
                 /// </summary>
-                public string FunctionType { get; private set; }
+                public Device.FUNC_TYPE FunctionType { get; private set; }
                 /// <summary>
                 /// Gets the result of the function execution.
-                /// The initial value is UNKNOWN until a result is assigned.
+                /// The initial value is UNKNOWN until the function ends.
                 /// </summary>
-                public FUNC_RESULT FuncResult { get; private set; }
+                public Device.FUNC_RESULT FuncResult { get; private set; }
                 /// <summary>
                 /// Gets the UTC time when the function started.
                 /// </summary>
                 public DateTime StartTime { get; private set; }
                 /// <summary>
                 /// Gets the UTC time when the function ended.
+                /// Null while the function is still active.
                 /// </summary>
                 public DateTime? EndTime { get; private set; }
+                /// <summary>
+                /// Gets the duration of the function execution.
+                /// Null while the function is still active.
+                /// </summary>
+                public TimeSpan? TimeDuration { get; private set; }
                 /// <summary>
                 /// Gets the parameters associated with the function.
                 /// </summary>
                 public object Parameters { get; private set; }
                 /// <summary>
-                /// Gets whether the function execution has been completed.
-                /// </summary>
-                public bool IsCompleted { get; private set; }
-                /// <summary>
                 /// Initializes a new function logging context.
                 /// </summary>
-                /// <param name="correlationId">The identifier of the parent operation.</param>
+                /// <param name="parentFuncId">
+                /// The identifier of the parent function, or null for a root function.
+                /// </param>
                 /// <param name="functionName">The name of the function.</param>
                 /// <param name="functionType">The type of the function.</param>
-                /// <param name="parentFuncId">The identifier of the parent function, if any.</param>
                 /// <param name="parameters">The parameters associated with the function.</param>
-                public FuncLogContext(string correlationId, string functionName, string functionType, string parentFuncId, object parameters = null)
+                public FuncLogContext(string parentFuncId, string functionName, Device.FUNC_TYPE functionType, object parameters = null)
                 {
-                    this.CorrelationId = correlationId;
                     this.FuncId = Guid.NewGuid().ToString("N");
                     this.ParentFuncId = parentFuncId;
                     this.FunctionName = functionName;
                     this.FunctionType = functionType;
-                    this.FuncResult = FUNC_RESULT.UNKNOWN;
+                    this.FuncResult = Device.FUNC_RESULT.UNKNOWN;
                     this.StartTime = DateTime.UtcNow;
                     this.Parameters = parameters;
-                    this.IsCompleted = false;
                 }
                 /// <summary>
-                /// Completes the function execution by assigning its result
-                /// and recording its end time.
+                /// Completes the function execution by assigning its result,
+                /// recording its end time, and calculating its duration.
                 /// </summary>
                 /// <param name="funcResult">The final result of the function execution.</param>
-                /// <returns>True if the function was completed; otherwise, false.</returns>
-                public bool TryComplete(FUNC_RESULT funcResult)
+                public void Complete(Device.FUNC_RESULT funcResult)
                 {
-                    if (this.IsCompleted) return false;
+                    DateTime endTime = DateTime.UtcNow;
                     this.FuncResult = funcResult;
-                    this.EndTime = DateTime.UtcNow;
-                    this.IsCompleted = true;
-                    return true;
+                    this.EndTime = endTime;
+                    this.TimeDuration = endTime - this.StartTime;
                 }
-                /// <summary>
-                /// Gets the function execution duration.
-                /// If the function has ended, calculates the duration using its end time;
-                /// otherwise, calculates the duration up to the current time.
-                /// </summary>
-                /// <returns>The duration of the function execution.</returns>
-                public TimeSpan GetDuration() { DateTime endTime = this.EndTime ?? DateTime.UtcNow; return endTime - this.StartTime; }
             }
 
-
-            /// <summary>
-            /// Gets the error tracer associated with this device logger.
-            /// </summary>
-            public ErrorTracer Errors { get => this._errorTracer; }
-            
+            // ================== Constructor & Decunstructor ==================
             /// <summary>
             /// Initializes a new DeviceLogger with a unique LogId.
             /// Creates the Serilog logger and its associated ErrorTracer.
             /// </summary>
             internal DeviceLogger()
             {
+                // Initialize function context stack
+                this._funcContextStack = new Stack<FuncLogContext>();
+                // Generate unique LogId
                 this._logId = Guid.NewGuid().ToString("N");
-                // Sanitize DeviceId for file name
+                // Sanitize LogId for file name
                 string safeLogId = new string(this._logId.Select(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' ? c : '_').ToArray());
                 if (string.IsNullOrWhiteSpace(safeLogId)) safeLogId = "DEFAULT";
-                // Log directory
+                // Initialize log directory
                 string logsDirectory = InitializeLogging();
-                // Log file paths
+                // Define log file paths
                 string textLogPath = Path.Combine(logsDirectory, $"device-{safeLogId}-.txt");
                 string jsonLogPath = Path.Combine(logsDirectory, $"device-{safeLogId}-structured-.json");
-                // Serilog Configuration
+                // Configure Serilog
                 this._logger = new LoggerConfiguration().MinimumLevel.Debug()
                     // Text Log
                     .WriteTo.File(path: textLogPath, outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
@@ -312,7 +140,6 @@ namespace GSM.Core.Source.Device
                     .Enrich.FromLogContext().Enrich.WithProperty("LogId", this._logId).CreateLogger();
                 // Log initialization
                 this._logger.Information("Logger initialized for Device: {LogId}", this._logId);
-                this._errorTracer = new ErrorTracer(this);
             }
             /// <summary>
             /// Initializes the logging directory.
@@ -331,380 +158,350 @@ namespace GSM.Core.Source.Device
             {
                 if (this._disposed) return;
                 this._disposed = true;
+                if (!this.FuncContextIsEmpty()) this._logger.Warning("Logger disposed while {FuncCount} function context(s) were still active.", this._funcContextStack.Count);
                 IDisposable disposableLogger = this._logger as IDisposable;
                 if (disposableLogger != null) disposableLogger.Dispose();
             }
-            // ================== OPERATION LIFECYCLE ==================
-            /// <summary>
-            /// Logs the start of an operation and creates its context.
-            /// </summary>
-            /// <param name="operationName">The name of the operation.</param>
-            /// <param name="parameters">Optional operation parameters.</param>
-            /// <returns>The context of the started operation.</returns>
-            public LogContext OperationStart(string operationName, object parameters = null)
-            {
-                if (string.IsNullOrWhiteSpace(operationName)) throw new ArgumentException("Operation name cannot be null or empty", nameof(operationName));
-                string correlationId = Guid.NewGuid().ToString("N").ToUpperInvariant();
-                var context = new LogContext { CorrelationId = correlationId, OperationName = operationName, StartTime = DateTime.UtcNow, Parameters = parameters };
-                this._logger.Information("OPERATION_START | Operation={Operation} | CorrelationId={CorrelationId} | Params={@Parameters}", operationName, correlationId, parameters ?? new { });
-                return context;
-            }
-            /// <summary>
-            /// Ends the specified operation by logging its final status.
-            /// Calls OperationComplete or OperationFailed based on the operation status.
-            /// </summary>
-            /// <param name="context">The context of the operation being completed.</param>
-            /// <param name="status">The final status of the operation.</param>
-            /// <param name="exception">The exception associated with the operation failure, if any.</param>
-            private void OperationEnd(LogContext context, FUNC_RESULT FuncResult, Exception exception = null)
-            {
-                if (FuncResult != FUNC_RESULT.SUCCESS || exception != null) this.OperationFailed(context, exception);
-                else this.OperationComplete(context);
-            }
-            /// <summary>
-            /// Logs the successful or normal completion of an operation.
-            /// </summary>
-            /// <param name="context">The context of the operation.</param>
-            /// <param name="operationResult">The final result of the operation.</param>
-            /// <param name="result">Optional operation result data.</param>
-            public void OperationComplete(LogContext context, string operationResult = "SUCCESS", object result = null)
-            {
-                // Prevent null context and duplicate operation completion.
-                if (context == null || !context.TryComplete()) return;
-                if (string.IsNullOrWhiteSpace(operationResult)) operationResult = "UNKNOWN";
-                var duration = context.GetDuration();
-                this._logger.Information("OPERATION_COMPLETE | Operation={Operation} | CorrelationId={CorrelationId} | operationResult={operationResult} | DurationMs={DurationMs} | " +
-                                         " Result={@Result}", context.OperationName, context.CorrelationId, operationResult, duration.TotalMilliseconds, result ?? new { });
-            }
-            /// <summary>
-            /// Logs an operation failure with its result and error details.
-            /// </summary>
-            /// <param name="context">The context of the failed operation.</param>
-            /// <param name="ex">The exception associated with the failure.</param>
-            /// <param name="operationResult">The failure operation result.</param>
-            /// <param name="errorCode">The error code, if available.</param>
-            /// <param name="errorMessage">The error description.</param>
-            public void OperationFailed(LogContext context, Exception ex = null, string operationResult = "FAIL", string errorCode = null, string errorMessage = null, object result = null)
-            {
-                // Prevent null context and duplicate operation completion.
-                if (context == null || !context.TryComplete()) return;
-                if (string.IsNullOrWhiteSpace(operationResult)) operationResult = "FAIL";
-                if (string.IsNullOrWhiteSpace(errorMessage)) errorMessage = ex != null ? ex.Message : operationResult;
-                var duration = context.GetDuration();
-                this._logger.Error(ex, "OPERATION_FAILED | Operation={Operation} | CorrelationId={CorrelationId} | operationResult={operationResult} | ErrorCode={ErrorCode} | " +
-                                   "DurationMs={DurationMs} | ErrorMessage={ErrorMessage} | Result={@Result}", context.OperationName, context.CorrelationId, operationResult, errorCode,
-                                   duration.TotalMilliseconds, errorMessage, result ?? new { });
-            }
-            // ================== ERROR LOGGING ==================
-            /// <summary>
-            /// Logs an error message with its code and operation name.
-            /// </summary>
-            /// <param name="errorCode">The error code.</param>
-            /// <param name="errorMessage">The error description.</param>
-            /// <param name="operation">The name of the related operation.</param>
-            /// <param name="ex">The related exception, if available.</param>
-            public void LogError(string errorCode, string errorMessage, string operation, Exception ex = null)
-            {
-                if (string.IsNullOrWhiteSpace(errorCode)) errorCode = "UNKNOWN";
-                if (string.IsNullOrWhiteSpace(operation)) operation = "UNKNOWN";
-                if (string.IsNullOrWhiteSpace(errorMessage)) errorMessage = ex != null ? ex.Message : "No error message provided.";
-                this._logger.Error(ex, "ERROR | ErrorCode={ErrorCode} | ErrorMessage={ErrorMessage} | Operation={Operation}", errorCode, errorMessage, operation);
-            }
-            /// <summary>
-            /// Logs a warning message for the specified operation.
-            /// </summary>
-            /// <param name="message">The warning message.</param>
-            /// <param name="operation">The name of the related operation.</param>
-            public void LogWarning(string message, string operation)
-            {
-                if (string.IsNullOrWhiteSpace(message)) message = "No warning message provided.";
-                if (string.IsNullOrWhiteSpace(operation)) operation = "UNKNOWN";
-                this._logger.Warning("WARNING | Message={Message} | Operation={Operation}", message, operation);
-            }
-            // ================== DLL OPERATIONS ==================
-            /// <summary>
-            /// Logs a DLL function call with its method name and parameters.
-            /// </summary>
-            /// <param name="methodName">The name of the DLL function.</param>
-            /// <param name="parameters">The function parameters, if available.</param>
-            public void LogDllCall(string methodName, Dictionary<string, object> parameters = null)
-            {
-                if (string.IsNullOrWhiteSpace(methodName)) methodName = "UNKNOWN";
-                this._logger.Debug("DLL_CALL | Method={Method} | Parameters={@Parameters}", methodName, parameters ?? new Dictionary<string, object>());
-            }
-            /// <summary>
-            /// Logs the result and execution time of a DLL function.
-            /// </summary>
-            /// <param name="methodName">The name of the DLL function.</param>
-            /// <param name="result">The function return value.</param>
-            /// <param name="durationMs">The execution time in milliseconds.</param>
-            public void LogDllResult(string methodName, object result, long durationMs)
-            {
-                if (string.IsNullOrWhiteSpace(methodName)) methodName = "UNKNOWN";
-                this._logger.Debug("DLL_RESULT | Method={Method} | Result={Result} | DurationMs={DurationMs}", methodName, result, durationMs);
-            }
-            // ================== STATE CHANGES ==================
-            /// <summary>
-            /// Logs a device state change with its reason.
-            /// </summary>
-            /// <param name="oldState">The previous device state.</param>
-            /// <param name="newState">The new device state.</param>
-            /// <param name="reason">The reason for the state change.</param>
-            public void LogStateChange(string oldState, string newState, string reason)
-            {
-                if (string.IsNullOrWhiteSpace(oldState)) oldState = "UNKNOWN";
-                if (string.IsNullOrWhiteSpace(newState)) newState = "UNKNOWN";
-                if (string.IsNullOrWhiteSpace(reason)) reason = "Not specified";
-                this._logger.Information("STATE_CHANGE | OldState={OldState} | NewState={NewState} | Reason={Reason}", oldState, newState, reason);
-            }
-            /// <summary>
-            /// Logs a change in a device flag or control value.
-            /// </summary>
-            /// <param name="flagName">The name of the flag or variable.</param>
-            /// <param name="oldValue">The previous value.</param>
-            /// <param name="newValue">The new value.</param>
-            public void LogFlagChange(string flagName, object oldValue, object newValue)
-            {
-                if (string.IsNullOrWhiteSpace(flagName)) flagName = "UNKNOWN";
-                this._logger.Debug("FLAG_CHANGE | FlagName={FlagName} | OldValue={OldValue} | NewValue={NewValue}", flagName, oldValue, newValue);
-            }
 
+            // ================== Error Report ==================
             /// <summary>
-            /// Executes an operation and logs its start, completion, or failure.
+            /// Generates a textual report of the recorded errors.
             /// </summary>
-            /// <typeparam name="T">The type of the operation result.</typeparam>
-            /// <param name="operation">The operation to execute.</param>
-            /// <param name="operationName">The name of the operation.</param>
-            /// <returns>The result returned by the operation.</returns>
-            public T LogOperation<T>(Func<T> operation, string operationName)
+            /// <returns>A formatted error report.</returns>
+            public string GenerateErrorSummaryReport(List<ErrorTracer.ErrorRecord> snapshot)
             {
-                if (operation == null) throw new ArgumentNullException(nameof(operation));
-                var context = this.OperationStart(operationName);
-                try
+                //List<ErrorTracer.ErrorRecord> snapshot = this._errorTracer.GetHistory();
+                var patterns = snapshot.GroupBy(e => e.ErrorCode).Select(g => new
                 {
-                    var result = operation.Invoke();
-                    this.OperationComplete(context, "SUCCESS", new { Result = result });
-                    return result;
-                }
-                catch (Exception ex)
+                    Code = g.Key,
+                    Count = g.Count(),
+                    FirstOccurrence = g.Min(x => x.Timestamp),
+                    LastOccurrence = g.Max(x => x.Timestamp),
+                    LastMessage = g.OrderByDescending(x => x.Timestamp).First().ErrorMessage
+                }).OrderByDescending(x => x.Count).ToList();
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("════════════════════════════════════════════════════════════");
+                sb.AppendLine("                      ERROR REPORT                          ");
+                sb.AppendLine("════════════════════════════════════════════════════════════");
+                sb.AppendLine($"Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}");
+                sb.AppendLine($"Total Errors: {snapshot.Count}");
+                sb.AppendLine($"Unique Error Codes: {patterns.Count}");
+                sb.AppendLine();
+                sb.AppendLine("Top 10 Error Patterns:");
+                int index = 1;
+                foreach (var pattern in patterns.Take(10))
                 {
-                    this.OperationFailed(context, ex);
-                    throw;
-                }
-            }
-            /// <summary>
-            /// Executes an operation without a return value and logs its
-            /// start, completion, or failure.
-            /// </summary>
-            /// <param name="operation">The operation to execute.</param>
-            /// <param name="operationName">The name of the operation.</param>
-            public void LogOperation(Action operation, string operationName)
-            {
-                if (operation == null) throw new ArgumentNullException(nameof(operation));
-                var context = this.OperationStart(operationName);
-                try
-                {
-                    operation.Invoke();
-                    this.OperationComplete(context, "SUCCESS");
-                }
-                catch (Exception ex)
-                {
-                    this.OperationFailed(context, ex);
-                    throw;
-                }
-            }
-
-            public class ErrorTracer
-            {
-                /// <summary>
-                /// Stores recent error records in memory.
-                /// </summary>
-                private readonly Queue<ErrorRecord> _errorHistory = new Queue<ErrorRecord>();
-                /// <summary>
-                /// Provides logging services for error records.
-                /// </summary>
-                private readonly DeviceLogger _logger;
-                /// <summary>
-                /// Synchronizes access to the error history.
-                /// </summary>
-                private readonly object _historyLock = new object();
-                /// <summary>
-                /// Defines the maximum number of error records kept in memory.
-                /// </summary>
-                private const int MAX_HISTORY = 1000;
-                public class ErrorRecord
-                {
-                    public DateTime Timestamp { get; set; }
-                    public string ErrorCode { get; set; }
-                    public string ErrorMessage { get; set; }
-                    public string Operation { get; set; }
-                    public Exception Exception { get; set; }
-                    public int Layer { get; set; } // Controller=1, Workflow=2, Base=3, DLL=4
-                    public string LayerName => Layer == 1 ? "Controller" : Layer == 2 ? "Workflow" : Layer == 3 ? "Base" : Layer == 4 ? "DLL" : "Unknown";
-                }
-                /// <summary>
-                /// Initializes a new ErrorTracer for the specified device logger.
-                /// </summary>
-                /// <param name="logger">The logger associated with the device.</param>
-                /// <exception cref="ArgumentNullException">
-                /// Thrown when the logger is null.
-                /// </exception>
-                internal ErrorTracer(DeviceLogger logger)
-                {
-                    if (logger == null) throw new ArgumentNullException(nameof(logger));
-                    this._logger = logger;
-                }
-                /// <summary>
-                /// Records an error in the device error history and log file.
-                /// </summary>
-                /// <param name="code">The error code.</param>
-                /// <param name="message">The error description.</param>
-                /// <param name="operation">The operation where the error occurred.</param>
-                /// <param name="layer">The device layer where the error occurred.</param>
-                /// <param name="ex">The related exception, if available.</param>
-                public void RecordError(ERROR_CODE code, string message, string operation, int layer = 1, Exception ex = null)
-                {
-                    var record = new ErrorRecord { Timestamp = DateTime.UtcNow, ErrorCode = code.ToString(), ErrorMessage = message, Operation = operation, Layer = layer, Exception = ex };
-                    // Store the error and maintain the history limit.
-                    lock (_historyLock)
-                    {
-                        this._errorHistory.Enqueue(record);
-                        if (this._errorHistory.Count > MAX_HISTORY) this._errorHistory.Dequeue();
-                    }
-                    // Write the error to the log file.
-                    this._logger.LogError(record.ErrorCode, record.ErrorMessage, $"{record.Operation} [{record.LayerName}]", record.Exception);
-                }
-                /// <summary>
-                /// Gets error patterns grouped by error code.
-                /// </summary>
-                /// <returns>
-                /// A list of error patterns ordered by occurrence count.
-                /// </returns>
-                public List<(string Code, int Count, DateTime FirstOccurrence, DateTime LastOccurrence, string LastMessage)> GetErrorPatterns()
-                {
-                    List<ErrorRecord> snapshot;
-                    lock (this._historyLock) snapshot = this._errorHistory.ToList();
-                    return snapshot.GroupBy(e => e.ErrorCode).Select(g => (Code: g.Key, Count: g.Count(), FirstOccurrence: g.Min(x => x.Timestamp), LastOccurrence: g.Max(x => x.Timestamp),
-                            LastMessage: g.OrderByDescending(x => x.Timestamp).First().ErrorMessage)).OrderByDescending(x => x.Count).ToList();
-                }
-                /// <summary>
-                /// Gets the most recent errors.
-                /// </summary>
-                /// <param name="count">The maximum number of errors to return.</param>
-                /// <returns>A list of recent errors, ordered from newest to oldest.</returns>
-                public List<ErrorRecord> GetRecentErrors(int count = 20)
-                {
-                    List<ErrorRecord> snapshot;
-                    lock (this._historyLock) snapshot = this._errorHistory.ToList();
-                    return snapshot.OrderByDescending(e => e.Timestamp).Take(count).ToList();
-                }
-                /// <summary>
-                /// Gets errors associated with a specific operation.
-                /// </summary>
-                /// <param name="operation">The operation name to search for.</param>
-                /// <returns>A list of matching errors, ordered from newest to oldest.</returns>
-                public List<ErrorRecord> GetErrorsByOperation(string operation)
-                {
-                    List<ErrorRecord> snapshot;
-                    lock (this._historyLock) snapshot = this._errorHistory.ToList();
-                    return snapshot.Where(e => e.Operation == operation).OrderByDescending(e => e.Timestamp).ToList();
-                }
-                /// <summary>
-                /// Gets errors associated with a specific error code.
-                /// </summary>
-                /// <param name="errorCode">The error code to search for.</param>
-                /// <returns>A list of matching errors, ordered from newest to oldest.</returns>
-                public List<ErrorRecord> GetErrorsByCode(string errorCode)
-                {
-                    List<ErrorRecord> snapshot;
-                    lock (this._historyLock) snapshot = this._errorHistory.ToList();
-                    return snapshot.Where(e => e.ErrorCode == errorCode).OrderByDescending(e => e.Timestamp).ToList();
-                }
-                /// <summary>
-                /// Gets errors recorded during the last 24 hours.
-                /// </summary>
-                /// <returns>A list of errors, ordered from newest to oldest.</returns>
-                public List<ErrorRecord> GetErrorsLast24Hours()
-                {
-                    DateTime twentyFourHoursAgo = DateTime.UtcNow.AddHours(-24);
-                    List<ErrorRecord> snapshot;
-                    lock (this._historyLock) snapshot = this._errorHistory.ToList();
-                    return snapshot.Where(e => e.Timestamp >= twentyFourHoursAgo).OrderByDescending(e => e.Timestamp).ToList();
-                }
-                /// <summary>
-                /// Gets the total number of errors currently stored in history.
-                /// </summary>
-                /// <returns>The number of stored errors.</returns>
-                public int GetTotalErrorCount() { lock (this._historyLock) return this._errorHistory.Count; }
-                /// <summary>
-                /// Generates a report containing error statistics and recent errors.
-                /// </summary>
-                /// <returns>A formatted error report.</returns>
-                public string GenerateErrorReport()
-                {
-                    List<ErrorRecord> snapshot;
-                    lock (this._historyLock) snapshot = this._errorHistory.ToList();
-                    var patterns = snapshot.GroupBy(e => e.ErrorCode).Select(g => (Code: g.Key, Count: g.Count(), FirstOccurrence: g.Min(x => x.Timestamp), LastOccurrence: g.Max(x => x.Timestamp),
-                                        LastMessage: g.OrderByDescending(x => x.Timestamp).First().ErrorMessage)).OrderByDescending(x => x.Count).ToList();
-                    var sb = new StringBuilder();
-                    sb.AppendLine("════════════════════════════════════════════════════════════");
-                    sb.AppendLine("                      ERROR REPORT                          ");
-                    sb.AppendLine("════════════════════════════════════════════════════════════");
-                    sb.AppendLine($"Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}");
-                    sb.AppendLine($"Total Errors: {snapshot.Count}");
-                    sb.AppendLine($"Unique Error Codes: {patterns.Count}");
+                    sb.AppendLine($"  {index}. [{pattern.Code}] - Occurred {pattern.Count} times");
+                    sb.AppendLine($"     ├─ First: {pattern.FirstOccurrence:yyyy-MM-dd HH:mm:ss}");
+                    sb.AppendLine($"     ├─ Last:  {pattern.LastOccurrence:yyyy-MM-dd HH:mm:ss}");
+                    sb.AppendLine($"     └─ Message: {pattern.LastMessage}");
                     sb.AppendLine();
-                    sb.AppendLine("Top 10 Error Patterns:");
-                    int index = 1;
-                    foreach (var (code, count, firstOcc, lastOcc, lastMsg) in patterns.Take(10))
-                    {
-                        sb.AppendLine($"  {index}. [{code}] - Occurred {count} times");
-                        sb.AppendLine($"     ├─ First: {firstOcc:yyyy-MM-dd HH:mm:ss}");
-                        sb.AppendLine($"     ├─ Last:  {lastOcc:yyyy-MM-dd HH:mm:ss}");
-                        sb.AppendLine($"     └─ Message: {lastMsg}");
-                        sb.AppendLine();
-                        index++;
-                    }
-                    sb.AppendLine("Recent 5 Errors:");
-                    var recent = snapshot.OrderByDescending(e => e.Timestamp).Take(5).ToList();
-                    for (int i = 0; i < recent.Count; i++)
-                    {
-                        var err = recent[i];
-                        sb.AppendLine($"  {i + 1}. [{err.ErrorCode}] at {err.Timestamp:yyyy-MM-dd HH:mm:ss.fff}");
-                        sb.AppendLine($"     ├─ Operation: {err.Operation}");
-                        sb.AppendLine($"     ├─ Layer: {err.LayerName}");
-                        sb.AppendLine($"     └─ Message: {err.ErrorMessage}");
-                        sb.AppendLine();
-                    }
-                    sb.AppendLine("════════════════════════════════════════════════════════════");
-                    return sb.ToString();
+                    index++;
                 }
-                /// <summary>
-                /// Clears all errors from the in-memory history.
-                /// </summary>
-                public void ClearHistory() { lock (this._historyLock) this._errorHistory.Clear(); }
-                /// <summary>
-                /// Exports the error history as a CSV-formatted string.
-                /// </summary>
-                /// <returns>A CSV string containing all recorded errors.</returns>
-                public string ExportAsCSV()
+                sb.AppendLine("Recent 5 Errors:");
+                List<ErrorTracer.ErrorRecord> recent = snapshot.OrderByDescending(e => e.Timestamp).Take(5).ToList();
+                for (int i = 0; i < recent.Count; i++)
                 {
-                    List<ErrorRecord> snapshot;
-                    lock (this._historyLock) snapshot = this._errorHistory.ToList();
-                    var sb = new StringBuilder();
-                    sb.AppendLine("Timestamp,ErrorCode,Operation,Layer,Message");
-                    foreach (var error in snapshot.OrderBy(e => e.Timestamp))
-                        sb.AppendLine($"\"{error.Timestamp:yyyy-MM-dd HH:mm:ss.fff}\",\"{EscapeCsv(error.ErrorCode)}\",\"{EscapeCsv(error.Operation)}\",\"{EscapeCsv(error.LayerName)}\"," +
-                                      $"\"{EscapeCsv(error.ErrorMessage)}\"");
-                    return sb.ToString();
+                    ErrorTracer.ErrorRecord err = recent[i];
+                    sb.AppendLine($"  {i + 1}. [{err.ErrorCode}] at {err.Timestamp:yyyy-MM-dd HH:mm:ss.fff}");
+                    sb.AppendLine($"     ├─ Function: {err.FunctionName}");
+                    sb.AppendLine($"     ├─ Type: {err.FunctionType}");
+                    sb.AppendLine($"     └─ Message: {err.ErrorMessage}");
+                    sb.AppendLine();
                 }
-                /// <summary>
-                /// Escapes a value for safe inclusion in a CSV field.
-                /// </summary>
-                /// <param name="value">The value to escape.</param>
-                /// <returns>The escaped value.</returns>
-                private static string EscapeCsv(string value) { return (value ?? string.Empty).Replace("\"", "\"\""); }
+                sb.AppendLine("════════════════════════════════════════════════════════════");
+                return sb.ToString();
             }
+            /// <summary>
+            /// Generates a detailed text report containing a specified number
+            /// of error records, ordered by timestamp.
+            /// </summary>
+            /// <param name="snapshot">
+            /// A snapshot of the error history retrieved from ErrorTracer.
+            /// </param>
+            /// <param name="descending">
+            /// Determines the order of error records.
+            /// True: Newest to oldest.
+            /// False: Oldest to newest.
+            /// </param>
+            /// <param name="maxCount">
+            /// Maximum number of error records to include in the report.
+            /// Zero means all available error records.
+            /// </param>
+            /// <returns>
+            /// A formatted text report containing the selected error records.
+            /// </returns>
+            public string GenerateFullErrorReport(List<ErrorTracer.ErrorRecord> snapshot, bool descending = true, int maxCount = 0)
+            {
+                if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+                if (maxCount < 0) throw new ArgumentOutOfRangeException(nameof(maxCount));
+                StringBuilder sb = new StringBuilder();
+                // Determine the ordering of error records
+                IEnumerable<ErrorTracer.ErrorRecord> orderedErrors = descending ? snapshot.OrderByDescending(error => error.Timestamp) : snapshot.OrderBy(error => error.Timestamp);
+                // Apply the maximum record count when specified
+                if (maxCount > 0) orderedErrors = orderedErrors.Take(maxCount);
+                // Materialize the selected records
+                List<ErrorTracer.ErrorRecord> reportErrors = orderedErrors.ToList();
+                // Report header
+                sb.AppendLine("============================================================");
+                sb.AppendLine("                    FULL ERROR REPORT");
+                sb.AppendLine("============================================================");
+                sb.AppendLine($"Generated At : {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff} UTC");
+                sb.AppendLine($"Total Errors : {reportErrors.Count}");
+                sb.AppendLine($"Order        : {(descending ? "Newest to Oldest" : "Oldest to Newest")}");
+                sb.AppendLine($"Requested    : {(maxCount == 0 ? "All" : maxCount.ToString())}");
+                sb.AppendLine("============================================================");
+                sb.AppendLine();
+                // Handle empty error history
+                if (reportErrors.Count == 0) { sb.AppendLine("No errors have been recorded."); return sb.ToString(); }
+                // Write each error record
+                for (int i = 0; i < reportErrors.Count; i++)
+                {
+                    ErrorTracer.ErrorRecord error = reportErrors[i];
+                    sb.AppendLine($"[{i + 1}] ERROR RECORD");
+                    sb.AppendLine("------------------------------------------------------------");
+                    sb.AppendLine($"Timestamp      : {error.Timestamp:yyyy-MM-dd HH:mm:ss.fff} UTC");
+                    sb.AppendLine($"Error Code     : {error.ErrorCode}");
+                    sb.AppendLine($"Function Name  : {error.FunctionName}");
+                    sb.AppendLine($"Function Type  : {error.FunctionType}");
+                    sb.AppendLine($"Func ID        : {error.FuncId}");
+                    sb.AppendLine($"Parent Func ID : {error.ParentFuncId ?? "N/A"}");
+                    sb.AppendLine($"Error Message  : {error.ErrorMessage}");
+                    // Include exception details when available
+                    if (error.Exception != null) { sb.AppendLine("Exception      :"); sb.AppendLine(error.Exception.ToString()); }
+                    sb.AppendLine("============================================================");
+                    sb.AppendLine();
+                }
+                return sb.ToString();
+            }
+            /// <summary>
+            /// Exports the recorded error history as CSV.
+            /// </summary>
+            /// <returns>A CSV-formatted string containing the error records.</returns>
+            public string ExportAsCSV(List<ErrorTracer.ErrorRecord> snapshot)
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("Timestamp,ErrorCode,FuncId,ParentFuncId,FunctionName,FunctionType,Message");
+                foreach (ErrorTracer.ErrorRecord error in snapshot.OrderBy(e => e.Timestamp))
+                    sb.AppendLine($"\"{error.Timestamp:yyyy-MM-dd HH:mm:ss.fff}\",\"{EscapeCsv(error.ErrorCode.ToString())}\",\"{EscapeCsv(error.FuncId)}\",\"{EscapeCsv(error.ParentFuncId)}\"," +
+                                  $"\"{EscapeCsv(error.FunctionName)}\",\"{EscapeCsv(error.FunctionType.ToString())}\",\"{EscapeCsv(error.ErrorMessage)}\"");
+                return sb.ToString();
+            }
+            /// <summary>
+            /// Exports a specified number of error records from the snapshot
+            /// to CSV format, ordered by timestamp.
+            /// </summary>
+            /// <param name="snapshot">
+            /// A snapshot of the error history retrieved from ErrorTracer.
+            /// </param>
+            /// <param name="descending">
+            /// Determines the order of error records.
+            /// True: Newest to oldest.
+            /// False: Oldest to newest.
+            /// </param>
+            /// <param name="maxCount">
+            /// Maximum number of error records to export.
+            /// Zero means all available error records.
+            /// </param>
+            /// <returns>
+            /// A CSV-formatted string containing the selected error records.
+            /// </returns>
+            public string ExportAsCSV(List<ErrorTracer.ErrorRecord> snapshot, bool descending, int maxCount = 0)
+            {
+                if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+                if (maxCount < 0) throw new ArgumentOutOfRangeException(nameof(maxCount));
+                StringBuilder sb = new StringBuilder();
+                // Determine the ordering of error records
+                IEnumerable<ErrorTracer.ErrorRecord> orderedErrors = descending ? snapshot.OrderByDescending(error => error.Timestamp) : snapshot.OrderBy(error => error.Timestamp);
+                // Apply the maximum record count when specified
+                if (maxCount > 0) orderedErrors = orderedErrors.Take(maxCount);
+                // CSV header
+                sb.AppendLine("Timestamp,ErrorCode,FuncId,ParentFuncId,FunctionName,FunctionType,Message,Exception");
+                // Write error records
+                foreach (ErrorTracer.ErrorRecord error in orderedErrors)
+                    sb.AppendLine($"\"{EscapeCsv(error.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"))}\",\"{EscapeCsv(error.ErrorCode.ToString())}\",\"{EscapeCsv(error.FuncId)}\"," +
+                                  $"\"{EscapeCsv(error.ParentFuncId)}\",\"{EscapeCsv(error.FunctionName)}\",\"{EscapeCsv(error.FunctionType.ToString())}\"," +
+                                  $"\"{EscapeCsv(error.ErrorMessage)}\",\"{EscapeCsv(error.Exception == null ? string.Empty : error.Exception.ToString())}\"");
+                return sb.ToString();
+            }
+            /// <summary>
+            /// Escapes a value for CSV formatting.
+            /// </summary>
+            private static string EscapeCsv(string value) => (value ?? string.Empty).Replace("\"", "\"\"");
+
+            // ================== Helper Functions ==================
+            //Stack Helper Methods
+            /// <summary>
+            /// Determines whether the function context stack is empty.
+            /// </summary>
+            /// <returns>
+            /// True if the stack contains no active function contexts; otherwise, false.
+            /// </returns>
+            private bool FuncContextIsEmpty() => this._funcContextStack.Count == 0;
+            /// <summary>
+            /// Gets the currently active function context without removing it from the stack.
+            /// </summary>
+            /// <returns>
+            /// The top function context, or null if the stack is empty.
+            /// </returns>
+            private FuncLogContext FuncContextPeek() => this.FuncContextIsEmpty() ? null : this._funcContextStack.Peek();
+            /// <summary>
+            /// Pushes a function context onto the stack.
+            /// </summary>
+            /// <param name="context">The function context to add.</param>
+            private void FuncContextPush(FuncLogContext context)
+            {
+                if (context == null) throw new ArgumentNullException(nameof(context));
+                this._funcContextStack.Push(context);
+            }
+            /// <summary>
+            /// Removes and returns the top function context from the stack.
+            /// Returns null if the stack is empty.
+            /// </summary>
+            private FuncLogContext FuncContextPop() => this.FuncContextIsEmpty() ? null : this._funcContextStack.Pop();
+            //End : Stack Helper Methods
+        }
+
+        /// <summary>
+        /// Manages the in-memory history of error records.
+        /// </summary>
+        private class ErrorTracer
+        {
+            /// <summary>
+            /// Stores recent error records in memory.
+            /// </summary>
+            private readonly Queue<ErrorRecord> _errorHistory = new Queue<ErrorRecord>();
+            /// <summary>
+            /// Synchronizes access to the error history.
+            /// </summary>
+            private readonly object _historyLock = new object();
+            /// <summary>
+            /// Defines the maximum number of error records kept in memory.
+            /// </summary>
+            private const int MAX_HISTORY = 1000;
+            /// <summary>
+            /// Represents an error record stored in the error history.
+            /// </summary>
+            public class ErrorRecord
+            {
+                /// <summary>
+                /// Gets or sets the timestamp when the error occurred.
+                /// </summary>
+                public DateTime Timestamp { get; set; }
+                /// <summary>
+                /// Gets or sets the error code.
+                /// </summary>
+                public Device.ERROR_CODE ErrorCode { get; set; }
+                /// <summary>
+                /// Gets or sets the error message.
+                /// </summary>
+                public string ErrorMessage { get; set; }
+                /// <summary>
+                /// Gets or sets the identifier of the function where the error occurred.
+                /// </summary>
+                public string FuncId { get; set; }
+                /// <summary>
+                /// Gets or sets the identifier of the parent function.
+                /// </summary>
+                public string ParentFuncId { get; set; }
+                /// <summary>
+                /// Gets or sets the name of the function where the error occurred.
+                /// </summary>
+                public string FunctionName { get; set; }
+                /// <summary>
+                /// Gets or sets the type of the function where the error occurred.
+                /// </summary>
+                public Device.FUNC_TYPE FunctionType { get; set; }
+                /// <summary>
+                /// Gets or sets the exception associated with the error.
+                /// </summary>
+                public Exception Exception { get; set; }
+            }
+            /// <summary>
+            /// Returns a snapshot of the current error history.
+            /// </summary>
+            public List<ErrorRecord> GetHistory() { lock (this._historyLock) { return this._errorHistory.ToList(); } }
+            /// <summary>
+            /// Records an error in the in-memory history.
+            /// Removes the oldest record when the maximum capacity is reached.
+            /// </summary>
+            public void RecordError(Device.ERROR_CODE errorCode, string errorMessage, string funcId, string parentFuncId, string functionName, Device.FUNC_TYPE functionType, Exception exception = null)
+            {
+                ErrorRecord record = new ErrorRecord
+                {
+                    Timestamp = DateTime.UtcNow,
+                    ErrorCode = errorCode,
+                    ErrorMessage = errorMessage,
+                    Exception = exception,
+                    FuncId = funcId,
+                    ParentFuncId = parentFuncId,
+                    FunctionName = functionName,
+                    FunctionType = functionType
+                };
+                lock (this._historyLock)
+                {
+                    while (this._errorHistory.Count >= MAX_HISTORY) this._errorHistory.Dequeue();
+                    this._errorHistory.Enqueue(record);
+                }
+            }
+            /// <summary>
+            /// Returns error patterns grouped by error code.
+            /// Results are ordered by occurrence count in descending order.
+            /// </summary>
+            public List<(Device.ERROR_CODE Code, int Count, DateTime FirstOccurrence, DateTime LastOccurrence, string LastMessage)> GetErrorPatterns()
+            {
+                List<ErrorRecord> snapshot;
+                lock (this._historyLock) snapshot = this._errorHistory.ToList();
+                return snapshot.GroupBy(e => e.ErrorCode).Select(g => (Code: g.Key, Count: g.Count(), FirstOccurrence: g.Min(x => x.Timestamp), LastOccurrence: g.Max(x => x.Timestamp),
+                                                                 LastMessage: g.OrderByDescending(x => x.Timestamp).First().ErrorMessage)).OrderByDescending(x => x.Count).ToList();
+            }
+            /// <summary>
+            /// Returns the most recent error records.
+            /// </summary>
+            /// <param name="count">Maximum number of records to return.</param>
+            public List<ErrorRecord> GetRecentErrors(int count = 20)
+            {
+                List<ErrorRecord> snapshot;
+                lock (this._historyLock) snapshot = this._errorHistory.ToList();
+                return snapshot.OrderByDescending(e => e.Timestamp).Take(count).ToList();
+            }
+            /// <summary>
+            /// Returns error records associated with a specific function name.
+            /// </summary>
+            public List<ErrorRecord> GetErrorsByFunctionName(string functionName)
+            {
+                List<ErrorRecord> snapshot;
+                lock (this._historyLock) snapshot = this._errorHistory.ToList();
+
+                return snapshot.Where(e => e.FunctionName == functionName).OrderByDescending(e => e.Timestamp).ToList();
+            }
+            /// <summary>
+            /// Returns error records associated with a specific error code.
+            /// </summary>
+            public List<ErrorRecord> GetErrorsByCode(Device.ERROR_CODE errorCode)
+            {
+                List<ErrorRecord> snapshot;
+                lock (this._historyLock) snapshot = this._errorHistory.ToList();
+                return snapshot.Where(e => e.ErrorCode == errorCode).OrderByDescending(e => e.Timestamp).ToList();
+            }
+            /// <summary>
+            /// Returns error records from the last 24 hours.
+            /// </summary>
+            public List<ErrorRecord> GetErrorsLast24Hours()
+            {
+                DateTime twentyFourHoursAgo = DateTime.UtcNow.AddHours(-24);
+                List<ErrorRecord> snapshot;
+                lock (this._historyLock) snapshot = this._errorHistory.ToList();
+                return snapshot.Where(e => e.Timestamp >= twentyFourHoursAgo).OrderByDescending(e => e.Timestamp).ToList();
+            }
+            /// <summary>
+            /// Returns the number of error records currently stored.
+            /// </summary>
+            public int Count { get { lock (this._historyLock) return this._errorHistory.Count; } }
+            /// <summary>
+            /// Clears all error records from the history.
+            /// </summary>
+            public void Clear() { lock (this._historyLock) this._errorHistory.Clear(); }
         }
     }
 }

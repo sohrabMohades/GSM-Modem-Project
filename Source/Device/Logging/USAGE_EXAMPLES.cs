@@ -1,9 +1,9 @@
 // مثال نحوهٔ استفاده از Logging System در Device
 
 using GSM.Core.Source.Device;
-using GSM.Core.Source.Device.Logging;
+//using GSM.Core.Source.Device.Logging;
 using System;
-
+/*
 namespace GSM.Core.Examples
 {
     public class DeviceLoggingExample

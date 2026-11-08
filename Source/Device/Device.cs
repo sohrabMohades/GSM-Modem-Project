@@ -630,6 +630,7 @@ namespace GSM.Core.Source.Device
         //constructor
         public Device(string DllFileName)
         {
+            this._errorTracer = new ErrorTracer();
             this._logger = new DeviceLogger();
             this._dllFileName = DllFileName;
             this.ErrorReset();
@@ -644,8 +645,12 @@ namespace GSM.Core.Source.Device
         protected virtual void Dispose(bool disposing)
         {
             if (this._disposed) return;
-            if (disposing && this._dllWrapper != null) { this._dllWrapper.Dispose(); this._dllWrapper = null; }
-            if (disposing && this._logger != null) { this._logger.Dispose(); this._logger = null; }
+            if (disposing)
+            {
+                if (this._dllWrapper != null) { this._dllWrapper.Dispose(); this._dllWrapper = null; }
+                if (this._logger != null) { this._logger.Dispose(); this._logger = null; }
+                if (this._errorTracer != null) this._errorTracer = null;
+            }
             this._disposed = true;
         }
         //End : Deconstructor
