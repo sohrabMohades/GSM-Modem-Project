@@ -2,6 +2,8 @@
 using Serilog.Formatting.Compact;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -75,7 +77,9 @@ namespace GSM.Core.Source.Device
                 /// <summary>
                 /// Gets the parameters associated with the function.
                 /// </summary>
-                public object Parameters { get; private set; }
+                public object InputParameters { get; private set; }
+                public object OutputParameters { get; private set; }
+                private readonly Stopwatch _stopwatch;
                 /// <summary>
                 /// Initializes a new function logging context.
                 /// </summary>
@@ -85,34 +89,38 @@ namespace GSM.Core.Source.Device
                 /// <param name="functionName">The name of the function.</param>
                 /// <param name="functionType">The type of the function.</param>
                 /// <param name="parameters">The parameters associated with the function.</param>
-                public FuncLogContext(string parentFuncId, string functionName, Device.FUNC_TYPE functionType, object parameters = null)
+                public FuncLogContext(string ParentFuncId, string FunctionName, Device.FUNC_TYPE FunctionType, object Parameters = null)
                 {
                     this.FuncId = Guid.NewGuid().ToString("N");
-                    this.ParentFuncId = parentFuncId;
-                    this.FunctionName = functionName;
-                    this.FunctionType = functionType;
+                    this.ParentFuncId = ParentFuncId;
+                    this.FunctionName = FunctionName;
+                    this.FunctionType = FunctionType;
                     this.FuncResult = Device.FUNC_RESULT.UNKNOWN;
                     this.StartTime = DateTime.UtcNow;
-                    this.Parameters = parameters;
+                    this.InputParameters = Parameters;
+                    this._stopwatch = Stopwatch.StartNew();
                 }
                 /// <summary>
                 /// Completes the function execution by assigning its result,
                 /// recording its end time, and calculating its duration.
                 /// </summary>
                 /// <param name="funcResult">The final result of the function execution.</param>
-                public void Complete(Device.FUNC_RESULT funcResult)
+                public void Complete(Device.FUNC_RESULT funcResult, object Parameters = null)
                 {
+                    this._stopwatch.Stop();
                     DateTime endTime = DateTime.UtcNow;
                     this.FuncResult = funcResult;
                     this.EndTime = endTime;
-                    this.TimeDuration = endTime - this.StartTime;
+                    this.OutputParameters = Parameters;
+                    this.TimeDuration = this._stopwatch.Elapsed; ;
                 }
             }
 
-            // ================== Constructor & Decunstructor ==================
+            // ================== Constructor & Dispose ==================
             /// <summary>
             /// Initializes a new DeviceLogger with a unique LogId.
-            /// Creates the Serilog logger and its associated ErrorTracer.
+            /// Initializes a new DeviceLogger with a unique LogId.
+            /// Creates and configures the Serilog logger.
             /// </summary>
             internal DeviceLogger()
             {
@@ -163,15 +171,141 @@ namespace GSM.Core.Source.Device
                 if (disposableLogger != null) disposableLogger.Dispose();
             }
 
+            // ================== OPERATION LIFECYCLE ==================
+            /// <summary>
+            /// Starts a new function logging context.
+            /// Automatically links the new function to the currently active parent function.
+            /// </summary>
+            /// <param name="functionName">The name of the function.</param>
+            /// <param name="functionType">The type of the function.</param>
+            /// <param name="parameters">The parameters associated with the function.</param>
+            public void FuncStart(string FunctionName, Device.FUNC_TYPE FunctionType, object Parameters = null)
+            {
+                // Get the currently active parent function
+                FuncLogContext parentContext = this.FuncContextPeek();
+                // Create a new function context
+                FuncLogContext context = new FuncLogContext(parentContext == null ? null : parentContext.FuncId, FunctionName, FunctionType, Parameters);
+                // Push the new context onto the stack
+                this.FuncContextPush(context);
+                // Log function start
+                this._logger.Information("FuncStart | {FuncId} | {ParentFuncId} | {FunctionName} | {FunctionType} | {@InputParameters}",
+                                         context.FuncId, context.ParentFuncId, context.FunctionName, context.FunctionType, context.InputParameters);
+            }
+            /// <summary>
+            /// Completes the currently active function logging context,
+            /// removes it from the stack, and logs its final result.
+            /// </summary>
+            /// <param name="funcResult">The final result of the function execution.</param>
+            public void FuncEnd(Device.FUNC_RESULT FuncResult, object Parameters = null)
+            {
+                // Get the currently active function context
+                FuncLogContext context = this.FuncContextPeek();
+                // Nothing to complete if the stack is empty
+                if (context == null) return;
+                // Complete the function context
+                context.Complete(FuncResult, Parameters);
+                // Remove the completed context from the stack
+                this.FuncContextPop();
+                // Log function completion
+                string message = "FuncEnd | {FuncId} | {ParentFuncId} | {FunctionName} | {FunctionType} | {FuncResult} | {StartTime} | {EndTime} | {TimeDurationMs} | " +
+                                 "{@InputParameters} | {@OutputParameters}";
+                object[] logParameters = {context.FuncId, context.ParentFuncId, context.FunctionName, context.FunctionType, context.FuncResult, context.StartTime, context.EndTime,
+                                          context.TimeDuration.Value.TotalMilliseconds, context.InputParameters, context.OutputParameters };
+                switch (FuncResult)
+                {
+                    case Device.FUNC_RESULT.MAJOR_ERROR: this._logger.Error(message, logParameters); break;
+                    case Device.FUNC_RESULT.FAIL: this._logger.Warning(message, logParameters); break;
+                    case Device.FUNC_RESULT.SUCCESS:
+                    case Device.FUNC_RESULT.UNKNOWN:
+                    default: this._logger.Information(message, logParameters); break;
+                }
+            }
+
+            // ================== ERROR LOGGING ==================
+            /// <summary>
+            /// Logs an error message using Serilog only.
+            /// </summary>
+            /// <param name="errorCode">The error code.</param>
+            /// <param name="errorMessage">The error description.</param>
+            /// <param name="exception">The related exception, if available.</param>
+            public void LogError(Device.ERROR_CODE ErrorCode, string ErrorMessage, Exception exception = null) => this.LogError(null, ErrorCode, ErrorMessage, exception);
+            /// <summary>
+            /// Logs an error message using both Serilog and ErrorTracer.
+            /// </summary>
+            /// <param name="errorTracer">The ErrorTracer instance.</param>
+            /// <param name="errorCode">The error code.</param>
+            /// <param name="errorMessage">The error description.</param>
+            /// <param name="exception">The related exception, if available.</param>
+            public void LogError(ErrorTracer ErrorTracer, Device.ERROR_CODE ErrorCode, string ErrorMessage, Exception exception = null)
+            {
+                if (ErrorCode == ERROR_CODE.NO_ERROR) return;
+                FuncLogContext context = this.FuncContextPeek();
+                this._logger.Error(exception, "LogError | {ErrorCode} | {ErrorMessage} | {FuncId} | {ParentFuncId} | {FunctionName} | {FunctionType}",
+                                   ErrorCode, ErrorMessage, context.FuncId, context.ParentFuncId, context.FunctionName, context.FunctionType);
+                if (ErrorTracer != null) ErrorTracer.RecordError(ErrorCode, ErrorMessage, context.FuncId, context.ParentFuncId, context.FunctionName, context.FunctionType, exception);
+            }
+
+            // ================== WARNING LOGGING ==================
+            public void LogWarning(Device.ERROR_CODE ErrorCode, string ErrorMessage)
+            {
+                if (ErrorCode == ERROR_CODE.NO_ERROR) return;
+                FuncLogContext context = this.FuncContextPeek();
+                this._logger.Warning("LogWarning | {ErrorCode} | {ErrorMessage} | {FuncId} | {ParentFuncId} | {FunctionName} | {FunctionType}",
+                                     ErrorCode, ErrorMessage, context.FuncId, context.ParentFuncId, context.FunctionName, context.FunctionType);
+            }
+            /// <summary>
+            /// Logs a warning message using Serilog.
+            /// </summary>
+            /// <param name="message">The warning message.</param>
+            public void LogWarning(string message)
+            {
+                if (string.IsNullOrWhiteSpace(message)) message = "No warning message provided.";
+                FuncLogContext context = this.FuncContextPeek();
+                this._logger.Warning("LogWarning | {Message} | {FuncId} | {ParentFuncId} | {FunctionName} | {FunctionType}",
+                                     message, context.FuncId, context.ParentFuncId, context.FunctionName, context.FunctionType);
+            }
+
+            // ================== STATE CHANGES ==================
+            /// <summary>
+            /// Logs a device state change with its reason.
+            /// </summary>
+            /// <param name="oldState">The previous state.</param>
+            /// <param name="newState">The new state.</param>
+            /// <param name="reason">The reason for the state change.</param>
+            public void LogStateChange(string oldState, string newState, string reason)
+            {
+                if (string.IsNullOrWhiteSpace(oldState)) oldState = "UNKNOWN";
+                if (string.IsNullOrWhiteSpace(newState)) newState = "UNKNOWN";
+                if (string.IsNullOrWhiteSpace(reason)) reason = "Not specified";
+                FuncLogContext context = this.FuncContextPeek();
+                this._logger.Information("LogStateChange | {OldState} | {NewState} | {Reason} | {FuncId} | {FunctionName}",
+                                          oldState, newState, reason, context.FuncId, context.FunctionName);
+            }
+            
+            // ================== FLAG CHANGES ==================
+            /// <summary>
+            /// Logs a change in a device flag or control value.
+            /// </summary>
+            /// <param name="flagName">The name of the flag or variable.</param>
+            /// <param name="oldValue">The previous value.</param>
+            /// <param name="newValue">The new value.</param>
+            public void LogFlagChange(string flagName, object oldValue, object newValue)
+            {
+                if (string.IsNullOrWhiteSpace(flagName)) flagName = "UNKNOWN";
+                FuncLogContext context = this.FuncContextPeek();
+                this._logger.Debug("LogFlagChange | {FlagName} | {OldValue} | {NewValue} | {FuncId} | {FunctionName}",
+                                   flagName, oldValue, newValue, context.FuncId, context.FunctionName);
+            }
+
             // ================== Error Report ==================
             /// <summary>
             /// Generates a textual report of the recorded errors.
             /// </summary>
             /// <returns>A formatted error report.</returns>
-            public string GenerateErrorSummaryReport(List<ErrorTracer.ErrorRecord> snapshot)
+            public string GenerateErrorSummaryReport(List<ErrorTracer.ErrorRecord> Snapshot)
             {
-                //List<ErrorTracer.ErrorRecord> snapshot = this._errorTracer.GetHistory();
-                var patterns = snapshot.GroupBy(e => e.ErrorCode).Select(g => new
+                if (Snapshot == null) throw new ArgumentNullException(nameof(Snapshot));
+                var patterns = Snapshot.GroupBy(e => e.ErrorCode).Select(g => new
                 {
                     Code = g.Key,
                     Count = g.Count(),
@@ -184,7 +318,7 @@ namespace GSM.Core.Source.Device
                 sb.AppendLine("                      ERROR REPORT                          ");
                 sb.AppendLine("════════════════════════════════════════════════════════════");
                 sb.AppendLine($"Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}");
-                sb.AppendLine($"Total Errors: {snapshot.Count}");
+                sb.AppendLine($"Total Errors: {Snapshot.Count}");
                 sb.AppendLine($"Unique Error Codes: {patterns.Count}");
                 sb.AppendLine();
                 sb.AppendLine("Top 10 Error Patterns:");
@@ -199,7 +333,7 @@ namespace GSM.Core.Source.Device
                     index++;
                 }
                 sb.AppendLine("Recent 5 Errors:");
-                List<ErrorTracer.ErrorRecord> recent = snapshot.OrderByDescending(e => e.Timestamp).Take(5).ToList();
+                List<ErrorTracer.ErrorRecord> recent = Snapshot.OrderByDescending(e => e.Timestamp).Take(5).ToList();
                 for (int i = 0; i < recent.Count; i++)
                 {
                     ErrorTracer.ErrorRecord err = recent[i];
@@ -231,15 +365,15 @@ namespace GSM.Core.Source.Device
             /// <returns>
             /// A formatted text report containing the selected error records.
             /// </returns>
-            public string GenerateFullErrorReport(List<ErrorTracer.ErrorRecord> snapshot, bool descending = true, int maxCount = 0)
+            public string GenerateFullErrorReport(List<ErrorTracer.ErrorRecord> Snapshot, bool Descending = true, int MaxCount = 0)
             {
-                if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
-                if (maxCount < 0) throw new ArgumentOutOfRangeException(nameof(maxCount));
+                if (Snapshot == null) throw new ArgumentNullException(nameof(Snapshot));
+                if (MaxCount < 0) throw new ArgumentOutOfRangeException(nameof(MaxCount));
                 StringBuilder sb = new StringBuilder();
                 // Determine the ordering of error records
-                IEnumerable<ErrorTracer.ErrorRecord> orderedErrors = descending ? snapshot.OrderByDescending(error => error.Timestamp) : snapshot.OrderBy(error => error.Timestamp);
+                IEnumerable<ErrorTracer.ErrorRecord> orderedErrors = Descending ? Snapshot.OrderByDescending(error => error.Timestamp) : Snapshot.OrderBy(error => error.Timestamp);
                 // Apply the maximum record count when specified
-                if (maxCount > 0) orderedErrors = orderedErrors.Take(maxCount);
+                if (MaxCount > 0) orderedErrors = orderedErrors.Take(MaxCount);
                 // Materialize the selected records
                 List<ErrorTracer.ErrorRecord> reportErrors = orderedErrors.ToList();
                 // Report header
@@ -248,8 +382,8 @@ namespace GSM.Core.Source.Device
                 sb.AppendLine("============================================================");
                 sb.AppendLine($"Generated At : {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff} UTC");
                 sb.AppendLine($"Total Errors : {reportErrors.Count}");
-                sb.AppendLine($"Order        : {(descending ? "Newest to Oldest" : "Oldest to Newest")}");
-                sb.AppendLine($"Requested    : {(maxCount == 0 ? "All" : maxCount.ToString())}");
+                sb.AppendLine($"Order        : {(Descending ? "Newest to Oldest" : "Oldest to Newest")}");
+                sb.AppendLine($"Requested    : {(MaxCount == 0 ? "All" : MaxCount.ToString())}");
                 sb.AppendLine("============================================================");
                 sb.AppendLine();
                 // Handle empty error history
@@ -275,18 +409,16 @@ namespace GSM.Core.Source.Device
                 return sb.ToString();
             }
             /// <summary>
-            /// Exports the recorded error history as CSV.
+            /// Exports all error records in the snapshot to CSV format,
+            /// ordered from newest to oldest.
             /// </summary>
-            /// <returns>A CSV-formatted string containing the error records.</returns>
-            public string ExportAsCSV(List<ErrorTracer.ErrorRecord> snapshot)
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine("Timestamp,ErrorCode,FuncId,ParentFuncId,FunctionName,FunctionType,Message");
-                foreach (ErrorTracer.ErrorRecord error in snapshot.OrderBy(e => e.Timestamp))
-                    sb.AppendLine($"\"{error.Timestamp:yyyy-MM-dd HH:mm:ss.fff}\",\"{EscapeCsv(error.ErrorCode.ToString())}\",\"{EscapeCsv(error.FuncId)}\",\"{EscapeCsv(error.ParentFuncId)}\"," +
-                                  $"\"{EscapeCsv(error.FunctionName)}\",\"{EscapeCsv(error.FunctionType.ToString())}\",\"{EscapeCsv(error.ErrorMessage)}\"");
-                return sb.ToString();
-            }
+            /// <param name="snapshot">
+            /// A snapshot of the error history retrieved from ErrorTracer.
+            /// </param>
+            /// <returns>
+            /// A CSV-formatted string containing all available error records.
+            /// </returns>
+            public string ExportAsCSV(List<ErrorTracer.ErrorRecord> Snapshot) => this.ExportAsCSV(Snapshot, true, 0);
             /// <summary>
             /// Exports a specified number of error records from the snapshot
             /// to CSV format, ordered by timestamp.
@@ -306,28 +438,28 @@ namespace GSM.Core.Source.Device
             /// <returns>
             /// A CSV-formatted string containing the selected error records.
             /// </returns>
-            public string ExportAsCSV(List<ErrorTracer.ErrorRecord> snapshot, bool descending, int maxCount = 0)
+            public string ExportAsCSV(List<ErrorTracer.ErrorRecord> Snapshot, bool Descending, int MaxCount = 0)
             {
-                if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
-                if (maxCount < 0) throw new ArgumentOutOfRangeException(nameof(maxCount));
+                if (Snapshot == null) throw new ArgumentNullException(nameof(Snapshot));
+                if (MaxCount < 0) throw new ArgumentOutOfRangeException(nameof(MaxCount));
                 StringBuilder sb = new StringBuilder();
                 // Determine the ordering of error records
-                IEnumerable<ErrorTracer.ErrorRecord> orderedErrors = descending ? snapshot.OrderByDescending(error => error.Timestamp) : snapshot.OrderBy(error => error.Timestamp);
+                IEnumerable<ErrorTracer.ErrorRecord> orderedErrors = Descending ? Snapshot.OrderByDescending(error => error.Timestamp) : Snapshot.OrderBy(error => error.Timestamp);
                 // Apply the maximum record count when specified
-                if (maxCount > 0) orderedErrors = orderedErrors.Take(maxCount);
+                if (MaxCount > 0) orderedErrors = orderedErrors.Take(MaxCount);
                 // CSV header
                 sb.AppendLine("Timestamp,ErrorCode,FuncId,ParentFuncId,FunctionName,FunctionType,Message,Exception");
                 // Write error records
                 foreach (ErrorTracer.ErrorRecord error in orderedErrors)
-                    sb.AppendLine($"\"{EscapeCsv(error.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"))}\",\"{EscapeCsv(error.ErrorCode.ToString())}\",\"{EscapeCsv(error.FuncId)}\"," +
-                                  $"\"{EscapeCsv(error.ParentFuncId)}\",\"{EscapeCsv(error.FunctionName)}\",\"{EscapeCsv(error.FunctionType.ToString())}\"," +
+                    sb.AppendLine($"\"{EscapeCsv(error.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture))}\",\"{EscapeCsv(error.ErrorCode.ToString())}\"," +
+                                  $"\"{EscapeCsv(error.FuncId)}\",\"{EscapeCsv(error.ParentFuncId)}\",\"{EscapeCsv(error.FunctionName)}\",\"{EscapeCsv(error.FunctionType.ToString())}\"," +
                                   $"\"{EscapeCsv(error.ErrorMessage)}\",\"{EscapeCsv(error.Exception == null ? string.Empty : error.Exception.ToString())}\"");
                 return sb.ToString();
             }
             /// <summary>
             /// Escapes a value for CSV formatting.
             /// </summary>
-            private static string EscapeCsv(string value) => (value ?? string.Empty).Replace("\"", "\"\"");
+            private static string EscapeCsv(string Value) => (Value ?? string.Empty).Replace("\"", "\"\"");
 
             // ================== Helper Functions ==================
             //Stack Helper Methods
@@ -349,10 +481,10 @@ namespace GSM.Core.Source.Device
             /// Pushes a function context onto the stack.
             /// </summary>
             /// <param name="context">The function context to add.</param>
-            private void FuncContextPush(FuncLogContext context)
+            private void FuncContextPush(FuncLogContext Context)
             {
-                if (context == null) throw new ArgumentNullException(nameof(context));
-                this._funcContextStack.Push(context);
+                if (Context == null) throw new ArgumentNullException(nameof(Context));
+                this._funcContextStack.Push(Context);
             }
             /// <summary>
             /// Removes and returns the top function context from the stack.
@@ -387,35 +519,35 @@ namespace GSM.Core.Source.Device
                 /// <summary>
                 /// Gets or sets the timestamp when the error occurred.
                 /// </summary>
-                public DateTime Timestamp { get; set; }
+                public DateTime Timestamp { get; internal set; }
                 /// <summary>
                 /// Gets or sets the error code.
                 /// </summary>
-                public Device.ERROR_CODE ErrorCode { get; set; }
+                public Device.ERROR_CODE ErrorCode { get; internal set; }
                 /// <summary>
                 /// Gets or sets the error message.
                 /// </summary>
-                public string ErrorMessage { get; set; }
+                public string ErrorMessage { get; internal set; }
                 /// <summary>
                 /// Gets or sets the identifier of the function where the error occurred.
                 /// </summary>
-                public string FuncId { get; set; }
+                public string FuncId { get; internal set; }
                 /// <summary>
                 /// Gets or sets the identifier of the parent function.
                 /// </summary>
-                public string ParentFuncId { get; set; }
+                public string ParentFuncId { get; internal set; }
                 /// <summary>
                 /// Gets or sets the name of the function where the error occurred.
                 /// </summary>
-                public string FunctionName { get; set; }
+                public string FunctionName { get; internal set; }
                 /// <summary>
                 /// Gets or sets the type of the function where the error occurred.
                 /// </summary>
-                public Device.FUNC_TYPE FunctionType { get; set; }
+                public Device.FUNC_TYPE FunctionType { get; internal set; }
                 /// <summary>
                 /// Gets or sets the exception associated with the error.
                 /// </summary>
-                public Exception Exception { get; set; }
+                public Exception Exception { get; internal set; }
             }
             /// <summary>
             /// Returns a snapshot of the current error history.
@@ -425,18 +557,18 @@ namespace GSM.Core.Source.Device
             /// Records an error in the in-memory history.
             /// Removes the oldest record when the maximum capacity is reached.
             /// </summary>
-            public void RecordError(Device.ERROR_CODE errorCode, string errorMessage, string funcId, string parentFuncId, string functionName, Device.FUNC_TYPE functionType, Exception exception = null)
+            public void RecordError(Device.ERROR_CODE ErrorCode, string ErrorMessage, string FuncId, string ParentFuncId, string FunctionName, Device.FUNC_TYPE FunctionType, Exception exception = null)
             {
                 ErrorRecord record = new ErrorRecord
                 {
                     Timestamp = DateTime.UtcNow,
-                    ErrorCode = errorCode,
-                    ErrorMessage = errorMessage,
+                    ErrorCode = ErrorCode,
+                    ErrorMessage = ErrorMessage,
                     Exception = exception,
-                    FuncId = funcId,
-                    ParentFuncId = parentFuncId,
-                    FunctionName = functionName,
-                    FunctionType = functionType
+                    FuncId = FuncId,
+                    ParentFuncId = ParentFuncId,
+                    FunctionName = FunctionName,
+                    FunctionType = FunctionType
                 };
                 lock (this._historyLock)
                 {
@@ -450,6 +582,7 @@ namespace GSM.Core.Source.Device
             /// </summary>
             public List<(Device.ERROR_CODE Code, int Count, DateTime FirstOccurrence, DateTime LastOccurrence, string LastMessage)> GetErrorPatterns()
             {
+                if (Count < 0) throw new ArgumentOutOfRangeException(nameof(Count));
                 List<ErrorRecord> snapshot;
                 lock (this._historyLock) snapshot = this._errorHistory.ToList();
                 return snapshot.GroupBy(e => e.ErrorCode).Select(g => (Code: g.Key, Count: g.Count(), FirstOccurrence: g.Min(x => x.Timestamp), LastOccurrence: g.Max(x => x.Timestamp),
@@ -459,30 +592,31 @@ namespace GSM.Core.Source.Device
             /// Returns the most recent error records.
             /// </summary>
             /// <param name="count">Maximum number of records to return.</param>
-            public List<ErrorRecord> GetRecentErrors(int count = 20)
+            public List<ErrorRecord> GetRecentErrors(int Count = 20)
             {
+                if (Count < 0) throw new ArgumentOutOfRangeException(nameof(Count));
                 List<ErrorRecord> snapshot;
                 lock (this._historyLock) snapshot = this._errorHistory.ToList();
-                return snapshot.OrderByDescending(e => e.Timestamp).Take(count).ToList();
+                return snapshot.OrderByDescending(e => e.Timestamp).Take(Count).ToList();
             }
             /// <summary>
             /// Returns error records associated with a specific function name.
             /// </summary>
-            public List<ErrorRecord> GetErrorsByFunctionName(string functionName)
+            public List<ErrorRecord> GetErrorsByFunctionName(string FunctionName)
             {
                 List<ErrorRecord> snapshot;
                 lock (this._historyLock) snapshot = this._errorHistory.ToList();
 
-                return snapshot.Where(e => e.FunctionName == functionName).OrderByDescending(e => e.Timestamp).ToList();
+                return snapshot.Where(e => e.FunctionName == FunctionName).OrderByDescending(e => e.Timestamp).ToList();
             }
             /// <summary>
             /// Returns error records associated with a specific error code.
             /// </summary>
-            public List<ErrorRecord> GetErrorsByCode(Device.ERROR_CODE errorCode)
+            public List<ErrorRecord> GetErrorsByCode(Device.ERROR_CODE ErrorCode)
             {
                 List<ErrorRecord> snapshot;
                 lock (this._historyLock) snapshot = this._errorHistory.ToList();
-                return snapshot.Where(e => e.ErrorCode == errorCode).OrderByDescending(e => e.Timestamp).ToList();
+                return snapshot.Where(e => e.ErrorCode == ErrorCode).OrderByDescending(e => e.Timestamp).ToList();
             }
             /// <summary>
             /// Returns error records from the last 24 hours.

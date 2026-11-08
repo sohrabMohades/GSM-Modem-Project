@@ -88,7 +88,6 @@
     <Compile Include="Source\Device\DeviceSendOperations.cs" />
     <Compile Include="Source\Device\DeviceTypes.cs" />
     <Compile Include="Source\Device\Logging\DeviceLogger.cs" />
-    <Compile Include="Source\Device\Logging\DeviceLoggerOld.cs" />
     <Compile Include="Source\Device\Logging\USAGE_EXAMPLES.cs" />
     <Compile Include="Source\DllWrapper\DllWrapper.cs" />
     <Compile Include="Source\DllWrapper\DllWrapperDelegates.cs" />
