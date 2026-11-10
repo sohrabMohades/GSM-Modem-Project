@@ -708,17 +708,8 @@ namespace GSM.Core.Source.Device
         }
         private void ConstructorStatusSet(bool Result)
         {
-            bool result = Result;
-            try
-            {
-                this._logger.FuncStart(nameof(this.ConstructorStatusSet), this.FuncType(nameof(this.ConstructorStatusSet)));
-                if (Result) this._state.InternalStatus = INTERNAL_STATUS.BASIC_LEVEL;
-                else this._state.InternalStatus = INTERNAL_STATUS.INVALID;
-            }
-            finally
-            {
-                this._logger.FuncEnd(this.FuncResult(result));
-            }
+            if (Result) this._state.InternalStatus = INTERNAL_STATUS.BASIC_LEVEL;
+            else this._state.InternalStatus = INTERNAL_STATUS.INVALID;
         }
         //Constructor Helper
         //Device Helper
@@ -750,7 +741,6 @@ namespace GSM.Core.Source.Device
                 case "Constructor":
                 case nameof(this.DllLoad):
                 case nameof(this.DllLoadCheck):
-                case nameof(this.ConstructorStatusSet):
                     return FUNC_TYPE.LOADER;
 
                 default:
