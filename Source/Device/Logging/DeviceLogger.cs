@@ -16,7 +16,7 @@ namespace GSM.Core.Source.Device
         /// Central logger for Device operations
         /// Provides structured logging with Serilog
         /// </summary>
-        private class DeviceLogger : IDisposable
+        internal class DeviceLogger : IDisposable
         {
             private readonly string _logId;
             /// <summary>
@@ -36,7 +36,7 @@ namespace GSM.Core.Source.Device
             /// Represents the logging context of a single function execution.
             /// Each context is uniquely identified and linked to its parent function.
             /// </summary>
-            private sealed class FuncLogContext
+            internal sealed class FuncLogContext
             {
                 /// <summary>
                 /// Gets the unique identifier of this function execution.
@@ -497,7 +497,7 @@ namespace GSM.Core.Source.Device
         /// <summary>
         /// Manages the in-memory history of error records.
         /// </summary>
-        private class ErrorTracer
+        internal class ErrorTracer
         {
             /// <summary>
             /// Stores recent error records in memory.

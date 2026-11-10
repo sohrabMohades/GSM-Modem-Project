@@ -98,7 +98,7 @@ namespace GSM.Core.Source.Device
         }
         //End : Refresh Result
         //Enum Function Result
-        private enum FUNC_RESULT
+        internal enum FUNC_RESULT
         {
             UNKNOWN,
             SUCCESS,
@@ -107,7 +107,7 @@ namespace GSM.Core.Source.Device
         }
         //End : Enum Function Result
         //Enum Function Type
-        private enum FUNC_TYPE
+        internal enum FUNC_TYPE
         {
             WORKFLOW,           // Represents a standard workflow function.
             COMPLEX_WORKFLOW,   // Represents a complex workflow function.
