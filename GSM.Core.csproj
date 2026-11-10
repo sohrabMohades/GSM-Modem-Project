@@ -257,7 +257,6 @@
     <Compile Include="Source\Device\DeviceSendOperations.cs" />
     <Compile Include="Source\Device\DeviceTypes.cs" />
     <Compile Include="Source\Device\Logging\DeviceLogger.cs" />
-    <Compile Include="Source\Device\Logging\USAGE_EXAMPLES.cs" />
     <Compile Include="Source\DllWrapper\DllWrapper.cs" />
     <Compile Include="Source\DllWrapper\DllWrapperDelegates.cs" />
     <Compile Include="Source\DllWrapper\DllWrapperLoader.cs" />
@@ -291,7 +290,6 @@
     <None Include="Docs\Design\GSM_Design_v1.1_FA.docx" />
     <None Include="Docs\Requirements\GSM_Project_Definition_v1.1_FA.docx" />
     <None Include="packages.config" />
-    <None Include="Source\Device\ARCHITECTURE_DIAGRAM.md" />
     <None Include="Source\Device\DeviceLogPlan.md" />
     <None Include="Source\Device\IMPLEMENTATION_GUIDE.md" />
     <None Include="Source\Device\LOGGING_IMPLEMENTATION_SUMMARY.md" />
@@ -306,9 +304,6 @@
     <None Include="Source\StringAnalyzer\StringAnalyzer_Summary.md" />
     <None Include="Source\StringAnalyzer\معماری پردازش رشته.md" />
     <None Include="Tools\ModemBufferParserProbe.ps1" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Source\Device\Logging\LogAllFiles.txt" />
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="packages\MSTest.Analyzers.4.5.2\analyzers\dotnet\cs\MSTest.Analyzers.CodeFixes.dll" />

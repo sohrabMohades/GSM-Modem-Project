@@ -12,47 +12,103 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT BufferClearWorkflow(bool InternalValueSet)
         {
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
-            result = this.BufferClearExecute(result, (int)OPERATION_DELAY_MS.BUFFER_UPDATE);
-            this.XXXSetValue(DeviceDefinitions.NUMBER_INVALID, ref this._runtimeBuffer.BufferLastIndex, InternalValueSet);
-            this.XXXSetValue(false, ref this._runtimeBuffer.BufferNewData, InternalValueSet);
-            this.XXXSetValue(DeviceDefinitions.STRING_INVALID, ref this._runtimeBuffer.BufferMessage, InternalValueSet);
-            this.XXXSetValue(DeviceDefinitions.NUMBER_INVALID, ref this._runtimeBuffer.BufferMessageLen, InternalValueSet);
-            return result;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferClearWorkflow), this.FuncType(nameof(this.BufferClearWorkflow)));
+                result = this.BufferClearExecute(result, (int)OPERATION_DELAY_MS.BUFFER_UPDATE);
+                this.XXXSetValue(DeviceDefinitions.NUMBER_INVALID, ref this._runtimeBuffer.BufferLastIndex, InternalValueSet);
+                this.XXXSetValue(false, ref this._runtimeBuffer.BufferNewData, InternalValueSet);
+                this.XXXSetValue(DeviceDefinitions.STRING_INVALID, ref this._runtimeBuffer.BufferMessage, InternalValueSet);
+                this.XXXSetValue(DeviceDefinitions.NUMBER_INVALID, ref this._runtimeBuffer.BufferMessageLen, InternalValueSet);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result);
+            }
         }
         private FUNC_RESULT BufferClearExecute(FUNC_RESULT Result, int Delay)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
-            Thread.Sleep(Delay);
-            return this.BufferClearBase();
+            FUNC_RESULT result = FUNC_RESULT.SUCCESS;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferClearExecute), this.FuncType(nameof(this.BufferClearExecute)));
+                Thread.Sleep(Delay);
+                result = this.BufferClearBase();
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result);
+            }
         }
         private FUNC_RESULT BufferClearBase()
         {
-            return this.BufferClearBaseDll(FUNC_RESULT.SUCCESS);
+            FUNC_RESULT result = FUNC_RESULT.SUCCESS;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferClearBase), this.FuncType(nameof(this.BufferClearBase)));
+                result = this.BufferClearBaseDll(result);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result);
+            }
         }
         private FUNC_RESULT BufferClearBaseDll(FUNC_RESULT Result)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
-            this._dllWrapper.ClearBuffer();
-            return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
+            FUNC_RESULT result = FUNC_RESULT.SUCCESS;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferClearBaseDll), this.FuncType(nameof(this.BufferClearBaseDll)));
+                this._dllWrapper.ClearBuffer();
+                result = this.DllWrapperHasError(result);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result);
+            }
         }
         //End : Buffer Clear
 
         //Buffer new Index read
         private FUNC_RESULT BufferLastIndexGetWorkflow(ref int BufferLastIndex, bool InternalValueSet)
         {
-            bool tempBool = false;
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
-            result = this.LastBufferIndexGetExecute(result, (int)OPERATION_DELAY_MS.BUFFER_UPDATE, ref BufferLastIndex);
-            result = this.LastBufferIndexGetCheck(result, this._runtimeBuffer.BufferLastIndex, BufferLastIndex);
-            this.XXXSetValue(result, BufferLastIndex, DeviceDefinitions.NUMBER_INVALID, ref BufferLastIndex, ref this._runtimeBuffer.BufferLastIndex, InternalValueSet);
-            this.XXXSetValue(result, true, false, ref tempBool, ref this._runtimeBuffer.BufferNewData, InternalValueSet);
-            return result;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferLastIndexGetWorkflow), this.FuncType(nameof(this.BufferLastIndexGetWorkflow)), this._runtimeBuffer.BufferLastIndex);
+                bool tempBool = false;
+                result = this.LastBufferIndexGetExecute(result, (int)OPERATION_DELAY_MS.BUFFER_UPDATE, ref BufferLastIndex);
+                result = this.LastBufferIndexGetCheck(result, this._runtimeBuffer.BufferLastIndex, BufferLastIndex);
+                this.XXXSetValue(result, BufferLastIndex, DeviceDefinitions.NUMBER_INVALID, ref BufferLastIndex, ref this._runtimeBuffer.BufferLastIndex, InternalValueSet);
+                this.XXXSetValue(result, true, false, ref tempBool, ref this._runtimeBuffer.BufferNewData, InternalValueSet);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result, BufferLastIndex);
+            }
         }
         private FUNC_RESULT LastBufferIndexGetExecute(FUNC_RESULT Result, int Delay, ref int BufferLastIndex)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
-            Thread.Sleep(Delay);
-            return this.BufferLastIndexGetBase(ref BufferLastIndex);
+            FUNC_RESULT result = FUNC_RESULT.SUCCESS;
+            try
+            {
+                this._logger.FuncStart(nameof(this.LastBufferIndexGetExecute), this.FuncType(nameof(this.LastBufferIndexGetExecute)));
+                Thread.Sleep(Delay);
+                result = this.BufferLastIndexGetBase(ref BufferLastIndex);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result, BufferLastIndex);
+            }
         }
         private FUNC_RESULT LastBufferIndexGetCheck(FUNC_RESULT Result, int BufferLastIndexOld, int BufferLastIndexNew)
         {
@@ -64,16 +120,34 @@ namespace GSM.Core.Source.Device
         {
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
             int bufferLastIndex = DeviceDefinitions.NUMBER_INVALID;
-            result = this.BufferLastIndexGetBaseDll(result, ref bufferLastIndex);
-            result = this.BufferLastIndexGetBaseCheck(result, ref bufferLastIndex);
-            this.XXXBaseSetValue(result, bufferLastIndex, DeviceDefinitions.NUMBER_INVALID, ref BufferLastIndex);
-            return result;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferLastIndexGetBase), this.FuncType(nameof(this.BufferLastIndexGetBase)));
+                result = this.BufferLastIndexGetBaseDll(result, ref bufferLastIndex);
+                result = this.BufferLastIndexGetBaseCheck(result, ref bufferLastIndex);
+                this.XXXBaseSetValue(result, bufferLastIndex, DeviceDefinitions.NUMBER_INVALID, ref BufferLastIndex);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result, bufferLastIndex);
+            }
         }
         private FUNC_RESULT BufferLastIndexGetBaseDll(FUNC_RESULT Result, ref int BufferLastIndex)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
-            BufferLastIndex = (int)this._dllWrapper.BufferLastIndexGet();
-            return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
+            FUNC_RESULT result = FUNC_RESULT.SUCCESS;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferLastIndexGetBaseDll), this.FuncType(nameof(this.BufferLastIndexGetBaseDll)));
+                BufferLastIndex = (int)this._dllWrapper.BufferLastIndexGet();
+                result = this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result, BufferLastIndex);
+            }
         }
         private FUNC_RESULT BufferLastIndexGetBaseCheck(FUNC_RESULT Result, ref int BufferLastIndex)
         {
@@ -88,25 +162,51 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT BufferMessageGetWorkflow(int BufferLastIndex, ref string BufferMessage, ref int BufferMessageLen, bool InternalValueSet)
         {
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
-            result = this.BufferMessageGetExecute(result, (int)OPERATION_DELAY_MS.BUFFER_UPDATE, BufferLastIndex, ref BufferMessage, ref BufferMessageLen);
-            this.XXXSetValue(result, BufferMessage, DeviceDefinitions.STRING_INVALID, ref BufferMessage, ref this._runtimeBuffer.BufferMessage, InternalValueSet);
-            this.XXXSetValue(result, BufferMessageLen, DeviceDefinitions.NUMBER_INVALID, ref BufferMessageLen, ref this._runtimeBuffer.BufferMessageLen, InternalValueSet);
-            return result;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferMessageGetWorkflow), this.FuncType(nameof(this.BufferMessageGetWorkflow)), BufferLastIndex);
+                result = this.BufferMessageGetExecute(result, (int)OPERATION_DELAY_MS.BUFFER_UPDATE, BufferLastIndex, ref BufferMessage, ref BufferMessageLen);
+                this.XXXSetValue(result, BufferMessage, DeviceDefinitions.STRING_INVALID, ref BufferMessage, ref this._runtimeBuffer.BufferMessage, InternalValueSet);
+                this.XXXSetValue(result, BufferMessageLen, DeviceDefinitions.NUMBER_INVALID, ref BufferMessageLen, ref this._runtimeBuffer.BufferMessageLen, InternalValueSet);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result, new { BufferMessage, BufferMessageLen });
+            }
         }
         private FUNC_RESULT BufferMessageGetExecute(FUNC_RESULT Result, int Delay, int BufferLastIndex, ref string BufferMessage, ref int BufferMessageLen)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
-            Thread.Sleep(Delay);
-            return this.BufferMessageGetBase(BufferLastIndex, ref BufferMessage, ref BufferMessageLen);
+            FUNC_RESULT result = FUNC_RESULT.SUCCESS;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferMessageGetExecute), this.FuncType(nameof(this.BufferMessageGetExecute)), BufferLastIndex);
+                Thread.Sleep(Delay);
+                result = this.BufferMessageGetBase(BufferLastIndex, ref BufferMessage, ref BufferMessageLen);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result, new { BufferMessage, BufferMessageLen });
+            }
         }
         private FUNC_RESULT BufferMessageGetBase(int BufferLastIndex, ref string BufferMessage, ref int BufferMessageLen)
         {
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
-            result = this.BufferMessageGetBaseCheck(result, BufferLastIndex);
-            result = this.BufferMessageGetBaseDll(result, BufferLastIndex, ref BufferMessage, ref BufferMessageLen);
-            this.XXXBaseSetValue(result, BufferMessage, DeviceDefinitions.STRING_INVALID, ref BufferMessage);
-            this.XXXBaseSetValue(result, BufferMessageLen, DeviceDefinitions.NUMBER_INVALID, ref BufferMessageLen);
-            return result;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferMessageGetBase), this.FuncType(nameof(this.BufferMessageGetBase)), BufferLastIndex);
+                result = this.BufferMessageGetBaseCheck(result, BufferLastIndex);
+                result = this.BufferMessageGetBaseDll(result, BufferLastIndex, ref BufferMessage, ref BufferMessageLen);
+                this.XXXBaseSetValue(result, BufferMessage, DeviceDefinitions.STRING_INVALID, ref BufferMessage);
+                this.XXXBaseSetValue(result, BufferMessageLen, DeviceDefinitions.NUMBER_INVALID, ref BufferMessageLen);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result, new { BufferMessage, BufferMessageLen });
+            }
         }
         private FUNC_RESULT BufferMessageGetBaseCheck(FUNC_RESULT Result, int BufferLastIndex)
         {
@@ -117,8 +217,18 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT BufferMessageGetBaseDll(FUNC_RESULT Result, int BufferLastIndex, ref string BufferMessage, ref int BufferMessageLen)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
-            this._dllWrapper.BufferRead(ref BufferLastIndex, out BufferMessage, ref BufferMessageLen);
-            return this.DllWrapperHasError(FUNC_RESULT.SUCCESS);
+            FUNC_RESULT result = FUNC_RESULT.SUCCESS;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferMessageGetBaseDll), this.FuncType(nameof(this.BufferMessageGetBaseDll)), BufferLastIndex);
+                this._dllWrapper.BufferRead(ref BufferLastIndex, out BufferMessage, ref BufferMessageLen);
+                result = this.DllWrapperHasError(result);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result, new { BufferLastIndex, BufferMessage, BufferMessageLen });
+            }
         }
         //End : Buffer new Index read
 

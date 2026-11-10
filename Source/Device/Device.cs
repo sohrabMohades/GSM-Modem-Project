@@ -743,6 +743,25 @@ namespace GSM.Core.Source.Device
                 case nameof(this.DllLoadCheck):
                     return FUNC_TYPE.LOADER;
 
+                case nameof(this.BufferClearWorkflow):
+                case nameof(this.BufferLastIndexGetWorkflow):
+                case nameof(this.BufferMessageGetWorkflow):
+                    return FUNC_TYPE.WORKFLOW;
+
+                case nameof(this.BufferClearExecute):
+                case nameof(this.LastBufferIndexGetExecute):
+                case nameof(this.BufferMessageGetExecute):
+                    return FUNC_TYPE.WORKFLOW_SUB;
+
+                case nameof(this.BufferClearBase):
+                case nameof(this.BufferLastIndexGetBase):
+                case nameof(this.BufferMessageGetBase):
+                    return FUNC_TYPE.BASE;
+
+                case nameof(this.BufferClearBaseDll):
+                case nameof(this.BufferLastIndexGetBaseDll):
+                    return FUNC_TYPE.BASE_DLL_CALL;
+
                 default:
                     return FUNC_TYPE.UNCLASSIFIED;
             }

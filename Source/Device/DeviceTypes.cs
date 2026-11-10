@@ -116,6 +116,7 @@ namespace GSM.Core.Source.Device
             COMPLEX_WORKFLOW_SUB,   //Complex workflow sub layers functions
             WORKFLOW_SUB,           //Standard workflow sub layers functions
             BASE,                   //Base layer functions
+            BASE_DLL_CALL,          //Base call Dll functions
             BASE_SUB,               //Base sub layers functions
             UNCLASSIFIED            //Unclassified functions
         }
