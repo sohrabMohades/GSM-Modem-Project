@@ -631,10 +631,10 @@ namespace GSM.Core.Source.Device
         public Device(string DllFileName)
         {
             bool result = false;
-            this._errorTracer = new ErrorTracer();
-            this._logger = new DeviceLogger();
             try
             {
+                this._errorTracer = new ErrorTracer();
+                this._logger = new DeviceLogger();
                 this._logger.FuncStart("Constructor", this.FuncType("Constructor"));
                 this._dllFileName = DllFileName;
                 this.ErrorReset();
@@ -688,20 +688,37 @@ namespace GSM.Core.Source.Device
         }
         private bool DllLoadCheck()
         {
+            bool result = false;
             try
             {
-                if (this._dllWrapper.ErrorCode == DllWrapper.ERROR_CODE.NO_ERROR) return true;
-                else return DllWrapperErrorCheckSetValue("DllWrapper ErrorCode = " + this._dllWrapper.ErrorCode.ToString() + " - ErrorMessage = " + this._dllWrapper.ErrorMessage);
+                this._logger.FuncStart(nameof(this.DllLoadCheck), this.FuncType(nameof(this.DllLoadCheck)));
+                if (this._dllWrapper.ErrorCode == DllWrapper.ERROR_CODE.NO_ERROR) result = true;
+                else result = DllWrapperErrorCheckSetValue("DllWrapper ErrorCode = " + this._dllWrapper.ErrorCode.ToString() + " - ErrorMessage = " + this._dllWrapper.ErrorMessage);
+                return result;
             }
             catch (Exception ex)
             {
-                return DllWrapperErrorCheckSetValue($"Device Constructor Error : {ex.Message}");
+                result = false;
+                return DllWrapperErrorCheckSetValue($"Device Constructor Error : {ex.Message}", ex);
+            }
+            finally
+            {
+                this._logger.FuncEnd(this.FuncResult(result));
             }
         }
-        private void ConstructorStatusSet(bool result)
+        private void ConstructorStatusSet(bool Result)
         {
-            if (result) this._state.InternalStatus = INTERNAL_STATUS.BASIC_LEVEL;
-            else this._state.InternalStatus = INTERNAL_STATUS.INVALID;
+            bool result = Result;
+            try
+            {
+                this._logger.FuncStart(nameof(this.ConstructorStatusSet), this.FuncType(nameof(this.ConstructorStatusSet)));
+                if (Result) this._state.InternalStatus = INTERNAL_STATUS.BASIC_LEVEL;
+                else this._state.InternalStatus = INTERNAL_STATUS.INVALID;
+            }
+            finally
+            {
+                this._logger.FuncEnd(this.FuncResult(result));
+            }
         }
         //Constructor Helper
         //Device Helper
