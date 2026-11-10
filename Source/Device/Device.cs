@@ -630,12 +630,21 @@ namespace GSM.Core.Source.Device
         //constructor
         public Device(string DllFileName)
         {
+            bool result = false;
             this._errorTracer = new ErrorTracer();
             this._logger = new DeviceLogger();
-            this._dllFileName = DllFileName;
-            this.ErrorReset();
-            bool result = this.DllLoad();
-            this.ConstructorStatusSet(result);
+            try
+            {
+                this._logger.FuncStart("Constructor", this.FuncType("Constructor"));
+                this._dllFileName = DllFileName;
+                this.ErrorReset();
+                result = this.DllLoad();
+                this.ConstructorStatusSet(result);
+            }
+            finally
+            {
+                this._logger.FuncEnd(this.FuncResult(result));
+            }
         }
         //End : constructor
 
@@ -659,8 +668,23 @@ namespace GSM.Core.Source.Device
         //Constructor Helper
         private bool DllLoad()
         {
-            try { this._dllWrapper = new DllWrapper.ManshoorGsmDllWrapper(this._dllFileName); return this.DllLoadCheck(); }
-            catch (Exception ex) { return DllWrapperErrorCheckSetValue($"Device Constructor Error : {ex.Message}"); }
+            bool result = false;
+            try 
+            {
+                this._logger.FuncStart(nameof(this.DllLoad), this.FuncType(nameof(this.DllLoad)));
+                this._dllWrapper = new DllWrapper.ManshoorGsmDllWrapper(this._dllFileName); 
+                result = this.DllLoadCheck();
+                return result;
+            }
+            catch (Exception ex) 
+            {
+                result = false;
+                return DllWrapperErrorCheckSetValue($"Device Constructor Error : {ex.Message}", ex);
+            }
+            finally
+            {
+                this._logger.FuncEnd(this.FuncResult(result));
+            }
         }
         private bool DllLoadCheck()
         {
@@ -702,6 +726,25 @@ namespace GSM.Core.Source.Device
         private bool XXXOutput(BOOL_TYPE value) { return value == BOOL_TYPE.TRUE; }
         private BOOL_TYPE BoolType(FUNC_RESULT FuncResult, bool ResultBool)
         { if (FuncResult == FUNC_RESULT.SUCCESS && ResultBool) return BOOL_TYPE.TRUE; else return BOOL_TYPE.FALSE; }
+        private FUNC_TYPE FuncType(string FuncName)
+        {
+            switch (FuncName)
+            {
+                case "Constructor":
+                case nameof(this.DllLoad):
+                case nameof(this.DllLoadCheck):
+                case nameof(this.ConstructorStatusSet):
+                    return FUNC_TYPE.LOADER;
+
+                default:
+                    return FUNC_TYPE.UNCLASSIFIED;
+            }
+        }
+        private FUNC_RESULT FuncResult(bool Result)
+        {
+            if (Result) return FUNC_RESULT.SUCCESS;
+            else return FUNC_RESULT.FAIL;
+        }
         //End : Device Helper
         //End : Helper
     }

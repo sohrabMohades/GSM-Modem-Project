@@ -109,9 +109,15 @@ namespace GSM.Core.Source.Device
         //Enum Function Type
         internal enum FUNC_TYPE
         {
-            WORKFLOW,           // Represents a standard workflow function.
-            COMPLEX_WORKFLOW,   // Represents a complex workflow function.
-            EXECUTE             // Represents a low-level execution function.
+            LOADER,                 //Device Loader layer functions
+            CONTROLLER,             //Device Controller layer functions
+            COMPLEX_WORKFLOW,       //Complex workflow layer functions
+            WORKFLOW,               //Standard workflow layer functions
+            COMPLEX_WORKFLOW_SUB,   //Complex workflow sub layers functions
+            WORKFLOW_SUB,           //Standard workflow sub layers functions
+            BASE,                   //Base layer functions
+            BASE_SUB,               //Base sub layers functions
+            UNCLASSIFIED            //Unclassified functions
         }
         //End : Enum Function Type
         //Enum Operation execute Delay ms

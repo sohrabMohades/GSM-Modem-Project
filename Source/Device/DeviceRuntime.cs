@@ -24,10 +24,11 @@ namespace GSM.Core.Source.Device
                 this.DllWrapperErrorCheckSetValue(ex.Message); return FUNC_RESULT.MAJOR_ERROR;
             }
         }
-        private bool DllWrapperErrorCheckSetValue(string error)
+        private bool DllWrapperErrorCheckSetValue(string error, Exception exception = null)
         {
             this._state.ErrorCode = ERROR_CODE.DLL_WRAPPER;
             this._state.ErrorMessage = error;
+            this._logger.LogError(this._state.ErrorCode, this._state.ErrorMessage, exception);
             return false;
         }
         private bool ErrorSet(ERROR_CODE ErrorCode, string ErrorMessage)

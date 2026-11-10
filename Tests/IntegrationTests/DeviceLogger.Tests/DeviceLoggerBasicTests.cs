@@ -60,7 +60,7 @@ namespace GSM.Core.Tests.IntegrationTests
             // Record an error inside Child Function
             this._logger.LogError(this._errorTracer, this.GetValidErrorCode(), "Child error");
             // Start Nested Function
-            this._logger.FuncStart("NestedFunction", GsmDevice.FUNC_TYPE.EXECUTE);
+            this._logger.FuncStart("NestedFunction", GsmDevice.FUNC_TYPE.WORKFLOW_SUB);
             Assert.AreEqual(3, this.GetFuncStackCount());
             // End Nested Function
             this._logger.FuncEnd(GsmDevice.FUNC_RESULT.SUCCESS);
