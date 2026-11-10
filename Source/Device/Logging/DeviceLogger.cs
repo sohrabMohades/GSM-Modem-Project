@@ -18,6 +18,7 @@ namespace GSM.Core.Source.Device
         /// </summary>
         internal class DeviceLogger : IDisposable
         {
+            private bool _constructor = false;
             private readonly string _logId;
             /// <summary>
             /// Provides logging methods for the current device.
@@ -124,30 +125,39 @@ namespace GSM.Core.Source.Device
             /// </summary>
             internal DeviceLogger()
             {
-                // Initialize function context stack
-                this._funcContextStack = new Stack<FuncLogContext>();
-                // Generate unique LogId
-                this._logId = Guid.NewGuid().ToString("N");
-                // Sanitize LogId for file name
-                string safeLogId = new string(this._logId.Select(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' ? c : '_').ToArray());
-                if (string.IsNullOrWhiteSpace(safeLogId)) safeLogId = "DEFAULT";
-                // Initialize log directory
-                string logsDirectory = InitializeLogging();
-                // Define log file paths
-                string textLogPath = Path.Combine(logsDirectory, $"device-{safeLogId}-.txt");
-                string jsonLogPath = Path.Combine(logsDirectory, $"device-{safeLogId}-structured-.json");
-                // Configure Serilog
-                this._logger = new LoggerConfiguration().MinimumLevel.Debug()
-                    // Text Log
-                    .WriteTo.File(path: textLogPath, outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
-                                  rollingInterval: RollingInterval.Day, fileSizeLimitBytes: 10485760, rollOnFileSizeLimit: true, retainedFileCountLimit: 100)
-                    // Structured JSON Log
-                    .WriteTo.File(formatter: new CompactJsonFormatter(), path: jsonLogPath,
-                                  rollingInterval: RollingInterval.Day, fileSizeLimitBytes: 10485760, rollOnFileSizeLimit: true, retainedFileCountLimit: 100)
-                    // Enrich Logs
-                    .Enrich.FromLogContext().Enrich.WithProperty("LogId", this._logId).CreateLogger();
-                // Log initialization
-                this._logger.Information("Logger initialized for Device: {LogId}", this._logId);
+                try
+                {
+                    // Initialize function context stack
+                    this._funcContextStack = new Stack<FuncLogContext>();
+                    // Generate unique LogId
+                    this._logId = Guid.NewGuid().ToString("N");
+                    // Sanitize LogId for file name
+                    string safeLogId = new string(this._logId.Select(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' ? c : '_').ToArray());
+                    if (string.IsNullOrWhiteSpace(safeLogId)) safeLogId = "DEFAULT";
+                    // Initialize log directory
+                    string logsDirectory = InitializeLogging();
+                    // Define log file paths
+                    string textLogPath = Path.Combine(logsDirectory, $"device-{safeLogId}-.txt");
+                    string jsonLogPath = Path.Combine(logsDirectory, $"device-{safeLogId}-structured-.json");
+                    // Configure Serilog
+                    this._logger = new LoggerConfiguration().MinimumLevel.Debug()
+                        // Text Log
+                        .WriteTo.File(path: textLogPath, outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+                                      rollingInterval: RollingInterval.Day, fileSizeLimitBytes: 10485760, rollOnFileSizeLimit: true, retainedFileCountLimit: 100)
+                        // Structured JSON Log
+                        .WriteTo.File(formatter: new CompactJsonFormatter(), path: jsonLogPath,
+                                      rollingInterval: RollingInterval.Day, fileSizeLimitBytes: 10485760, rollOnFileSizeLimit: true, retainedFileCountLimit: 100)
+                        // Enrich Logs
+                        .Enrich.FromLogContext().Enrich.WithProperty("LogId", this._logId).CreateLogger();
+                    // Log initialization
+                    this._logger.Information("Logger initialized for Device: {LogId}", this._logId);
+                    //Construct success
+                    this._constructor = true;
+                }
+                catch
+                {
+                    this._constructor = false;
+                }
             }
             /// <summary>
             /// Initializes the logging directory.
@@ -181,6 +191,7 @@ namespace GSM.Core.Source.Device
             /// <param name="parameters">The parameters associated with the function.</param>
             public void FuncStart(string FunctionName, Device.FUNC_TYPE FunctionType, object Parameters = null)
             {
+                if (!this._constructor) return;
                 // Get the currently active parent function
                 FuncLogContext parentContext = this.FuncContextPeek();
                 // Create a new function context
@@ -198,6 +209,7 @@ namespace GSM.Core.Source.Device
             /// <param name="funcResult">The final result of the function execution.</param>
             public void FuncEnd(Device.FUNC_RESULT FuncResult, object Parameters = null)
             {
+                if (!this._constructor) return;
                 // Get the currently active function context
                 FuncLogContext context = this.FuncContextPeek();
                 // Nothing to complete if the stack is empty
@@ -238,6 +250,7 @@ namespace GSM.Core.Source.Device
             /// <param name="exception">The related exception, if available.</param>
             public void LogError(ErrorTracer ErrorTracer, Device.ERROR_CODE ErrorCode, string ErrorMessage, Exception exception = null)
             {
+                if (!this._constructor) return;
                 if (ErrorCode == ERROR_CODE.NO_ERROR) return;
                 FuncLogContext context = this.FuncContextPeek();
                 this._logger.Error(exception, "LogError | {ErrorCode} | {ErrorMessage} | {FuncId} | {ParentFuncId} | {FunctionName} | {FunctionType}",
@@ -248,6 +261,7 @@ namespace GSM.Core.Source.Device
             // ================== WARNING LOGGING ==================
             public void LogWarning(Device.ERROR_CODE ErrorCode, string ErrorMessage)
             {
+                if (!this._constructor) return;
                 if (ErrorCode == ERROR_CODE.NO_ERROR) return;
                 FuncLogContext context = this.FuncContextPeek();
                 this._logger.Warning("LogWarning | {ErrorCode} | {ErrorMessage} | {FuncId} | {ParentFuncId} | {FunctionName} | {FunctionType}",
@@ -259,6 +273,7 @@ namespace GSM.Core.Source.Device
             /// <param name="message">The warning message.</param>
             public void LogWarning(string message)
             {
+                if (!this._constructor) return;
                 if (string.IsNullOrWhiteSpace(message)) message = "No warning message provided.";
                 FuncLogContext context = this.FuncContextPeek();
                 this._logger.Warning("LogWarning | {Message} | {FuncId} | {ParentFuncId} | {FunctionName} | {FunctionType}",
@@ -274,6 +289,7 @@ namespace GSM.Core.Source.Device
             /// <param name="reason">The reason for the state change.</param>
             public void LogStateChange(string oldState, string newState, string reason)
             {
+                if (!this._constructor) return;
                 if (string.IsNullOrWhiteSpace(oldState)) oldState = "UNKNOWN";
                 if (string.IsNullOrWhiteSpace(newState)) newState = "UNKNOWN";
                 if (string.IsNullOrWhiteSpace(reason)) reason = "Not specified";
@@ -291,6 +307,7 @@ namespace GSM.Core.Source.Device
             /// <param name="newValue">The new value.</param>
             public void LogFlagChange(string flagName, object oldValue, object newValue)
             {
+                if (!this._constructor) return;
                 if (string.IsNullOrWhiteSpace(flagName)) flagName = "UNKNOWN";
                 FuncLogContext context = this.FuncContextPeek();
                 this._logger.Debug("LogFlagChange | {FlagName} | {OldValue} | {NewValue} | {FuncId} | {FunctionName}",
@@ -304,6 +321,7 @@ namespace GSM.Core.Source.Device
             /// <returns>A formatted error report.</returns>
             public string GenerateErrorSummaryReport(List<ErrorTracer.ErrorRecord> Snapshot)
             {
+                if (!this._constructor) return null;
                 if (Snapshot == null) throw new ArgumentNullException(nameof(Snapshot));
                 var patterns = Snapshot.GroupBy(e => e.ErrorCode).Select(g => new
                 {
@@ -367,6 +385,7 @@ namespace GSM.Core.Source.Device
             /// </returns>
             public string GenerateFullErrorReport(List<ErrorTracer.ErrorRecord> Snapshot, bool Descending = true, int MaxCount = 0)
             {
+                if (!this._constructor) return null;
                 if (Snapshot == null) throw new ArgumentNullException(nameof(Snapshot));
                 if (MaxCount < 0) throw new ArgumentOutOfRangeException(nameof(MaxCount));
                 StringBuilder sb = new StringBuilder();
@@ -440,6 +459,7 @@ namespace GSM.Core.Source.Device
             /// </returns>
             public string ExportAsCSV(List<ErrorTracer.ErrorRecord> Snapshot, bool Descending, int MaxCount = 0)
             {
+                if (!this._constructor) return null;
                 if (Snapshot == null) throw new ArgumentNullException(nameof(Snapshot));
                 if (MaxCount < 0) throw new ArgumentOutOfRangeException(nameof(MaxCount));
                 StringBuilder sb = new StringBuilder();
@@ -499,6 +519,7 @@ namespace GSM.Core.Source.Device
         /// </summary>
         internal class ErrorTracer
         {
+            private bool _constructor = false;
             /// <summary>
             /// Stores recent error records in memory.
             /// </summary>
@@ -552,13 +573,18 @@ namespace GSM.Core.Source.Device
             /// <summary>
             /// Returns a snapshot of the current error history.
             /// </summary>
-            public List<ErrorRecord> GetHistory() { lock (this._historyLock) { return this._errorHistory.ToList(); } }
+            public List<ErrorRecord> GetHistory()
+            {
+                if (!this._constructor) return null;
+                lock (this._historyLock) return this._errorHistory.ToList();
+            }
             /// <summary>
             /// Records an error in the in-memory history.
             /// Removes the oldest record when the maximum capacity is reached.
             /// </summary>
             public void RecordError(Device.ERROR_CODE ErrorCode, string ErrorMessage, string FuncId, string ParentFuncId, string FunctionName, Device.FUNC_TYPE FunctionType, Exception exception = null)
             {
+                if (!this._constructor) return;
                 ErrorRecord record = new ErrorRecord
                 {
                     Timestamp = DateTime.UtcNow,
@@ -582,6 +608,7 @@ namespace GSM.Core.Source.Device
             /// </summary>
             public List<(Device.ERROR_CODE Code, int Count, DateTime FirstOccurrence, DateTime LastOccurrence, string LastMessage)> GetErrorPatterns()
             {
+                if (!this._constructor) return null;
                 if (Count < 0) throw new ArgumentOutOfRangeException(nameof(Count));
                 List<ErrorRecord> snapshot;
                 lock (this._historyLock) snapshot = this._errorHistory.ToList();
@@ -594,6 +621,7 @@ namespace GSM.Core.Source.Device
             /// <param name="count">Maximum number of records to return.</param>
             public List<ErrorRecord> GetRecentErrors(int Count = 20)
             {
+                if (!this._constructor) return null;
                 if (Count < 0) throw new ArgumentOutOfRangeException(nameof(Count));
                 List<ErrorRecord> snapshot;
                 lock (this._historyLock) snapshot = this._errorHistory.ToList();
@@ -604,9 +632,9 @@ namespace GSM.Core.Source.Device
             /// </summary>
             public List<ErrorRecord> GetErrorsByFunctionName(string FunctionName)
             {
+                if (!this._constructor) return null;
                 List<ErrorRecord> snapshot;
                 lock (this._historyLock) snapshot = this._errorHistory.ToList();
-
                 return snapshot.Where(e => e.FunctionName == FunctionName).OrderByDescending(e => e.Timestamp).ToList();
             }
             /// <summary>
@@ -614,6 +642,7 @@ namespace GSM.Core.Source.Device
             /// </summary>
             public List<ErrorRecord> GetErrorsByCode(Device.ERROR_CODE ErrorCode)
             {
+                if (!this._constructor) return null;
                 List<ErrorRecord> snapshot;
                 lock (this._historyLock) snapshot = this._errorHistory.ToList();
                 return snapshot.Where(e => e.ErrorCode == ErrorCode).OrderByDescending(e => e.Timestamp).ToList();
@@ -623,6 +652,7 @@ namespace GSM.Core.Source.Device
             /// </summary>
             public List<ErrorRecord> GetErrorsLast24Hours()
             {
+                if (!this._constructor) return null;
                 DateTime twentyFourHoursAgo = DateTime.UtcNow.AddHours(-24);
                 List<ErrorRecord> snapshot;
                 lock (this._historyLock) snapshot = this._errorHistory.ToList();
@@ -631,11 +661,22 @@ namespace GSM.Core.Source.Device
             /// <summary>
             /// Returns the number of error records currently stored.
             /// </summary>
-            public int Count { get { lock (this._historyLock) return this._errorHistory.Count; } }
+            public int Count 
+            {
+                get 
+                {
+                    if (!this._constructor) return 0;
+                    lock (this._historyLock) return this._errorHistory.Count; 
+                }
+            }
             /// <summary>
             /// Clears all error records from the history.
             /// </summary>
-            public void Clear() { lock (this._historyLock) this._errorHistory.Clear(); }
+            public void Clear() 
+            {
+                if (!this._constructor) return;
+                lock (this._historyLock) this._errorHistory.Clear();
+            }
         }
     }
 }
