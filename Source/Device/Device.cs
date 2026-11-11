@@ -762,6 +762,10 @@ namespace GSM.Core.Source.Device
                 case nameof(this.BufferLastIndexGetBaseDll):
                     return FUNC_TYPE.BASE_DLL_CALL;
 
+                case nameof(this.BufferUpdate):
+                case nameof(this.BufferDataRemoveExtra):
+                    return FUNC_TYPE.BUFFER_UPDATE;
+
                 default:
                     return FUNC_TYPE.UNCLASSIFIED;
             }

@@ -118,6 +118,7 @@ namespace GSM.Core.Source.Device
             BASE,                   //Base layer functions
             BASE_DLL_CALL,          //Base call Dll functions
             BASE_SUB,               //Base sub layers functions
+            BUFFER_UPDATE,          //Buffer Update functions
             UNCLASSIFIED            //Unclassified functions
         }
         //End : Enum Function Type

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using static GSM.Core.Source.Device.Device;
 
 namespace GSM.Core.Source.Device
 {
@@ -238,42 +239,59 @@ namespace GSM.Core.Source.Device
         {
             if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.UNKNOWN) return FUNC_RESULT.MAJOR_ERROR;
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
-            if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW) this.BufferDataRemoveExtra(result , null);
-            result = this.BufferTimeoutCheck(result, BufferUpdateSource, BufferUpdateType);
-            result = this.BufferUpdateList(result, BufferUpdateSource);
-            result = this.BufferUpdateAnalyze(result, BufferUpdateSource, ref BufferUpdateType);
-            return result;
+            try
+            {
+                this._logger.FuncStart(nameof(this.BufferUpdate), this.FuncType(nameof(this.BufferUpdate)), new { BufferUpdateSource , BufferUpdateType });
+                if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW) this.BufferDataRemoveExtra(result, null);
+                result = this.BufferTimeoutCheck(result, BufferUpdateSource, BufferUpdateType);
+                result = this.BufferUpdateList(result, BufferUpdateSource);
+                result = this.BufferUpdateAnalyze(result, BufferUpdateSource, ref BufferUpdateType);
+                return result;
+            }
+            finally
+            {
+                this._logger.FuncEnd(result, BufferUpdateType );
+            }
         }
         //End : Buffer Update Main
         //Remove Null and Not Usable BufferGroup[...].BaferData[...]
         private void BufferDataRemoveExtra(FUNC_RESULT Result, BufferData targetBufferData)
         {
             if (Result != FUNC_RESULT.SUCCESS && targetBufferData == null) return;
-            this.BufferDataRemoveNulls();
-            if (targetBufferData == null)
-                foreach (BufferDataGroup group in this._runtimeBuffer.BufferDataGroup.AsEnumerable().Reverse())
-                {
-                    foreach (BufferData bufferData in group.BufferData.AsEnumerable().Reverse()) if (bufferData != null) { targetBufferData = bufferData; break; }
-                    if (targetBufferData != null) break;
-                }
-            if (targetBufferData == null) return;
-            bool IsPreservedAction(BUFFER_ACTION action) => action == BUFFER_ACTION.MODEM_STARTUP || action == BUFFER_ACTION.MODEM_READY || action == BUFFER_ACTION.SMS_RECEIVED ||
-                action == BUFFER_ACTION.SMS_DELIVERY_REPORT;
-            bool preserveTarget = IsPreservedAction(targetBufferData.Action);
-            for (int groupIndex = 0; groupIndex < this._runtimeBuffer.BufferDataGroup.Count; groupIndex++)
+            try
             {
-                BufferDataGroup group = this._runtimeBuffer.BufferDataGroup[groupIndex];int targetIndex = -1;
-                for (int dataIndex = 0; dataIndex < group.BufferData.Count; dataIndex++)
-                    if (ReferenceEquals(group.BufferData[dataIndex], targetBufferData)) { targetIndex = dataIndex; break; }
-                if (targetIndex > -1)
+                this._logger.FuncStart(nameof(this.BufferDataRemoveExtra), this.FuncType(nameof(this.BufferDataRemoveExtra)));
+                this.BufferDataRemoveNulls();
+                if (targetBufferData == null)
+                    foreach (BufferDataGroup group in this._runtimeBuffer.BufferDataGroup.AsEnumerable().Reverse())
+                    {
+                        foreach (BufferData bufferData in group.BufferData.AsEnumerable().Reverse()) if (bufferData != null) { targetBufferData = bufferData; break; }
+                        if (targetBufferData != null) break;
+                    }
+                if (targetBufferData == null) return;
+                bool IsPreservedAction(BUFFER_ACTION action) => action == BUFFER_ACTION.MODEM_STARTUP || action == BUFFER_ACTION.MODEM_READY || action == BUFFER_ACTION.SMS_RECEIVED ||
+                    action == BUFFER_ACTION.SMS_DELIVERY_REPORT;
+                bool preserveTarget = IsPreservedAction(targetBufferData.Action);
+                for (int groupIndex = 0; groupIndex < this._runtimeBuffer.BufferDataGroup.Count; groupIndex++)
                 {
-                    group.BufferData.RemoveAt(targetIndex);
-                    for (int dataIndex = targetIndex - 1; dataIndex >= 0; dataIndex--)
+                    BufferDataGroup group = this._runtimeBuffer.BufferDataGroup[groupIndex];
+                    int targetIndex = -1;
+                    for (int dataIndex = 0; dataIndex < group.BufferData.Count; dataIndex++)
+                        if (ReferenceEquals(group.BufferData[dataIndex], targetBufferData)) { targetIndex = dataIndex; break; }
+                    if (targetIndex > -1)
+                    {
+                        group.BufferData.RemoveAt(targetIndex);
+                        for (int dataIndex = targetIndex - 1; dataIndex >= 0; dataIndex--)
+                            if (!IsPreservedAction(group.BufferData[dataIndex].Action)) group.BufferData.RemoveAt(dataIndex);
+                        break;
+                    }
+                    for (int dataIndex = group.BufferData.Count - 1; dataIndex >= 0; dataIndex--)
                         if (!IsPreservedAction(group.BufferData[dataIndex].Action)) group.BufferData.RemoveAt(dataIndex);
-                    break;
                 }
-                for (int dataIndex = group.BufferData.Count - 1; dataIndex >= 0; dataIndex--)
-                    if (!IsPreservedAction(group.BufferData[dataIndex].Action)) group.BufferData.RemoveAt(dataIndex);
+            }
+            finally
+            {
+                this._logger.FuncEnd(FUNC_RESULT.UNKNOWN);
             }
         }
         private void BufferDataRemoveNulls()
