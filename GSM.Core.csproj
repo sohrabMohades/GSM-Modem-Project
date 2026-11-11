@@ -291,6 +291,7 @@
     <None Include="Docs\Requirements\GSM_Project_Definition_v1.1_FA.docx" />
     <None Include="packages.config" />
     <None Include="Source\Device\DeviceLogPlan.md" />
+    <None Include="Source\Device\GSM_Buffer_Analysis_and_Refactoring_Guide_FA.docx" />
     <None Include="Source\Device\IMPLEMENTATION_GUIDE.md" />
     <None Include="Source\Device\LOGGING_IMPLEMENTATION_SUMMARY.md" />
     <None Include="Source\Device\QUICK_REFERENCE.md" />
