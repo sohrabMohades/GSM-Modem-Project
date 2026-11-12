@@ -125,7 +125,7 @@ namespace GSM.Core.Source.Device
         //Enum Operation execute Delay ms
         private enum OPERATION_DELAY_MS
         {
-            BUFFER_CLEAR = 0,
+            NO_DELAY = 0,
             BUFFER_UPDATE_CONTINUE = 0,
             BUFFER_UPDATE = 300,
             SHORT = 200,
