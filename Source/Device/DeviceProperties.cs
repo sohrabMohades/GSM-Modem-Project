@@ -52,9 +52,9 @@ namespace GSM.Core.Source.Device
             while (loopCount-- > 0 && result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR)
             {
                 Thread.Sleep(Delay);
-                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(FUNC_RESULT.SUCCESS, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_GET);
+                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) ;// this.XXXBufferCheck(FUNC_RESULT.SUCCESS, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_GET);
                 result = this.GSMPowerGetBase(ref ResultBool);
-                result = this.XXXBufferCheck(result, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_GET);
+                //result = this.XXXBufferCheck(result, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_GET);
             }
             return result;
         }
@@ -108,14 +108,14 @@ namespace GSM.Core.Source.Device
             while (loopCount-- > 0 && result != FUNC_RESULT.SUCCESS && result != FUNC_RESULT.MAJOR_ERROR)
             {
                 Thread.Sleep(Delay);
-                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) this.XXXBufferCheck(FUNC_RESULT.SUCCESS, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_SET);
+                if (bufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) ;// this.XXXBufferCheck(FUNC_RESULT.SUCCESS, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_SET);
                 result = this.GSMPowerSetBase(Power);
-                result = this.XXXBufferCheck(result, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_SET);
+                //result = this.XXXBufferCheck(result, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.GSM_POWER_SET);
             }
             if(Power)
             {
                 bufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW;
-                result = this.XXXBufferCheck(result, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY);
+                //result = this.XXXBufferCheck(result, ref bufferUpdateSource, BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY);
             }
             return result;
         }

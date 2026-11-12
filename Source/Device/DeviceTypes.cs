@@ -265,6 +265,7 @@ namespace GSM.Core.Source.Device
             INBOX_SMS_RECEIVED,
             INBOX_SMS_DELIVERY_REPORT,
             SMS_DELIVERY_REPORT,
+            UNKOWN
         }
         //End : Buffer Function (call Buffer Update)
         //End: Buffer

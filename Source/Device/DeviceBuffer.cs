@@ -235,7 +235,7 @@ namespace GSM.Core.Source.Device
 
         //Buffer Update
         //Buffer Update Main
-        private FUNC_RESULT BufferUpdate(BUFFER_UPDATE_SOURCE BufferUpdateSource, ref BUFFER_UPDATE_TYPE BufferUpdateType, bool ApplyOperationDelay)
+        private FUNC_RESULT BufferUpdate(BUFFER_UPDATE_SOURCE BufferUpdateSource, BUFFER_UPDATE_TYPE BufferUpdateType, bool ApplyOperationDelay, ref BUFFER_UPDATE_TYPE BufferUpdateTypeOut)
         {
             if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.UNKNOWN) return FUNC_RESULT.MAJOR_ERROR;
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
@@ -243,9 +243,8 @@ namespace GSM.Core.Source.Device
             {
                 this._logger.FuncStart(nameof(this.BufferUpdate), this.FuncType(nameof(this.BufferUpdate)), new { BufferUpdateSource , BufferUpdateType });
                 this.BufferDataRemoveExtra(result, BufferUpdateSource);
-                result = this.BufferTimeoutCheck(result, BufferUpdateSource, BufferUpdateType);
                 result = this.BufferUpdateList(result, BufferUpdateSource, ApplyOperationDelay);
-                result = this.BufferUpdateAnalyze(result, BufferUpdateSource, ref BufferUpdateType);
+                result = this.BufferUpdateAnalyze(result, BufferUpdateSource, BufferUpdateType, ref BufferUpdateTypeOut);
                 return result;
             }
             finally
@@ -295,35 +294,6 @@ namespace GSM.Core.Source.Device
             }
             finally { this._logger.FuncEnd(FUNC_RESULT.UNKNOWN, new { RemovedBufferData = removedBufferData, RemovedNullCount = removedNullCount }); }
         }
-        //Buffer TimeOut Check
-        private FUNC_RESULT BufferTimeoutCheck(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, BUFFER_UPDATE_TYPE BufferUpdateType)
-        {
-            if (Result != FUNC_RESULT.SUCCESS) return Result;
-            if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW) return FUNC_RESULT.SUCCESS;
-            int timeout = (int)(DateTime.Now - this._runtimeBuffer.BufferLastUpdatePerior).TotalMilliseconds;
-            if (timeout > this._runtimeConfig.TimeoutMaxMs) return FUNC_RESULT.MAJOR_ERROR;
-            switch (BufferUpdateType)
-            {
-                case BUFFER_UPDATE_TYPE.DEVICE_NUMBER_GET:
-                case BUFFER_UPDATE_TYPE.GSM_POWER_GET:
-                case BUFFER_UPDATE_TYPE.GSM_POWER_SET:
-                    if (timeout <= (int)BUFFER_TIME_OUT_MS.SHORT) return FUNC_RESULT.SUCCESS;
-                    else return FUNC_RESULT.MAJOR_ERROR;
-
-                case BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY:
-                    if (!this._runtimeInfo.GsmStatus.ModemStartup)
-                        if (timeout <= (int)BUFFER_TIME_OUT_MS.MODEM_STARTUP) return FUNC_RESULT.SUCCESS;
-                        else return FUNC_RESULT.MAJOR_ERROR;
-                    else if (!this._runtimeInfo.GsmStatus.ModemReady)
-                        if (timeout <= (int)BUFFER_TIME_OUT_MS.MODEM_READY) return FUNC_RESULT.SUCCESS;
-                        else return FUNC_RESULT.MAJOR_ERROR;
-                    else return FUNC_RESULT.MAJOR_ERROR;
-
-                default:
-                    return FUNC_RESULT.UNKNOWN;
-            }
-        }
-        //End : Buffer TimeOut Check
         //Buffer Update List
         private FUNC_RESULT BufferUpdateList(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, bool ApplyOperationDelay)
         {
@@ -424,26 +394,24 @@ namespace GSM.Core.Source.Device
         }
         //End : Buffer Update List
         //Buffer Update Analyze
-        private FUNC_RESULT BufferUpdateAnalyze(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, ref BUFFER_UPDATE_TYPE BufferUpdateType)
+        private FUNC_RESULT BufferUpdateAnalyze(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, BUFFER_UPDATE_TYPE BufferUpdateType, ref BUFFER_UPDATE_TYPE BufferUpdateTypeOut)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-            BufferData successBufferData = new BufferData();
             if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) 
                 result = FUNC_RESULT.SUCCESS;
             else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW || BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START)
-                result = this.BufferUpdateAnalyzeWorkFlow(ref BufferUpdateType, out successBufferData);
+                result = this.BufferUpdateAnalyzeWorkFlow(BufferUpdateType, ref BufferUpdateTypeOut);
             else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.TIMER) 
                 result = this.BufferUpdateAnalyzeTimer();
             else 
                 result = FUNC_RESULT.MAJOR_ERROR;
-            //this.BufferDataRemoveExtra(result , successBufferData);
             return result;
         }
-        private FUNC_RESULT BufferUpdateAnalyzeWorkFlow(ref BUFFER_UPDATE_TYPE BufferUpdateType, out BufferData SuccessBufferData)
+        private FUNC_RESULT BufferUpdateAnalyzeWorkFlow(BUFFER_UPDATE_TYPE BufferUpdateType, ref BUFFER_UPDATE_TYPE BufferUpdateTypeOut)
         {
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
-            SuccessBufferData = null;
+            BufferUpdateTypeOut = BUFFER_UPDATE_TYPE.UNKOWN;
             foreach (BufferData bufferData in this._runtimeBuffer.BufferDataGroup.SelectMany(group => group.BufferData).Where(data => 
                                                                                 data != null && data.ReceivedTime >= this._runtimeBuffer.BufferLastUpdatePerior))
             {
@@ -456,7 +424,7 @@ namespace GSM.Core.Source.Device
 
                     case BUFFER_UPDATE_TYPE.MODEM_STARTUP:
                         {
-                            if (bufferData.Action == BUFFER_ACTION.MODEM_READY) { result = FUNC_RESULT.SUCCESS; BufferUpdateType = BUFFER_UPDATE_TYPE.MODEM_READY; }
+                            if (bufferData.Action == BUFFER_ACTION.MODEM_READY) { result = FUNC_RESULT.SUCCESS; BufferUpdateTypeOut = BUFFER_UPDATE_TYPE.MODEM_READY; }
                             else { result = bufferData.Action == BUFFER_ACTION.MODEM_STARTUP ? FUNC_RESULT.SUCCESS : FUNC_RESULT.FAIL; }
                             break;
                         }
@@ -465,15 +433,15 @@ namespace GSM.Core.Source.Device
                         { result = bufferData.Action == BUFFER_ACTION.MODEM_READY ? FUNC_RESULT.SUCCESS : FUNC_RESULT.FAIL; break; }
 
                     case BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY:
-                        if (bufferData.Action == BUFFER_ACTION.MODEM_STARTUP) { result = FUNC_RESULT.SUCCESS; BufferUpdateType = BUFFER_UPDATE_TYPE.MODEM_STARTUP; }
-                        else if (bufferData.Action == BUFFER_ACTION.MODEM_READY) { result = FUNC_RESULT.SUCCESS; BufferUpdateType = BUFFER_UPDATE_TYPE.MODEM_READY; }
+                        if (bufferData.Action == BUFFER_ACTION.MODEM_STARTUP) { result = FUNC_RESULT.SUCCESS; BufferUpdateTypeOut = BUFFER_UPDATE_TYPE.MODEM_STARTUP; }
+                        else if (bufferData.Action == BUFFER_ACTION.MODEM_READY) { result = FUNC_RESULT.SUCCESS; BufferUpdateTypeOut = BUFFER_UPDATE_TYPE.MODEM_READY; }
                         else result = FUNC_RESULT.FAIL;
                         break;
 
                     default:
                         result = FUNC_RESULT.UNKNOWN;break;
                 }
-                if (result == FUNC_RESULT.SUCCESS) { SuccessBufferData = bufferData; break; }
+                if (result == FUNC_RESULT.SUCCESS) break;
             }
             return result;
         }
@@ -488,6 +456,136 @@ namespace GSM.Core.Source.Device
 
         //End : Buffer Update Analyze
 
+        //Buffer Check
+        private FUNC_RESULT BufferCheck(FUNC_RESULT Result, BUFFER_UPDATE_TYPE BufferUpdateType)
+        {
+            if (Result != FUNC_RESULT.SUCCESS) return Result;
+            bool applyOperationDelay = true;
+            FUNC_RESULT result = FUNC_RESULT.UNKNOWN, resultTimeout = FUNC_RESULT.UNKNOWN;
+            BUFFER_UPDATE_SOURCE bufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
+            BUFFER_UPDATE_TYPE bufferUpdateTypeInternal = BufferUpdateType;
+            do
+            {
+                result = this.BufferUpdate(bufferUpdateSource, BufferUpdateType, applyOperationDelay, ref bufferUpdateTypeInternal);
+                this.BufferCheckUpdateSource(ref bufferUpdateSource);
+                result = this.BufferCheckRules(result, BufferUpdateType, ref bufferUpdateTypeInternal);
+                resultTimeout = this.BufferCheckTimeout(result, bufferUpdateSource, BufferUpdateType);
+            }
+            while (this.BufferCheckWhileCondition(ref result, resultTimeout));
+            return result;
+        }
+        private void BufferCheckUpdateSource(ref BUFFER_UPDATE_SOURCE BufferUpdateSource)
+        {
+            if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START) BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW;
+        }
+        private FUNC_RESULT BufferCheckRules(FUNC_RESULT Result, BUFFER_UPDATE_TYPE BufferUpdateTypeExternal, ref BUFFER_UPDATE_TYPE BufferUpdateTypeInternal)
+        {
+            if (Result != FUNC_RESULT.SUCCESS) return Result;
+            FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
+            switch (BufferUpdateTypeInternal)
+            {
+                case BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY: case BUFFER_UPDATE_TYPE.MODEM_READY:
+                    {
+                        this._runtimeInfo.GsmStatus.ModemStartup = true;
+                        this._runtimeInfo.GsmStatus.ModemReady = true;
+                        result = FUNC_RESULT.SUCCESS;
+                        break;
+                    }
+                case BUFFER_UPDATE_TYPE.MODEM_STARTUP:
+                    {
+                        if (BufferUpdateTypeExternal == BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY || BufferUpdateTypeExternal == BUFFER_UPDATE_TYPE.MODEM_READY)
+                        {
+                            this._runtimeInfo.GsmStatus.ModemStartup = true;
+                            BufferUpdateTypeInternal = BUFFER_UPDATE_TYPE.MODEM_READY;
+                            result = FUNC_RESULT.FAIL;
+                        }
+                        else if (BufferUpdateTypeExternal == BUFFER_UPDATE_TYPE.MODEM_STARTUP)
+                        {
+                            this._runtimeInfo.GsmStatus.ModemStartup = true;
+                            result = FUNC_RESULT.SUCCESS;
+                        }
+                        else result = Result;
+                        break;
+                    }
+
+                default:
+                    result = Result;
+                    break;
+            }
+            return result;
+        }
+        private FUNC_RESULT BufferCheckTimeout(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, BUFFER_UPDATE_TYPE BufferUpdateType)
+        {
+            if (Result == FUNC_RESULT.SUCCESS || Result == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.UNKNOWN;//return Result;
+            int timeout = (int)(DateTime.Now - this._runtimeBuffer.BufferLastUpdatePerior).TotalMilliseconds;
+            if (timeout > this._runtimeConfig.TimeoutMaxMs) return FUNC_RESULT.FAIL;
+            switch (BufferUpdateType)
+            {
+                case BUFFER_UPDATE_TYPE.DEVICE_NUMBER_GET:
+                case BUFFER_UPDATE_TYPE.GSM_POWER_GET:
+                case BUFFER_UPDATE_TYPE.GSM_POWER_SET:
+                    if (timeout <= (int)BUFFER_TIME_OUT_MS.SHORT) return FUNC_RESULT.SUCCESS;
+                    else return FUNC_RESULT.FAIL;
+
+                case BUFFER_UPDATE_TYPE.MODEM_READY:
+                case BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY:
+                    if (!this._runtimeInfo.GsmStatus.ModemStartup)
+                        if (timeout <= (int)BUFFER_TIME_OUT_MS.MODEM_STARTUP) return FUNC_RESULT.SUCCESS;
+                        else return FUNC_RESULT.FAIL;
+                    else if (!this._runtimeInfo.GsmStatus.ModemReady)
+                        if (timeout <= (int)BUFFER_TIME_OUT_MS.MODEM_READY) return FUNC_RESULT.SUCCESS;
+                        else return FUNC_RESULT.FAIL;
+                    else return FUNC_RESULT.UNKNOWN;
+
+                default:
+                    return FUNC_RESULT.UNKNOWN;
+            }
+        }
+        private bool BufferCheckWhileCondition(ref FUNC_RESULT Result, FUNC_RESULT ResultTimeout)
+        {
+            if (Result == FUNC_RESULT.SUCCESS) return false;
+            if (Result == FUNC_RESULT.MAJOR_ERROR) return false;
+            if (ResultTimeout == FUNC_RESULT.FAIL)
+            {
+                Result = FUNC_RESULT.FAIL;
+                return false;
+            }
+            return true;
+        }
+        //End :Buffer Check
+
+        /*
+        private FUNC_RESULT BufferTimeoutCheck(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, BUFFER_UPDATE_TYPE BufferUpdateType)
+        {
+            if (Result != FUNC_RESULT.SUCCESS) return Result;
+            if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.WORKFLOW) return FUNC_RESULT.SUCCESS;
+            int timeout = (int)(DateTime.Now - this._runtimeBuffer.BufferLastUpdatePerior).TotalMilliseconds;
+            if (timeout > this._runtimeConfig.TimeoutMaxMs) return FUNC_RESULT.MAJOR_ERROR;
+            switch (BufferUpdateType)
+            {
+                case BUFFER_UPDATE_TYPE.DEVICE_NUMBER_GET:
+                case BUFFER_UPDATE_TYPE.GSM_POWER_GET:
+                case BUFFER_UPDATE_TYPE.GSM_POWER_SET:
+                    if (timeout <= (int)BUFFER_TIME_OUT_MS.SHORT) return FUNC_RESULT.SUCCESS;
+                    else return FUNC_RESULT.MAJOR_ERROR;
+
+                case BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY:
+                    if (!this._runtimeInfo.GsmStatus.ModemStartup)
+                        if (timeout <= (int)BUFFER_TIME_OUT_MS.MODEM_STARTUP) return FUNC_RESULT.SUCCESS;
+                        else return FUNC_RESULT.MAJOR_ERROR;
+                    else if (!this._runtimeInfo.GsmStatus.ModemReady)
+                        if (timeout <= (int)BUFFER_TIME_OUT_MS.MODEM_READY) return FUNC_RESULT.SUCCESS;
+                        else return FUNC_RESULT.MAJOR_ERROR;
+                    else return FUNC_RESULT.MAJOR_ERROR;
+
+                default:
+                    return FUNC_RESULT.UNKNOWN;
+            }
+        }
+        */
+        //End : Buffer TimeOut Check
+
+        /*
         private FUNC_RESULT XXXBufferCheck(FUNC_RESULT Result, ref BUFFER_UPDATE_SOURCE BufferUpdateSource, BUFFER_UPDATE_TYPE BufferUpdateType)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
@@ -522,6 +620,7 @@ namespace GSM.Core.Source.Device
             if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
             return result;
         }
+        */
         //End : Buffer Update
 
     }
