@@ -764,6 +764,10 @@ namespace GSM.Core.Source.Device
 
                 case nameof(this.BufferUpdate):
                 case nameof(this.BufferDataRemoveExtra):
+                case nameof(this.BufferUpdateList):
+                case nameof(this.BufferUpdateRawList):
+                case nameof(this.BufferUpdateRawListFill):
+                case nameof(this.BufferUpdateDataList):
                     return FUNC_TYPE.BUFFER_UPDATE;
 
                 default:

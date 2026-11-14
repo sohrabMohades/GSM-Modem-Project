@@ -279,6 +279,14 @@ namespace GSM.Core.Source.Device
                 this._logger.Warning("LogWarning | {Message} | {FuncId} | {ParentFuncId} | {FunctionName} | {FunctionType}",
                                      message, context.FuncId, context.ParentFuncId, context.FunctionName, context.FunctionType);
             }
+            public void LogWarning(object Parameters)
+            {
+                if (!this._constructor) return;
+                if (Parameters == null) Parameters = "No warning parameters provided.";
+                FuncLogContext context = this.FuncContextPeek();
+                this._logger.Warning("LogWarning | {Parameters} | {FuncId} | {ParentFuncId} | {FunctionName} | {FunctionType}",
+                                     Parameters, context.FuncId, context.ParentFuncId, context.FunctionName, context.FunctionType);
+            }
 
             // ================== STATE CHANGES ==================
             /// <summary>

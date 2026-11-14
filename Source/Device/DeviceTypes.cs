@@ -433,7 +433,7 @@ namespace GSM.Core.Source.Device
             public string BufferMessage = DeviceDefinitions.STRING_INVALID;             //only for singel read or test
             public int BufferMessageLen = DeviceDefinitions.NUMBER_INVALID;             //only for singel read or test
             public DateTime BufferLastUpdate = DateTime.MinValue;
-            public DateTime BufferLastUpdatePerior = DateTime.MinValue;
+            public DateTime BufferLastCheck = DateTime.MinValue;
             public List<BufferRawData> BufferDataRaw = new List<BufferRawData>();       //RAW Message list, without any Analyze, ONLY REMOVE NULL string from this list
             public List<BufferDataGroup> BufferDataGroup = new List<BufferDataGroup>(); //this list is Analyze of BufferDataRaw list
             public bool NewInboxNotifiction = false;
