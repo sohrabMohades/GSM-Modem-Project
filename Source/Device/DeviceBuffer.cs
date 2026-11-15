@@ -202,34 +202,22 @@ namespace GSM.Core.Source.Device
         //End : Buffer new Index read
 
         //Buffer Update
-        //Buffer Update Main
-        private FUNC_RESULT BufferUpdate(BUFFER_UPDATE_SOURCE BufferUpdateSource, BUFFER_UPDATE_TYPE BufferUpdateType, bool ApplyOperationDelay, ref BUFFER_UPDATE_TYPE BufferUpdateTypeOut)
+        private FUNC_RESULT BufferUpdate(bool ApplyOperationDelay, bool ClearBufferExtra)
         {
-            if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.UNKNOWN) return FUNC_RESULT.MAJOR_ERROR;
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
             try
             {
-                this._logger.FuncStart(nameof(this.BufferUpdate), this.FuncType(nameof(this.BufferUpdate)), new { BufferUpdateSource, BufferUpdateType });
-                this.BufferDataRemoveExtra(result, BufferUpdateSource);
-                result = this.BufferUpdateList(result, BufferUpdateSource, ApplyOperationDelay);
-                result = this.BufferUpdateAnalyze(result, BufferUpdateSource, BufferUpdateType, ref BufferUpdateTypeOut);
+                this._logger.FuncStart(nameof(this.BufferUpdate), this.FuncType(nameof(this.BufferUpdate)));
+                this.BufferDataRemoveExtra(result, ClearBufferExtra);
+                result = this.BufferUpdateList(result, ApplyOperationDelay);
                 return result;
             }
-            finally { this._logger.FuncEnd(result, BufferUpdateType); }
+            finally { this._logger.FuncEnd(result); }
         }
-        //End : Buffer Update Main
-
-        /// <summary>
-        /// Removes null and non-preserved BufferData records from all groups.
-        /// Preserved records remain unchanged. Empty groups are also removed.
-        /// BufferRawData is not accessed or modified.
-        /// Call after a Workflow is completed or during TIMER and DATA_UPDATE_ONLY.
-        /// </summary>
-        /// <param name="Result">The previous operation result. Cleanup runs only when SUCCESS.</param>
-        private void BufferDataRemoveExtra(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource = BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY)
+        private void BufferDataRemoveExtra(FUNC_RESULT Result, bool ClearBufferExtra)
         {
             if (Result != FUNC_RESULT.SUCCESS) return;
-            if (BufferUpdateSource != BUFFER_UPDATE_SOURCE.TIMER && BufferUpdateSource != BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) return;
+            if (!ClearBufferExtra) return;
             BufferDataGroup group;
             BufferData bufferData;
             List<BufferData> removedBufferData = new List<BufferData>();
@@ -259,22 +247,20 @@ namespace GSM.Core.Source.Device
             }
             finally { this._logger.FuncEnd(FUNC_RESULT.UNKNOWN, new { RemovedBufferData = removedBufferData, RemovedNullCount = removedNullCount }); }
         }
-        //Buffer Update List
-        private FUNC_RESULT BufferUpdateList(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, bool ApplyOperationDelay)
+        private FUNC_RESULT BufferUpdateList(FUNC_RESULT Result, bool ApplyOperationDelay)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             FUNC_RESULT result = FUNC_RESULT.SUCCESS;
             try
             {
                 this._logger.FuncStart(nameof(this.BufferUpdateList), this.FuncType(nameof(this.BufferUpdateList)));
-                result = this.BufferUpdateRawList(result, BufferUpdateSource, ApplyOperationDelay);
+                result = this.BufferUpdateRawList(result, ApplyOperationDelay);
                 result = this.BufferUpdateDataList(result);
-                return BufferUpdateListResult(result, BufferUpdateSource);
+                return result;
             }
             finally { this._logger.FuncEnd(result); }
         }
-        //Buffer Update RAW List
-        private FUNC_RESULT BufferUpdateRawList(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, bool ApplyOperationDelay)
+        private FUNC_RESULT BufferUpdateRawList(FUNC_RESULT Result, bool ApplyOperationDelay)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             bool lastIndexNotEqual = false, internalValueSet = true, bufferCleareApplyDelay = false;
@@ -317,8 +303,6 @@ namespace GSM.Core.Source.Device
             }
             finally { this._logger.FuncEnd(result); }
         }
-        //End : Buffer Update RAW List
-        //BufferDataGroup Update
         private FUNC_RESULT BufferUpdateDataList(FUNC_RESULT Result)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
@@ -337,57 +321,30 @@ namespace GSM.Core.Source.Device
             }
             finally { this._logger.FuncEnd(result); }
         }
-        //End : BufferDataGroup Update
+        //End : Buffer Update
+
         //////////////////////////////////////////////////////////// Next Step
-        private FUNC_RESULT BufferUpdateListResult(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource)
-        {
-            switch (BufferUpdateSource)
-            {
-                case BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY:
-                case BUFFER_UPDATE_SOURCE.WORKFLOW_START:
-                case BUFFER_UPDATE_SOURCE.WORKFLOW:
-                    return Result;
-
-                case BUFFER_UPDATE_SOURCE.TIMER:
-                    int bufferDataCount = 0;
-                    return this.BufferDataCount(ref bufferDataCount);
-
-                case BUFFER_UPDATE_SOURCE.UNKNOWN:
-                default:
-                    return FUNC_RESULT.MAJOR_ERROR;
-                    
-            }
-        }
-        private FUNC_RESULT BufferDataCount(ref int BufferDataCount)
-        {
-            BufferDataCount = 0;
-            foreach (BufferDataGroup bufferDataGroup in this._runtimeBuffer.BufferDataGroup)
-                BufferDataCount += bufferDataGroup.BufferData.Count;
-            if (BufferDataCount > 0) return FUNC_RESULT.SUCCESS;
-            else return FUNC_RESULT.FAIL;
-        }
-        //End : Buffer Update List
         //Buffer Update Analyze
-        private FUNC_RESULT BufferUpdateAnalyze(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, BUFFER_UPDATE_TYPE BufferUpdateType, ref BUFFER_UPDATE_TYPE BufferUpdateTypeOut)
+        private FUNC_RESULT BufferUpdateAnalyze(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, BUFFER_UPDATE_TYPE BufferUpdateType, ref BUFFER_UPDATE_TYPE BufferUpdateTypeOut, DateTime AnylizeStartTime)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.DATA_UPDATE_ONLY) 
                 result = FUNC_RESULT.SUCCESS;
             else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW || BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START)
-                result = this.BufferUpdateAnalyzeWorkFlow(BufferUpdateType, ref BufferUpdateTypeOut);
+                result = this.BufferUpdateAnalyzeWorkFlow(BufferUpdateType, ref BufferUpdateTypeOut, AnylizeStartTime);
             else if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.TIMER) 
                 result = this.BufferUpdateAnalyzeTimer();
             else 
                 result = FUNC_RESULT.MAJOR_ERROR;
             return result;
         }
-        private FUNC_RESULT BufferUpdateAnalyzeWorkFlow(BUFFER_UPDATE_TYPE BufferUpdateType, ref BUFFER_UPDATE_TYPE BufferUpdateTypeOut)
+        private FUNC_RESULT BufferUpdateAnalyzeWorkFlow(BUFFER_UPDATE_TYPE BufferUpdateType, ref BUFFER_UPDATE_TYPE BufferUpdateTypeOut, DateTime AnylizeStartTime)
         {
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             BufferUpdateTypeOut = BUFFER_UPDATE_TYPE.UNKOWN;
             foreach (BufferData bufferData in this._runtimeBuffer.BufferDataGroup.SelectMany(group => group.BufferData).Where(data => 
-                                                                                data != null && data.ReceivedTime >= this._runtimeBuffer.BufferLastUpdatePerior))
+                                                                                data != null && data.ReceivedTime >= AnylizeStartTime))
             {
                 switch (BufferUpdateType)
                 {
@@ -433,39 +390,65 @@ namespace GSM.Core.Source.Device
         private FUNC_RESULT BufferCheck(FUNC_RESULT Result, BUFFER_UPDATE_TYPE BufferUpdateType)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
-            bool applyOperationDelay = true;
+            bool applyOperationDelay = true, clearBufferExtra = true;
             DateTime timeStart = DateTime.Now;
             Stopwatch timeoutWatch = Stopwatch.StartNew();
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN, resultTimeout = FUNC_RESULT.UNKNOWN;
-            BUFFER_UPDATE_SOURCE bufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
-            BUFFER_UPDATE_TYPE bufferUpdateTypeInternal = BufferUpdateType;
             do
             {
-                result = this.BufferUpdate(bufferUpdateSource, BufferUpdateType, applyOperationDelay, ref bufferUpdateTypeInternal);
-                this.BufferCheckUpdateSource(ref bufferUpdateSource);
-                result = this.BufferCheckRules(result, BufferUpdateType, ref bufferUpdateTypeInternal);
-                resultTimeout = this.BufferCheckTimeout(result, bufferUpdateSource, bufferUpdateTypeInternal);
+                result = this.BufferUpdate(applyOperationDelay, clearBufferExtra);
+                //result = this.BufferCheckRules(result, BufferUpdateType, ref bufferUpdateTypeInternal);
+                resultTimeout = this.BufferCheckTimeout(result, BufferUpdateType, timeoutWatch.ElapsedMilliseconds);
             }
             while (this.BufferCheckWhileCondition(ref result, resultTimeout));
             return result;
         }
-        private void BufferCheckUpdateSource(ref BUFFER_UPDATE_SOURCE BufferUpdateSource)
+        private FUNC_RESULT BufferCheckTimeout(FUNC_RESULT Result, BUFFER_UPDATE_TYPE BufferUpdateType, long TimeoutMs)
         {
-            if (BufferUpdateSource == BUFFER_UPDATE_SOURCE.WORKFLOW_START) BufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW;
+            if (Result == FUNC_RESULT.SUCCESS || Result == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.UNKNOWN;
+            if (TimeoutMs > this._runtimeConfig.TimeoutMaxMs) return FUNC_RESULT.FAIL;
+            switch (BufferUpdateType)
+            {
+                case BUFFER_UPDATE_TYPE.DEVICE_NUMBER_GET:
+                case BUFFER_UPDATE_TYPE.GSM_POWER_GET:
+                case BUFFER_UPDATE_TYPE.GSM_POWER_SET:
+                    if (TimeoutMs <= (int)BUFFER_TIME_OUT_MS.SHORT) return FUNC_RESULT.SUCCESS;
+                    else return FUNC_RESULT.FAIL;
+
+                case BUFFER_UPDATE_TYPE.MODEM_STARTUP:
+                case BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY:
+                    if (TimeoutMs <= (int)BUFFER_TIME_OUT_MS.MODEM_STARTUP) return FUNC_RESULT.SUCCESS;
+                    else return FUNC_RESULT.FAIL;
+
+                case BUFFER_UPDATE_TYPE.MODEM_READY:
+                    if (TimeoutMs <= (int)BUFFER_TIME_OUT_MS.MODEM_READY) return FUNC_RESULT.SUCCESS;
+                    else return FUNC_RESULT.FAIL;
+
+                default:
+                    return FUNC_RESULT.UNKNOWN;
+            }
         }
+        private bool BufferCheckWhileCondition(ref FUNC_RESULT Result, FUNC_RESULT ResultTimeout)
+        {
+            if (Result == FUNC_RESULT.SUCCESS || Result == FUNC_RESULT.MAJOR_ERROR) return false;
+            if (ResultTimeout == FUNC_RESULT.FAIL) { Result = FUNC_RESULT.FAIL; return false; }
+            return true;
+        }
+
         private FUNC_RESULT BufferCheckRules(FUNC_RESULT Result, BUFFER_UPDATE_TYPE BufferUpdateTypeExternal, ref BUFFER_UPDATE_TYPE BufferUpdateTypeInternal)
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
             switch (BufferUpdateTypeInternal)
             {
-                case BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY: case BUFFER_UPDATE_TYPE.MODEM_READY:
+                case BUFFER_UPDATE_TYPE.MODEM_READY:
                     {
                         this._runtimeInfo.GsmStatus.ModemStartup = true;
                         this._runtimeInfo.GsmStatus.ModemReady = true;
                         result = FUNC_RESULT.SUCCESS;
                         break;
                     }
+
                 case BUFFER_UPDATE_TYPE.MODEM_STARTUP:
                     {
                         if (BufferUpdateTypeExternal == BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY || BufferUpdateTypeExternal == BUFFER_UPDATE_TYPE.MODEM_READY)
@@ -489,9 +472,12 @@ namespace GSM.Core.Source.Device
             }
             return result;
         }
+        //End :Buffer Check
+
+        /*
         private FUNC_RESULT BufferCheckTimeout(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, BUFFER_UPDATE_TYPE BufferUpdateType)
         {
-            if (Result == FUNC_RESULT.SUCCESS || Result == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.UNKNOWN;//return Result;
+            if (Result == FUNC_RESULT.SUCCESS || Result == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.UNKNOWN;
             int timeout = (int)(DateTime.Now - this._runtimeBuffer.BufferLastUpdatePerior).TotalMilliseconds;
             if (timeout > this._runtimeConfig.TimeoutMaxMs) return FUNC_RESULT.FAIL;
             switch (BufferUpdateType)
@@ -522,15 +508,7 @@ namespace GSM.Core.Source.Device
                     return FUNC_RESULT.UNKNOWN;
             }
         }
-        private bool BufferCheckWhileCondition(ref FUNC_RESULT Result, FUNC_RESULT ResultTimeout)
-        {
-            if (Result == FUNC_RESULT.SUCCESS) return false;
-            if (Result == FUNC_RESULT.MAJOR_ERROR) return false;
-            if (ResultTimeout == FUNC_RESULT.FAIL) { Result = FUNC_RESULT.FAIL; return false; }
-            return true;
-        }
-        //End :Buffer Check
-
+        */
         /*
         private FUNC_RESULT BufferTimeoutCheck(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource, BUFFER_UPDATE_TYPE BufferUpdateType)
         {
