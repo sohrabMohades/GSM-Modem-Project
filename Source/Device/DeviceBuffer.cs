@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using static GSM.Core.Source.Device.Device;
+using System.Diagnostics;
 
 namespace GSM.Core.Source.Device
 {
@@ -338,6 +338,7 @@ namespace GSM.Core.Source.Device
             finally { this._logger.FuncEnd(result); }
         }
         //End : BufferDataGroup Update
+        //////////////////////////////////////////////////////////// Next Step
         private FUNC_RESULT BufferUpdateListResult(FUNC_RESULT Result, BUFFER_UPDATE_SOURCE BufferUpdateSource)
         {
             switch (BufferUpdateSource)
@@ -433,6 +434,8 @@ namespace GSM.Core.Source.Device
         {
             if (Result != FUNC_RESULT.SUCCESS) return Result;
             bool applyOperationDelay = true;
+            DateTime timeStart = DateTime.Now;
+            Stopwatch timeoutWatch = Stopwatch.StartNew();
             FUNC_RESULT result = FUNC_RESULT.UNKNOWN, resultTimeout = FUNC_RESULT.UNKNOWN;
             BUFFER_UPDATE_SOURCE bufferUpdateSource = BUFFER_UPDATE_SOURCE.WORKFLOW_START;
             BUFFER_UPDATE_TYPE bufferUpdateTypeInternal = BufferUpdateType;
