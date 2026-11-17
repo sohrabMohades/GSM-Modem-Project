@@ -272,6 +272,102 @@ namespace GSM.Core.Source.Device
         //End : Constants
 
         //Group 1 : Status
+        /// <summary>
+        /// Defines the matching strictness used when analyzing a buffer pattern.
+        /// </summary>
+        internal enum BUFFER_PATTERN_MODE
+        {
+            /// <summary>
+            /// Requires all expected actions to appear consecutively without any
+            /// intervening records.
+            /// </summary>
+            STRICT,
+            /// <summary>
+            /// Allows any number of NULL records between consecutive expected actions.
+            /// Other actions are not allowed between pattern elements.
+            /// </summary>
+            NULL_ALLOWED,
+            /// <summary>
+            /// Allows any number of records, regardless of their action,
+            /// between consecutive expected actions.
+            /// </summary>
+            FLEXIBLE
+        }
+        /// <summary>
+        /// Represents the operational result or modem state inferred
+        /// from the modem's response.
+        /// </summary>
+        internal enum BUFFER_OPERATION_RESULT
+        {
+            /// <summary>
+            /// The operational result has not been determined.
+            /// </summary>
+            UNKNOWN,
+            /// <summary>
+            /// The requested operation completed successfully.
+            /// </summary>
+            SUCCESS,
+            /// <summary>
+            /// The requested operation failed.
+            /// </summary>
+            FAIL,
+            /// <summary>
+            /// The modem is identified as powered off.
+            /// </summary>
+            POWER_OFF,
+            /// <summary>
+            /// The modem reports an adapter disconnection or related condition.
+            /// </summary>
+            ADAPTOR_DC,
+            /// <summary>
+            /// The modem reports a USB disconnection or related condition.
+            /// </summary>
+            USB_DC
+        }
+        /// <summary>
+        /// Defines a sequence of buffer actions and the matching mode
+        /// used to recognize that sequence.
+        /// </summary>
+        internal class BufferPattern
+        {
+            /// <summary>
+            /// Gets or sets the matching strictness applied between pattern actions.
+            /// </summary>
+            public BUFFER_PATTERN_MODE Mode { get; set; }
+            /// <summary>
+            /// Gets or sets the ordered sequence of actions that form the pattern.
+            /// </summary>
+            public List<BUFFER_ACTION> Actions { get; set; }
+        }
+        /// <summary>
+        /// Represents the final result produced by buffer analysis.
+        /// </summary>
+        internal class BufferAnalyzeResult
+        {
+            /// <summary>
+            /// Gets or sets the result of pattern recognition.
+            /// </summary>
+            public FUNC_RESULT Result { get; set; }
+            /// <summary>
+            /// Gets or sets the operational result or modem state
+            /// inferred from the recognized response.
+            /// </summary>
+            public BUFFER_OPERATION_RESULT OperationResult { get; set; }
+            /// <summary>
+            /// Gets the collected output values extracted from matched buffer details.
+            /// </summary>
+            public List<string> BufferResults { get; private set; }
+            /// <summary>
+            /// Initializes a new instance of the BufferAnalyzeResult class.
+            /// </summary>
+            public BufferAnalyzeResult()
+            {
+                this.Result = FUNC_RESULT.UNKNOWN;
+                this.OperationResult = BUFFER_OPERATION_RESULT.UNKNOWN;
+                this.BufferResults = new List<string>();
+            }
+        }
+
         private sealed class DeviceRuntimeState
         {
             public int Busy = 0;

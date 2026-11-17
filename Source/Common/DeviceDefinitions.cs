@@ -102,8 +102,8 @@ namespace GSM.Core.Source.Common
         public const int DATETIME_MINUTE_MAX = 59;
         public const int DATETIME_SECOND_MIN = 0;
         public const int DATETIME_SECOND_MAX = 59;
-        public const int BUFFER_LAST_INDEX_INVALID = 0;
-        public const int BUFFER_LAST_INDEX_MAX = 19;
+        public const int BUFFER_LAST_INDEX_MIN = 1;
+        public const int BUFFER_LAST_INDEX_MAX = 20;
         //End : Check Value
         //Initial Values
         public const int NUMBER_INVALID = -1;

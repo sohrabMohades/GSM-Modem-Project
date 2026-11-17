@@ -332,11 +332,10 @@ namespace GSM.Core.Source.Device
             public static BufferDataGroup BufferAnalyzeRawMessage(BufferRawData bufferRawData)
             {
                 BufferDataGroup bufferDataGroup = new BufferDataGroup { BufferRawData = bufferRawData };
-                if (bufferRawData == null)
-                    return bufferDataGroup;
+                if (bufferRawData == null) return bufferDataGroup;
                 if (string.IsNullOrEmpty(bufferRawData.Message))
                 {
-                    BufferAddData(bufferDataGroup, BUFFER_ACTION.UNKNOWN, string.Empty);
+                    BufferAddData(bufferDataGroup, BUFFER_ACTION.NULL, string.Empty);
                     return bufferDataGroup;
                 }
                 int position = 0;
@@ -346,7 +345,6 @@ namespace GSM.Core.Source.Device
                 {
                     BufferPattern pattern;
                     Match startMatch;
-
                     bool found = BufferFindNextPattern(bufferRawData.Message, position, out pattern, out startMatch);
                     // هیچ الگوی شناخته‌شده دیگری وجود ندارد.
                     // تمام باقی‌مانده به‌عنوان UNKNOWN حفظ می‌شود.
@@ -393,15 +391,6 @@ namespace GSM.Core.Source.Device
                         int terminalEnd = terminalMatch.Index + terminalMatch.Length;
                         if (terminalEnd < segmentEnd) segmentEnd = terminalEnd;
                     }
-                    /*
-                    Match terminalMatch = _bufferTerminalRegex.Match(bufferRawData.Message, startMatch.Index + startMatch.Length);
-                    if (terminalMatch.Success)
-                    {
-                        int terminalEnd = terminalMatch.Index + terminalMatch.Length;
-                        if (terminalEnd < segmentEnd)
-                            segmentEnd = terminalEnd;
-                    }
-                    */
                     // 2. بررسی پایان اختصاصی الگو، در صورت وجود
                     if (pattern.EndRegex != null)
                     {
@@ -439,14 +428,8 @@ namespace GSM.Core.Source.Device
                 foreach (BufferPattern pattern in _bufferPatterns)
                 {
                     Match match = pattern.StartRegex.Match(SourceMessage, SearchFrom);
-                    if (!match.Success)
-                        continue;
-                    if (match.Index < earliestIndex)
-                    {
-                        earliestIndex = match.Index;
-                        FoundPattern = pattern;
-                        FoundMatch = match;
-                    }
+                    if (!match.Success) continue;
+                    if (match.Index < earliestIndex) { earliestIndex = match.Index; FoundPattern = pattern; FoundMatch = match; }
                 }
                 return FoundPattern != null;
             }
@@ -473,18 +456,9 @@ namespace GSM.Core.Source.Device
             // ============================================================
             private static void BufferAddData(BufferDataGroup bufferDataGroup, BUFFER_ACTION Action, string Message)
             {
-                if (bufferDataGroup == null)
-                    return;
-                if (string.IsNullOrWhiteSpace(Message))
-                    Message = string.Empty;
-                //else
-                //    Message = Message.Trim();
-                BufferData data = new BufferData
-                {
-                    Action = Action,
-                    Message = Message,
-                    ReceivedTime = bufferDataGroup.BufferRawData.ReceivedTime
-                };
+                if (bufferDataGroup == null) return;
+                if (string.IsNullOrWhiteSpace(Message)) Message = string.Empty;
+                BufferData data = new BufferData { Action = Action, Message = Message, ReceivedTime = bufferDataGroup.BufferRawData.ReceivedTime };
                 BufferExtractStatus(data);
                 BufferExtractFields(data);
                 bufferDataGroup.BufferData.Add(data);
@@ -502,19 +476,6 @@ namespace GSM.Core.Source.Device
                 { data.Status = BUFFER_ACTION_STATUS.SUCCEEDED; return; }
                 data.Status = BUFFER_ACTION_STATUS.UNKNOWN;
             }
-            /*
-            private static void BufferExtractStatus(BufferData data)
-            {
-                if (_bufferErrorRegex.IsMatch(data.Message))
-                    data.Status = BUFFER_ACTION_STATUS.FAIL;
-                else if (data.Action == BUFFER_ACTION.USSD_RESPONSE && _bufferUssdResponseResultRegex.IsMatch(data.Message))
-                    data.Status = BUFFER_ACTION_STATUS.SUCCEEDED;
-                else if (_bufferOkRegex.IsMatch(data.Message))
-                    data.Status = BUFFER_ACTION_STATUS.SUCCEEDED;
-                else
-                    data.Status = BUFFER_ACTION_STATUS.UNKNOWN;
-            }
-            */
             // ============================================================
             // Extract fields according to the recognized pattern
             // ============================================================
