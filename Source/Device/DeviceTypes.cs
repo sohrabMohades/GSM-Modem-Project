@@ -325,19 +325,32 @@ namespace GSM.Core.Source.Device
             USB_DC
         }
         /// <summary>
-        /// Defines a sequence of buffer actions and the matching mode
-        /// used to recognize that sequence.
+        /// Defines a sequence of expected buffer records and its matching mode.
         /// </summary>
         internal class BufferPattern
         {
             /// <summary>
-            /// Gets or sets the matching strictness applied between pattern actions.
+            /// Gets or sets the matching strictness between pattern items.
             /// </summary>
             public BUFFER_PATTERN_MODE Mode { get; set; }
             /// <summary>
-            /// Gets or sets the ordered sequence of actions that form the pattern.
+            /// Gets or sets the ordered sequence of expected buffer items.
             /// </summary>
-            public List<BUFFER_ACTION> Actions { get; set; }
+            public List<BufferPatternItem> Items { get; set; }
+        }
+        /// <summary>
+        /// Represents one expected buffer record within a pattern.
+        /// </summary>
+        internal class BufferPatternItem
+        {
+            /// <summary>
+            /// Gets or sets the expected buffer action.
+            /// </summary>
+            public BUFFER_ACTION? Action { get; set; }
+            /// <summary>
+            /// Gets or sets the expected buffer status.
+            /// </summary>
+            public BUFFER_ACTION_STATUS? Status { get; set; }
         }
         /// <summary>
         /// Represents the final result produced by buffer analysis.

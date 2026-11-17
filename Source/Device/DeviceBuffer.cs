@@ -324,100 +324,109 @@ namespace GSM.Core.Source.Device
         {
             return new List<BufferPattern>
             {
+                new BufferPattern 
                 // Pattern 1: The modem directly reports that it is ready.
-                new BufferPattern { Mode = BUFFER_PATTERN_MODE.STRICT, Actions = new List<BUFFER_ACTION> { BUFFER_ACTION.MODEM_READY }  },
+                { Mode = BUFFER_PATTERN_MODE.STRICT, Items = new List<BufferPatternItem> { new BufferPatternItem { Action = BUFFER_ACTION.MODEM_READY, Status = null } }  },
                 // Pattern 2: The modem reports startup first and readiness afterward.
                 new BufferPattern
-                { Mode = BUFFER_PATTERN_MODE.STRICT, Actions = new List<BUFFER_ACTION> { BUFFER_ACTION.MODEM_STARTUP, BUFFER_ACTION.MODEM_READY } }
+                { Mode = BUFFER_PATTERN_MODE.STRICT, Items = new List<BufferPatternItem> { new BufferPatternItem { Action = BUFFER_ACTION.MODEM_STARTUP, Status = null } } }
             };
         }
         /// <summary>
-        /// Checks whether the specified buffer pattern exists in the runtime buffer,
-        /// considering only records received at or after the analysis start time.
+        /// Checks whether a buffer record matches the specified pattern item.
         /// </summary>
-        /// <param name="Pattern">The buffer pattern to be matched.</param>
-        /// <param name="AnalyzeStartTime">The minimum received time of eligible buffer records.</param>
+        /// <param name="BufferData">The buffer record to be checked.</param>
+        /// <param name="PatternItem">The expected pattern item.</param>
         /// <returns>
-        /// SUCCESS if the complete pattern is found; otherwise, FAIL.
+        /// SUCCESS if the record matches the pattern item;
+        /// FAIL if the record does not match;
+        /// MAJOR_ERROR if the input or pattern definition is invalid.
+        /// </returns>
+        private FUNC_RESULT BufferAnalyzeMatchPatternItem(BufferData BufferData, BufferPatternItem PatternItem)
+        {
+            if (BufferData == null || PatternItem == null) return FUNC_RESULT.MAJOR_ERROR;
+            if (PatternItem.Action == null && PatternItem.Status == null) return FUNC_RESULT.MAJOR_ERROR;
+            if (PatternItem.Action != null && BufferData.Action != PatternItem.Action.Value) return FUNC_RESULT.FAIL;
+            if (PatternItem.Status != null && BufferData.Status != PatternItem.Status.Value) return FUNC_RESULT.FAIL;
+            return FUNC_RESULT.SUCCESS;
+        }
+        /// <summary>
+        /// Searches the runtime buffer for the specified pattern.
+        /// </summary>
+        /// <param name="Pattern">The pattern to be matched.</param>
+        /// <param name="AnalyzeStartTime">The earliest timestamp eligible for analysis.</param>
+        /// <returns>
+        /// SUCCESS if the complete pattern is found;
+        /// FAIL if no complete match is found;
+        /// MAJOR_ERROR if the pattern definition or an internal operation is invalid.
         /// </returns>
         private FUNC_RESULT BufferAnalyzeMatchPattern(BufferPattern Pattern, DateTime AnalyzeStartTime)
         {
-            if (this._runtimeBuffer.BufferDataGroup == null || Pattern == null || Pattern.Actions == null || Pattern.Actions.Count == 0) return FUNC_RESULT.MAJOR_ERROR;
-            FUNC_RESULT result = FUNC_RESULT.FAIL;
+            FUNC_RESULT result = FUNC_RESULT.UNKNOWN;
+            FUNC_RESULT matchResult;
             try
             {
                 this._logger.FuncStart(nameof(this.BufferAnalyzeMatchPattern), this.FuncType(nameof(this.BufferAnalyzeMatchPattern)));
+                // Validate the pattern definition.
+                if (Pattern == null || Pattern.Items == null || Pattern.Items.Count == 0 || !Enum.IsDefined(typeof(BUFFER_PATTERN_MODE), Pattern.Mode))
+                { result = FUNC_RESULT.MAJOR_ERROR; return result; }
+                // Validate all pattern items before starting the analysis.
+                foreach (BufferPatternItem patternItem in Pattern.Items)
+                {
+                    if (patternItem == null || (patternItem.Action == null && patternItem.Status == null))
+                    { result = FUNC_RESULT.MAJOR_ERROR; return result; }
+                }
+                // No buffer data is available for analysis.
+                if (this._runtimeBuffer.BufferDataGroup == null) { result = FUNC_RESULT.FAIL; return result; }
                 int patternIndex = 0;
+                // Analyze all buffer records as one continuous sequence.
                 foreach (BufferDataGroup group in this._runtimeBuffer.BufferDataGroup)
                 {
+                    //Buffer Group check
                     if (group == null || group.BufferData == null) continue;
                     foreach (BufferData bufferData in group.BufferData)
                     {
-                        if (bufferData == null || bufferData.ReceivedTime < AnalyzeStartTime) continue;
-                        // The first expected action must match before pattern matching begins.
-                        if (patternIndex == 0)
+                        //Buffer Data check
+                        if (bufferData == null) continue;
+                        // Ignore records received before the analysis start time.
+                        if (bufferData.ReceivedTime < AnalyzeStartTime) continue;
+                        // Check the current record against the next expected item.
+                        matchResult = this.BufferAnalyzeMatchPatternItem(bufferData, Pattern.Items[patternIndex]);
+                        if (matchResult == FUNC_RESULT.MAJOR_ERROR) { result = FUNC_RESULT.MAJOR_ERROR; return result; }
+                        if (matchResult == FUNC_RESULT.SUCCESS)
                         {
-                            if (bufferData.Action == Pattern.Actions[0])
-                            {
-                                patternIndex++;
-                                if (patternIndex == Pattern.Actions.Count)
-                                {
-                                    result = FUNC_RESULT.SUCCESS;
-                                    return result;
-                                }
-                            }
-
+                            patternIndex++;
+                            // The complete pattern has been matched.
+                            if (patternIndex == Pattern.Items.Count) { result = FUNC_RESULT.SUCCESS; return result; }
                             continue;
                         }
-
-                        // Apply the matching mode between consecutive expected actions.
-                        switch (Pattern.Mode)
+                        // The current record did not match the expected item.
+                        // Apply the selected matching mode. -> NULL records are allowed between expected items.
+                        if (Pattern.Mode == BUFFER_PATTERN_MODE.NULL_ALLOWED && bufferData.Action == BUFFER_ACTION.NULL) continue;
+                        // Any non-matching record may be skipped. -> However, check whether it can start a new pattern.
+                        if (Pattern.Mode == BUFFER_PATTERN_MODE.FLEXIBLE) ;
+                        // Restart the matching attempt using the current record
+                        // as a possible first item of the pattern.
+                        patternIndex = 0;
+                        matchResult = this.BufferAnalyzeMatchPatternItem(bufferData, Pattern.Items[0]);
+                        if (matchResult == FUNC_RESULT.MAJOR_ERROR)
+                        { result = FUNC_RESULT.MAJOR_ERROR; return result; }
+                        if (matchResult == FUNC_RESULT.SUCCESS)
                         {
-                            case BUFFER_PATTERN_MODE.STRICT:
+                            patternIndex = 1;
 
-                                if (bufferData.Action == Pattern.Actions[patternIndex])
-                                {
-                                    patternIndex++;
-                                }
-                                else
-                                {
-                                    patternIndex = 0;
-                                }
-
-                                break;
-
-                            case BUFFER_PATTERN_MODE.NULL_ALLOWED:
-
-                                if (bufferData.Action == Pattern.Actions[patternIndex])
-                                {
-                                    patternIndex++;
-                                }
-                                else if (bufferData.Action != BUFFER_ACTION.NULL)
-                                {
-                                    patternIndex = 0;
-                                }
-
-                                break;
-
-                            case BUFFER_PATTERN_MODE.FLEXIBLE:
-
-                                if (bufferData.Action == Pattern.Actions[patternIndex])
-                                    patternIndex++;
-
-                                break;
-
-                            default:
-                                return FUNC_RESULT.FAIL;
-                        }
-
-                        if (patternIndex == Pattern.Actions.Count)
-                        {
-                            result = FUNC_RESULT.SUCCESS;
-                            return result;
+                            // The pattern contains only one item.
+                            if (patternIndex == Pattern.Items.Count)
+                            {
+                                result = FUNC_RESULT.SUCCESS;
+                                return result;
+                            }
                         }
                     }
                 }
 
+                // No complete pattern was found.
+                result = FUNC_RESULT.FAIL;
                 return result;
             }
             finally
