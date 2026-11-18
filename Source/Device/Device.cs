@@ -669,14 +669,14 @@ namespace GSM.Core.Source.Device
         private bool DllLoad()
         {
             bool result = false;
-            try 
+            try
             {
                 this._logger.FuncStart(nameof(this.DllLoad), this.FuncType(nameof(this.DllLoad)));
-                this._dllWrapper = new DllWrapper.ManshoorGsmDllWrapper(this._dllFileName); 
+                this._dllWrapper = new DllWrapper.ManshoorGsmDllWrapper(this._dllFileName);
                 result = this.DllLoadCheck();
                 return result;
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 result = false;
                 return DllWrapperErrorCheckSetValue($"Device Constructor Error : {ex.Message}", ex);
@@ -764,11 +764,13 @@ namespace GSM.Core.Source.Device
 
                 case nameof(this.BufferUpdate):
                 case nameof(this.BufferDataRemoveExtra):
-                case nameof(this.BufferUpdateList):
                 case nameof(this.BufferUpdateRawList):
                 case nameof(this.BufferUpdateRawListFill):
                 case nameof(this.BufferUpdateDataList):
                     return FUNC_TYPE.BUFFER_UPDATE;
+
+                case nameof(this.BufferAnalyzeMatchPattern):
+                    return FUNC_TYPE.BUFFER_ANALYZE;
 
                 default:
                     return FUNC_TYPE.UNCLASSIFIED;

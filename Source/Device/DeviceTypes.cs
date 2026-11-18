@@ -40,48 +40,50 @@ namespace GSM.Core.Source.Device
         //Error Codes
         public enum ERROR_CODE
         {
-            NO_ERROR = 0,
-            DLL_WRAPPER = 3,        //any undef DllWrapper Layer
-            INVALID_INPUT = 4,      //Invalid value for input parameters
-            DEVICE_COUNT = 5,       //Device count error
-            DEVICE_INDEX = 6,       //Device index invalid
-            DEVICE_NUMBER_GET = 7,  //device number get has error
-            DEVICE_NUMBER_SET = 8,  //device number set has error
-            IMEI = 9,               //IMEI get has error
-            SIM_STATUS = 13,        //SIM status get has error
-            SIM_NUMBER = 14,        //SIM Number get has error
-            SIM_ID = 15,            //SIM ID get has error
-            GSM_SIGNAL = 16,        //GSM signal get has error
-            SOFTWARE_VERSION = 17,  //software version get has error
-            HARDWARE_MODEL = 18,    //device information get has error
-            GSM_DATE_TIME_GET = 19, //GSM date time get has error
-            GSM_DATE_TIME_SET = 20, //GSM date time set has error
-            NETWORK_NAME_GET = 21,  //Network name get has error
-            NETWORK_NAME_SET = 22,  //Network name auto select has error
-            SMS_CENTER_GET = 23,    //SMS center get has error
-            SMS_CENTER_SET = 24,    //SMS center set has error
-            NATIONAL_MOBILE_ID = 25,//National mobile ID get has error
-            SMS_TYPE_GET = 26,      //SMS type get error
-            SMS_TYPE_SET = 27,      //SMS type set error
-            CHAR_MODE_GET = 28,     //Char mode get error
-            CHAR_MODE_SET = 29,     //Char mode set error
-            AT_COMMAND_DELAY_SET = 30,//AT Command delay set error
-            INBOX_PROPERTY = 31,    //Inbox total space get error
-            INBOX_ALARM_SET = 34,   //Inbox alarm set error
-            SEND_SMS_COMMON = 35,   //Send SMS common error
-            SEND_SMS_RESULT = 36,   //Send SMS return invalid result string
-            SEND_SMS_INPUT = 37,    //Send SMS invalid Input parameters
-            SEND_AT_COMMON = 38,    //Send AT Command common error
-            READ_INBOX_COMMON = 39, //Read Inbox common error
-            DEVICE_SELECT_INDEX = 40,//Device Select By Index Error
-            DEVICE_SELECT_NUMBER = 41,//Device Select By Device Number Error
-            DEVICE_NUMBER = 42,     //Device Number out of range or error
-            EXECUTE_TIMEOUT = 43,   //Execute DLL function timeout
-            BUSY = 44,              //Device is Busy wait untill current work end
-            INTERNAL_STATUS = 45,   //current Status NOT in correct Internal Status
-            GSM_STATUS = 46,        //GSM Status fail
-            DEVICE_NUMBER_CHANGE_NOT_ALLOW = 47,//Device Number not allow change
-            UNKNOWN_ERROR = 1000    //Unknown error 
+            NO_ERROR,
+            DLL_WRAPPER,            //any undef DllWrapper Layer
+            INVALID_INPUT,          //Invalid value for input parameters
+            DEVICE_COUNT,           //Device count error
+            DEVICE_INDEX,           //Device index invalid
+            DEVICE_NUMBER_GET,      //device number get has error
+            DEVICE_NUMBER_SET,      //device number set has error
+            IMEI,                   //IMEI get has error
+            SIM_STATUS,             //SIM status get has error
+            SIM_NUMBER,             //SIM Number get has error
+            SIM_ID,                 //SIM ID get has error
+            GSM_SIGNAL,             //GSM signal get has error
+            SOFTWARE_VERSION,       //software version get has error
+            HARDWARE_MODEL,         //device information get has error
+            GSM_DATE_TIME_GET,      //GSM date time get has error
+            GSM_DATE_TIME_SET,      //GSM date time set has error
+            NETWORK_NAME_GET,       //Network name get has error
+            NETWORK_NAME_SET,       //Network name auto select has error
+            SMS_CENTER_GET,         //SMS center get has error
+            SMS_CENTER_SET,         //SMS center set has error
+            NATIONAL_MOBILE_ID,     //National mobile ID get has error
+            SMS_TYPE_GET,           //SMS type get error
+            SMS_TYPE_SET,           //SMS type set error
+            CHAR_MODE_GET,          //Char mode get error
+            CHAR_MODE_SET,          //Char mode set error
+            AT_COMMAND_DELAY_SET,   //AT Command delay set error
+            INBOX_PROPERTY,         //Inbox total space get error
+            INBOX_ALARM_SET,        //Inbox alarm set error
+            SEND_SMS_COMMON,        //Send SMS common error
+            SEND_SMS_RESULT,        //Send SMS return invalid result string
+            SEND_SMS_INPUT,         //Send SMS invalid Input parameters
+            SEND_AT_COMMON,         //Send AT Command common error
+            READ_INBOX_COMMON,      //Read Inbox common error
+            DEVICE_SELECT_INDEX,    //Device Select By Index Error
+            DEVICE_SELECT_NUMBER,   //Device Select By Device Number Error
+            DEVICE_NUMBER,          //Device Number out of range or error
+            EXECUTE_TIMEOUT,        //Execute DLL function timeout
+            BUSY,                   //Device is Busy wait untill current work end
+            INTERNAL_STATUS,        //current Status NOT in correct Internal Status
+            GSM_STATUS,             //GSM Status fail
+            DEVICE_NUMBER_CHANGE_NOT_ALLOW,//Device Number not allow change
+            BUFFER_LAST_INDEX_GET,  //Buffer last index is invalid
+            BUFFER_ANALYZE_PATTERN, //Buffer Analyze pattern
+            UNKNOWN_ERROR           //Unknown error 
         }
         //End : Error Codes
         //Device Select Type
@@ -119,6 +121,7 @@ namespace GSM.Core.Source.Device
             BASE_DLL_CALL,          //Base call Dll functions
             BASE_SUB,               //Base sub layers functions
             BUFFER_UPDATE,          //Buffer Update functions
+            BUFFER_ANALYZE,         //Buffer Analyze functions
             UNCLASSIFIED            //Unclassified functions
         }
         //End : Enum Function Type
@@ -590,7 +593,7 @@ namespace GSM.Core.Source.Device
         private DllWrapper.ManshoorGsmDllWrapper _dllWrapper;
         private bool _disposed;
 
-        private DeviceRuntimeState _state = new DeviceRuntimeState(); 
+        private DeviceRuntimeState _state = new DeviceRuntimeState();
         private DeviceRuntimeFlags _runtimeFlags = new DeviceRuntimeFlags();
         private DeviceRuntimeInfo _runtimeInfo = new DeviceRuntimeInfo();
         private DeviceRuntimeConfiguration _runtimeConfig = new DeviceRuntimeConfiguration();
@@ -609,6 +612,16 @@ namespace GSM.Core.Source.Device
 
         private ErrorTracer _errorTracer;
         private DeviceLogger _logger;
+
+        private static readonly Dictionary<BUFFER_UPDATE_TYPE, int> BufferCheckTimeoutMap = new Dictionary<BUFFER_UPDATE_TYPE, int>
+        {
+            { BUFFER_UPDATE_TYPE.DEVICE_NUMBER_GET, (int)BUFFER_TIME_OUT_MS.SHORT },
+            { BUFFER_UPDATE_TYPE.GSM_POWER_GET, (int)BUFFER_TIME_OUT_MS.SHORT },
+            { BUFFER_UPDATE_TYPE.GSM_POWER_SET, (int)BUFFER_TIME_OUT_MS.SHORT },
+            { BUFFER_UPDATE_TYPE.MODEM_STARTUP, (int)BUFFER_TIME_OUT_MS.MODEM_STARTUP },
+            { BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY, (int)BUFFER_TIME_OUT_MS.MODEM_STARTUP },
+            { BUFFER_UPDATE_TYPE.MODEM_READY, (int)BUFFER_TIME_OUT_MS.MODEM_READY }
+        };
         //End : Variable
     }
 }

@@ -24,6 +24,18 @@ namespace GSM.Core.Source.Device
                 this.DllWrapperErrorCheckSetValue(ex.Message); return FUNC_RESULT.MAJOR_ERROR;
             }
         }
+        private FUNC_RESULT DllWrapperHasError()
+        {
+            try
+            {
+                if (this._dllWrapper.ErrorCode == DllWrapper.ERROR_CODE.NO_ERROR) return FUNC_RESULT.SUCCESS;
+                else { this.DllWrapperErrorCheckSetValue(this._dllWrapper.ErrorMessage); return FUNC_RESULT.MAJOR_ERROR; }
+            }
+            catch (Exception ex)
+            {
+                this.DllWrapperErrorCheckSetValue(ex.Message); return FUNC_RESULT.MAJOR_ERROR;
+            }
+        }
         private bool DllWrapperErrorCheckSetValue(string error, Exception exception = null)
         {
             this._state.ErrorCode = ERROR_CODE.DLL_WRAPPER;
@@ -35,6 +47,7 @@ namespace GSM.Core.Source.Device
         {
             this._state.ErrorCode = ErrorCode;
             this._state.ErrorMessage = ErrorMessage;
+            this._logger.LogError(this._state.ErrorCode, this._state.ErrorMessage);
             return false;
         }
         //Error Manager
