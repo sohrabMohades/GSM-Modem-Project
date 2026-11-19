@@ -79,7 +79,7 @@ namespace GSM.Core.Source.Common
         public const int DEVICE_INDEX_MIN = 0;
         public const int DEVICE_INDEX_MAX = 127;
         public const int DEVICE_NUMBER_MIN = 0;
-        public const int DEVICE_NUMBER_MAX = 127;
+        public const int DEVICE_NUMBER_MAX = 96;
         public const int IMEI_LEN_MIN = 14;
         public const int IMEI_LEN_MAX = 16;
         public const int SIM_ID_LEN_MIN = 18;

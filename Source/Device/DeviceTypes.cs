@@ -122,6 +122,7 @@ namespace GSM.Core.Source.Device
             BASE_SUB,               //Base sub layers functions
             BUFFER_UPDATE,          //Buffer Update functions
             BUFFER_ANALYZE,         //Buffer Analyze functions
+            BUFFER_CHECK,           //Buffer Check functions
             UNCLASSIFIED            //Unclassified functions
         }
         //End : Enum Function Type

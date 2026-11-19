@@ -675,33 +675,6 @@ namespace GSM.Core.Source.Device
             if (ResultTimeout == FUNC_RESULT.FAIL) { Result = FUNC_RESULT.FAIL; return false; }
             return true;
         }
-        /*
-        private FUNC_RESULT BufferCheckTimeout(FUNC_RESULT Result, BUFFER_UPDATE_TYPE BufferUpdateType, long TimeoutMs)
-        {
-            if (Result == FUNC_RESULT.SUCCESS || Result == FUNC_RESULT.MAJOR_ERROR) return FUNC_RESULT.UNKNOWN;
-            if (TimeoutMs > this._runtimeConfig.TimeoutMaxMs) return FUNC_RESULT.FAIL;
-            switch (BufferUpdateType)
-            {
-                case BUFFER_UPDATE_TYPE.DEVICE_NUMBER_GET:
-                case BUFFER_UPDATE_TYPE.GSM_POWER_GET:
-                case BUFFER_UPDATE_TYPE.GSM_POWER_SET:
-                    if (TimeoutMs <= (int)BUFFER_TIME_OUT_MS.SHORT) return FUNC_RESULT.SUCCESS;
-                    else return FUNC_RESULT.FAIL;
-
-                case BUFFER_UPDATE_TYPE.MODEM_STARTUP:
-                case BUFFER_UPDATE_TYPE.MODEM_STARTUP_READY:
-                    if (TimeoutMs <= (int)BUFFER_TIME_OUT_MS.MODEM_STARTUP) return FUNC_RESULT.SUCCESS;
-                    else return FUNC_RESULT.FAIL;
-
-                case BUFFER_UPDATE_TYPE.MODEM_READY:
-                    if (TimeoutMs <= (int)BUFFER_TIME_OUT_MS.MODEM_READY) return FUNC_RESULT.SUCCESS;
-                    else return FUNC_RESULT.FAIL;
-
-                default:
-                    return FUNC_RESULT.UNKNOWN;
-            }
-        }
-        */
         //End :Buffer Check
 
     }

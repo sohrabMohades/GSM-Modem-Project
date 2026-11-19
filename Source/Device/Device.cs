@@ -746,21 +746,43 @@ namespace GSM.Core.Source.Device
                 case nameof(this.BufferClearWorkflow):
                 case nameof(this.BufferLastIndexGetWorkflow):
                 case nameof(this.BufferMessageGetWorkflow):
+                case nameof(this.DeviceCountGetWorkflow):
+                case nameof(this.DeviceSelectByIndexWorkflow):
+                case nameof(this.DeviceSelectByDeviceNumberWorkflow):
+                case nameof(this.DeviceNumberGetWorkflow):
+                case nameof(this.DeviceNumberSetWorkflow):
                     return FUNC_TYPE.WORKFLOW;
 
                 case nameof(this.BufferClearExecute):
                 case nameof(this.LastBufferIndexGetExecute):
                 case nameof(this.BufferMessageGetExecute):
+                case nameof(this.DeviceCountGetExecute):
+                case nameof(this.DeviceSelectByIndexExecute):
+                case nameof(this.DeviceSelectByDeviceNumberExecute):
+                case nameof(this.DeviceNumberGetExecute):
+                case nameof(this.DeviceNumberGetExecuteNormal):
+                case nameof(this.DeviceNumberGetExecuteBufferCheck):
+                case nameof(this.DeviceNumberSetExecute):
                     return FUNC_TYPE.WORKFLOW_SUB;
 
                 case nameof(this.BufferClearBase):
                 case nameof(this.BufferLastIndexGetBase):
                 case nameof(this.BufferMessageGetBase):
+                case nameof(this.DeviceCountGetBase):
+                case nameof(this.DeviceSelectByIndexBase):
+                case nameof(this.DeviceSelectByDeviceNumberBase):
+                case nameof(this.DeviceNumberGetBase):
+                case nameof(this.DeviceNumberSetBase):
                     return FUNC_TYPE.BASE;
 
                 case nameof(this.BufferClearBaseDll):
                 case nameof(this.BufferLastIndexGetBaseDll):
                 case nameof(this.BufferMessageGetBaseDll):
+                case nameof(this.DeviceCountGetBaseDll):
+                case nameof(this.DeviceSelectByIndexBaseDll):
+                case nameof(this.DeviceSelectByDeviceNumberBaseDll):
+                case nameof(this.DeviceNumberGetBaseDll):
+                case nameof(this.DeviceNumberSetBaseDll):
                     return FUNC_TYPE.BASE_DLL_CALL;
 
                 case nameof(this.BufferUpdate):
@@ -771,7 +793,15 @@ namespace GSM.Core.Source.Device
                     return FUNC_TYPE.BUFFER_UPDATE;
 
                 case nameof(this.BufferAnalyzeMatchPattern):
+                case nameof(this.BufferAnalyzeMatch):
                     return FUNC_TYPE.BUFFER_ANALYZE;
+
+                case nameof(this.BufferCheck):
+                    return FUNC_TYPE.BUFFER_CHECK;
+
+                case nameof(this.DeviceIdentityComplexWorkflow):
+                case nameof(this.DeviceUnselectComplexWorkflow):
+                    return FUNC_TYPE.COMPLEX_WORKFLOW;
 
                 default:
                     return FUNC_TYPE.UNCLASSIFIED;
