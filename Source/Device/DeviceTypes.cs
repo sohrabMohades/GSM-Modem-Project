@@ -216,16 +216,10 @@ namespace GSM.Core.Source.Device
         //Buffer Action Status
         internal enum BUFFER_ACTION_STATUS
         {
-            UNKNOWN = 0,
-            SUCCEEDED = 1,
-            FAIL = 2
-           /*
-            OK_BEL = 3,
-            OK_LF = 4,
-            OK_MODEM_STATUS = 5,
-            OK_CR_CR_LF = 6,
-            OK_CR_LF = 7,
-            */
+            UNKNOWN,
+            SUCCEEDED,
+            FAIL,
+            OK
         }
         //End : Buffer Action Status 
         //Buffer Update Source

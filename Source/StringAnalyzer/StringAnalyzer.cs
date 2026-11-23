@@ -251,32 +251,20 @@ namespace GSM.Core.Source.Device
                                                                                           RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
             //Terminal Patterns
-            private static readonly string _bufferTerminalBoundaryRegex = @"(?:\x0D\x0A|\x0D|\x0A)";
-            private static readonly Regex _bufferTerminalSuccessRegex = new Regex(_bufferTerminalBoundaryRegex + @"OK(?:" + _bufferTerminalBoundaryRegex + @"|$)|^OK" + _bufferTerminalBoundaryRegex,
+            private static readonly string _bufferTerminalBoundaryRegex = @"[\x0D\x0A]";
+            private static readonly Regex _bufferTerminalSuccessRegex = new Regex(@"(?:" + _bufferTerminalBoundaryRegex + @"+OK(?:" + _bufferTerminalBoundaryRegex + @"+|\z)" +
+                                                                                  @"|(?<!" + _bufferTerminalBoundaryRegex + @")OK" + _bufferTerminalBoundaryRegex + @"+" + @")",
                                                                                   RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _bufferTerminalFailRegex = new Regex(_bufferTerminalBoundaryRegex + @"ERROR(?:" + _bufferTerminalBoundaryRegex + @"|$)|^ERROR" + _bufferTerminalBoundaryRegex,
+            private static readonly Regex _bufferTerminalFailRegex = new Regex(@"(?:" + _bufferTerminalBoundaryRegex + @"+ERROR(?:" + _bufferTerminalBoundaryRegex + @"+|\z)" +
+                                                                               @"|(?<!" + _bufferTerminalBoundaryRegex + @")ERROR" + _bufferTerminalBoundaryRegex + @"+" + @")",
                                                                                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            
-            /*
-            private static readonly Regex _bufferTerminalResultRegex = new Regex(@"(?:\x0D\x0A|\x0D|\x0A)(?:OK|ERROR)(?:(?:\x0D\x0A|\x0D|\x0A)|$)|^(?:OK|ERROR)(?:\x0D\x0A|\x0D|\x0A)",
-                                                                                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            //BEL + OK
-            private static readonly Regex _bufferOkBelRegex = new Regex(@"\x07OK", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            //LF + OK
-            private static readonly Regex _bufferOkLfRegex = new Regex(@"\x0AOK", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            //CR + OK + ModemStatus
-            private static readonly Regex _bufferOkModemStatusRegex = new Regex(@"\x0DOK(?<modemStatus>[\x00-\x03])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            //CR + CR + LF + OK + CR + LF
-            private static readonly Regex _bufferOkCrCrLfRegex = new Regex(@"\x0D\x0D\x0AOK\x0D\x0A", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            //CR + LF + OK + CR + LF
-            private static readonly Regex _bufferOkCrLfRegex = new Regex(@"\x0D\x0AOK\x0D\x0A", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            //Matches "(0007)OK" anywhere in the string.
+            //private static readonly Regex _bufferTerminalOKRegex = new Regex( @"\(0007\)OK", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            //Matches "(0007)OK" only at the end of the string.
+            //private static readonly Regex _bufferTerminalOKRegex = new Regex(@"\(0007\)OK\z", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            //Matches only when the entire string is exactly "(0007)OK".
+            private static readonly Regex _bufferTerminalOKRegex = new Regex(@"\A\(0007\)OK\z", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-            private static readonly Regex _bufferOkRegex = new Regex(@"(?:OK)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _bufferErrorRegex = new Regex(@"(?:ERROR)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            */
-            // پایان پاسخ CMGR می‌تواند OK یا ERROR باشد.
-            //private static readonly Regex _bufferTerminalRegex = new Regex(@"(?:OK|ERROR)",
-            //                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             // ============================================================
             // Buffer Pattern Definition
             // ============================================================
@@ -328,13 +316,9 @@ namespace GSM.Core.Source.Device
             }
             private static readonly BufferTerminalPattern[] _bufferTerminalPatterns =
             {
-                new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK_CR_CR_LF, _bufferOkCrCrLfRegex),
-                new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK_CR_LF, _bufferOkCrLfRegex),
-                new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK_MODEM_STATUS, _bufferOkModemStatusRegex),
-                new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK_BEL, _bufferOkBelRegex),
-                new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK_LF, _bufferOkLfRegex),
-                new BufferTerminalPattern(BUFFER_ACTION_STATUS.FAIL, _bufferErrorRegex),
-                new BufferTerminalPattern(BUFFER_ACTION_STATUS.SUCCEEDED, _bufferOkRegex),
+                new BufferTerminalPattern(BUFFER_ACTION_STATUS.SUCCEEDED, _bufferTerminalSuccessRegex),
+                new BufferTerminalPattern(BUFFER_ACTION_STATUS.FAIL, _bufferTerminalFailRegex),
+                new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK, _bufferTerminalOKRegex),
             };
             // ============================================================
             // Buffer Layer 1 - Main Analyzer
