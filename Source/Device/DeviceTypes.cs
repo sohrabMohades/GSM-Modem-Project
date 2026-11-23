@@ -186,6 +186,7 @@ namespace GSM.Core.Source.Device
             UNKNOWN,                    //Response Message not obvious
             MODEM_STARTUP,              //"MODEM:STARTUP" find in message , after this wait for +PBREADY
             MODEM_READY,                //"+PBREADY" find in message, befor this MODEM:STARTUP was appeare
+            DEVICE_NUMBER_GET,          //Device Number Get
             CHAR_MODE_SET,              //"AT+CSCS=" find in message -> GSM, HEX, IRA, PCCP437, 8859-1, UCS2
             PDU_MODE_SET,               //"AT+CMGF=" find in message -> 0 : UDU mode (Persian support) , 1 : Text Mode (NOT Persian support)
             GSM_MODEL,                  //"MS_SMS" find in message -> MS_SMS1402.12.01, Date maybe is another date
@@ -217,13 +218,14 @@ namespace GSM.Core.Source.Device
         {
             UNKNOWN = 0,
             SUCCEEDED = 1,
-            FAIL = 2,
+            FAIL = 2
+           /*
             OK_BEL = 3,
             OK_LF = 4,
             OK_MODEM_STATUS = 5,
             OK_CR_CR_LF = 6,
             OK_CR_LF = 7,
-            OK_DEVICE_NUMBER_GET = 8,
+            */
         }
         //End : Buffer Action Status 
         //Buffer Update Source

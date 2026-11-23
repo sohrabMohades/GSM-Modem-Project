@@ -191,10 +191,10 @@ namespace GSM.Core.Source.Device
             // ============================================================
             // Buffer Layer 1 - Pattern Definitions
             // ============================================================
-            // MODEM:STARTUP -> Modem Startup
-            private static readonly Regex _bufferModemStartupRegex = new Regex(@"MODEM:STARTUP", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            // +PBREADY -> Modem Ready
-            private static readonly Regex _bufferModemReadyRegex = new Regex(@"\+PBREADY", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferDeviceNumberRegex = new Regex(@"\x10OK(?<deviceNumber>[\x00-\xFF])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferModemStartupRegex = new Regex(@"(?:\x0D\x0A|\x0A|\x0D)?MODEM:STARTUP(?:\x0D\x0A|\x0A|\x0D)?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferModemReadyRegex = new Regex(@"(?:\x0D\x0A|\x0A|\x0D)?\+PBREADY(?:\x0D\x0A|\x0A|\x0D)?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
             // ATE1 / ATE0 -> Echo Mode Set
             private static readonly Regex _bufferEchoModeSetRegex = new Regex(@"ATE[01]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferEchoModeResultRegex = new Regex(@"ATE[ \t]*(?<echoMode>[01])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
@@ -250,6 +250,16 @@ namespace GSM.Core.Source.Device
             private static readonly Regex _bufferSmsDeliveryReportResultRegex = new Regex(@"\+CDS[ \t]*:[ \t]*(?<length>\d+)[ \t]*\r?\n(?<pdu>[\s\S]*?)(?=OK|ERROR|$)",
                                                                                           RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+            //Terminal Patterns
+            private static readonly string _bufferTerminalBoundaryRegex = @"(?:\x0D\x0A|\x0D|\x0A)";
+            private static readonly Regex _bufferTerminalSuccessRegex = new Regex(_bufferTerminalBoundaryRegex + @"OK(?:" + _bufferTerminalBoundaryRegex + @"|$)|^OK" + _bufferTerminalBoundaryRegex,
+                                                                                  RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferTerminalFailRegex = new Regex(_bufferTerminalBoundaryRegex + @"ERROR(?:" + _bufferTerminalBoundaryRegex + @"|$)|^ERROR" + _bufferTerminalBoundaryRegex,
+                                                                               RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            
+            /*
+            private static readonly Regex _bufferTerminalResultRegex = new Regex(@"(?:\x0D\x0A|\x0D|\x0A)(?:OK|ERROR)(?:(?:\x0D\x0A|\x0D|\x0A)|$)|^(?:OK|ERROR)(?:\x0D\x0A|\x0D|\x0A)",
+                                                                                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             //BEL + OK
             private static readonly Regex _bufferOkBelRegex = new Regex(@"\x07OK", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             //LF + OK
@@ -260,11 +270,10 @@ namespace GSM.Core.Source.Device
             private static readonly Regex _bufferOkCrCrLfRegex = new Regex(@"\x0D\x0D\x0AOK\x0D\x0A", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             //CR + LF + OK + CR + LF
             private static readonly Regex _bufferOkCrLfRegex = new Regex(@"\x0D\x0AOK\x0D\x0A", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            //DLE + OK + DeviceNumber
-            private static readonly Regex _bufferOkDeviceNumberRegex = new Regex(@"\x10OK(?<deviceNumber>[\x00-\xFF])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
             private static readonly Regex _bufferOkRegex = new Regex(@"(?:OK)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferErrorRegex = new Regex(@"(?:ERROR)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            */
             // پایان پاسخ CMGR می‌تواند OK یا ERROR باشد.
             //private static readonly Regex _bufferTerminalRegex = new Regex(@"(?:OK|ERROR)",
             //                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
@@ -287,8 +296,10 @@ namespace GSM.Core.Source.Device
             // اولویت را مشخص می‌کند.
             private static readonly BufferPattern[] _bufferPatterns =
             {
+                new BufferPattern(BUFFER_ACTION.DEVICE_NUMBER_GET, _bufferDeviceNumberRegex),
                 new BufferPattern(BUFFER_ACTION.MODEM_STARTUP, _bufferModemStartupRegex),
                 new BufferPattern(BUFFER_ACTION.MODEM_READY, _bufferModemReadyRegex),
+                
                 new BufferPattern(BUFFER_ACTION.GSM_CONNECTION_ATE1, _bufferEchoModeSetRegex),
                 new BufferPattern(BUFFER_ACTION.GSM_CONNECTION_AT, _bufferGsmConnectionCheckRegex),
                 new BufferPattern(BUFFER_ACTION.GSM_SIGNAL_GET, _bufferSignalGetRegex),
@@ -320,7 +331,6 @@ namespace GSM.Core.Source.Device
                 new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK_CR_CR_LF, _bufferOkCrCrLfRegex),
                 new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK_CR_LF, _bufferOkCrLfRegex),
                 new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK_MODEM_STATUS, _bufferOkModemStatusRegex),
-                new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK_DEVICE_NUMBER_GET, _bufferOkDeviceNumberRegex),
                 new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK_BEL, _bufferOkBelRegex),
                 new BufferTerminalPattern(BUFFER_ACTION_STATUS.OK_LF, _bufferOkLfRegex),
                 new BufferTerminalPattern(BUFFER_ACTION_STATUS.FAIL, _bufferErrorRegex),
@@ -487,13 +497,14 @@ namespace GSM.Core.Source.Device
                     match = _bufferOkModemStatusRegex.Match(data.Message);
                     if (match.Success) { int modemStatus = (int)match.Groups["modemStatus"].Value[0]; data.Detail.Add(modemStatus.ToString()); }
                 }
-                if (data.Status == BUFFER_ACTION_STATUS.OK_DEVICE_NUMBER_GET)
-                {
-                    match = _bufferOkDeviceNumberRegex.Match(data.Message);
-                    if (match.Success) { int deviceNumber = (int)match.Groups["deviceNumber"].Value[0]; data.Detail.Add(deviceNumber.ToString()); }
-                }
                 switch (data.Action)
                 {
+                    case BUFFER_ACTION.DEVICE_NUMBER_GET:
+                        {
+                            match = _bufferDeviceNumberRegex.Match(data.Message);
+                            if (match.Success) { int deviceNumber = (int)match.Groups["deviceNumber"].Value[0]; data.Detail.Add(deviceNumber.ToString()); }
+                            break;
+                        }
                     case BUFFER_ACTION.MODEM_STARTUP:
                         {
                             break;
