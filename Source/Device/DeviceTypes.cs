@@ -182,17 +182,21 @@ namespace GSM.Core.Source.Device
         //Buffer Action
         internal enum BUFFER_ACTION
         {
-            NULL,                       //NULL
-            UNKNOWN,                    //Response Message not obvious
-            MODEM_STARTUP,              //"MODEM:STARTUP" find in message , after this wait for +PBREADY
-            MODEM_READY,                //"+PBREADY" find in message, befor this MODEM:STARTUP was appeare
-            DEVICE_NUMBER_GET,          //Device Number Get
-            CHAR_MODE_SET,              //"AT+CSCS=" find in message -> GSM, HEX, IRA, PCCP437, 8859-1, UCS2
-            PDU_MODE_SET,               //"AT+CMGF=" find in message -> 0 : UDU mode (Persian support) , 1 : Text Mode (NOT Persian support)
-            GSM_MODEL,                  //"MS_SMS" find in message -> MS_SMS1402.12.01, Date maybe is another date
+            NULL,                       //string is NULL or white space -> "" or "   "
+            UNKNOWN,                    //Response Message not obvious what action is doing
+            MODEM_STARTUP,              //Modem is startup -> "MODEM:STARTUP"
+            MODEM_READY,                //Modem is ready -> "+PBREADY"
+            DEVICE_NUMBER_GET,          //Device Number Get response -> "(0010)OK(DeviceNumber)"
+            GSM_CONNECTION,             //GSM Is Connect first response -> "(0012)OK"
+            GSM_CONNECTION_ECHO,        //GSM buffer return values to send command -> "ATE0" => echo OFF, "ATE1" => echo ON
+            GSM_CONNECTION_AT_TEST,     //Modem AT connection is okey -> "AT"
+            POWER_GET,                  //Power status get and Modem Is Ready (same reaction and same response) -> "(000D)OK(0000)" / "(000D)OK(0001)" / "(000D)OK(0002)"
+            POWER_SET,                  //Power ON and Power OFF -> "(000A)OK"
+            PDU_MODE_SET,               //PDU Mode set -> "AT+CMGF=0" => 0 : UDU mode (Persian support) , "AT+CMGF=1" => 1 : Text Mode (NOT Persian support)
+            CHAR_TYPE_SET,              //Char type set -> "AT+CSCS="XXX"" ,XXX => GSM, HEX, IRA, PCCP437, 8859-1, UCS2
+            HARDWARE_MODEL,             //Hardware model -> "MS_SMS1402.12.01" => hardwareModel = "1402.12.01"
+
             GSM_DATE_TIME_GET,          //"AT+CCLK?" find in message -> request command and GSM response : +CCLK: "04/01/01,00:24:49" 
-            GSM_CONNECTION_ATE1,        //"ATE1" find in message -> GSM Is Connect, phase 1 : ATE1 , phase2 (with delay) AT
-            GSM_CONNECTION_AT,          //"AT" find in message -> GSM Is Connect, phase 1 : ATE1 , phase2 (with delay) AT
             GSM_SIGNAL_GET,             //"AT+CSQ" find in message -> GSM Signal request, response : +CSQ: 21,1
             GSM_SIGNAL_RESPONSE,        //"+CSQ:" find in message -> GSM Signal request, response : +CSQ: 21,1
             USSD_REQUEST,               //"AT+CUSD=" find in message -> sample : AT+CUSD=1,"*140*11#",15 (USSD request)

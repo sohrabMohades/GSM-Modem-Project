@@ -85,9 +85,9 @@ namespace GSM.Core.Source.Device
                         if (items[i].R != expectedR)
                             return new AnalyzerResult<List<string>> { Result = false, Data = null, ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR, ErrorMessage = smsSendResult + SMS_SEND_RESULT_GAP };
                     }
-                    return new AnalyzerResult<List<string>> { Result = true, Data = items.Select(x => x.Reference).ToList(), ErrorCode = ERROR_CODE.NO_ERROR,ErrorMessage = string.Empty };
+                    return new AnalyzerResult<List<string>> { Result = true, Data = items.Select(x => x.Reference).ToList(), ErrorCode = ERROR_CODE.NO_ERROR, ErrorMessage = string.Empty };
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     return new AnalyzerResult<List<string>> { Result = false, Data = null, ErrorCode = ERROR_CODE.SEND_SMS_RESULT_PARSE_ERROR, ErrorMessage = ex.Message };
                 }
@@ -114,12 +114,17 @@ namespace GSM.Core.Source.Device
                         domainMatch = _providerDomainRegex.Match(ussdText);
                         if (domainMatch.Success) providerDomain = domainMatch.Groups["domain"].Value;
                         else providerDomain = string.Empty;
-                        return new AnalyzerResult<BalanceData> { Result = true, Data = new BalanceData { Value = balance, ProviderDomain = providerDomain, UssdText = ussdText },
-                                                                 ErrorCode = ERROR_CODE.NO_ERROR, ErrorMessage = string.Empty };
+                        return new AnalyzerResult<BalanceData>
+                        {
+                            Result = true,
+                            Data = new BalanceData { Value = balance, ProviderDomain = providerDomain, UssdText = ussdText },
+                            ErrorCode = ERROR_CODE.NO_ERROR,
+                            ErrorMessage = string.Empty
+                        };
                     }
                     return new AnalyzerResult<BalanceData> { Result = false, Data = null, ErrorCode = ERROR_CODE.USSD_BALANCE_PARSE_ERROR, ErrorMessage = response };
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     return new AnalyzerResult<BalanceData> { Result = false, Data = null, ErrorCode = ERROR_CODE.USSD_BALANCE_PARSE_ERROR, ErrorMessage = ex.Message };
                 }
@@ -137,8 +142,13 @@ namespace GSM.Core.Source.Device
                     {
                         mobileMatch = _mobileNumberRegex.Match(ussdText);
                         if (!mobileMatch.Success) continue;
-                        return new AnalyzerResult<MobileData> { Result = true, Data = new MobileData { Value = mobileMatch.Groups["mobileNumber"].Value, UssdText = ussdText },
-                                                                ErrorCode = ERROR_CODE.NO_ERROR, ErrorMessage = string.Empty };
+                        return new AnalyzerResult<MobileData>
+                        {
+                            Result = true,
+                            Data = new MobileData { Value = mobileMatch.Groups["mobileNumber"].Value, UssdText = ussdText },
+                            ErrorCode = ERROR_CODE.NO_ERROR,
+                            ErrorMessage = string.Empty
+                        };
                     }
                     return new AnalyzerResult<MobileData> { Result = false, Data = null, ErrorCode = ERROR_CODE.USSD_MOBILE_NUMBER_PARSE_ERROR, ErrorMessage = string.Empty };
                 }
@@ -191,28 +201,38 @@ namespace GSM.Core.Source.Device
             // ============================================================
             // Buffer Layer 1 - Pattern Definitions
             // ============================================================
-            private static readonly Regex _bufferDeviceNumberRegex = new Regex(@"\x10OK(?<deviceNumber>[\x00-\xFF])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            //Action Patterns
+            private static readonly Regex _bufferDeviceNumberGetRegex = new Regex(@"\x10OK(?<deviceNumber>[\x00-\xFF])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferModemStartupRegex = new Regex(@"(?:\x0D\x0A|\x0A|\x0D)?MODEM:STARTUP(?:\x0D\x0A|\x0A|\x0D)?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferModemReadyRegex = new Regex(@"(?:\x0D\x0A|\x0A|\x0D)?\+PBREADY(?:\x0D\x0A|\x0A|\x0D)?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferGsmConnectionRegex = new Regex(@"\x12OK", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferEchoModeResultRegex = new Regex(@"\AATE(?<echoMode>[01])(?=[\r\n]|\z)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferGsmConnectionATTestRegex = new Regex(@"\AAT(?=[\r\n])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferPowerGetRegex = new Regex(@"\x0DOK(?<powerStatus>[\x00-\x02])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferPowerSetRegex = new Regex(@"\x0AOK", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferPduModeSetRegex = new Regex(@"AT\+CMGF=(?<pduMode>[01])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferCharTypeSetRegex = new Regex(@"AT\+CSCS=""(?<charType>GSM|HEX|IRA|PCCP437|8859-1|UCS2)""", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferHardwareModelRegex = new Regex(@"MS_SMS(?<hardwareModel>\d{4}\.\d{2}\.\d{2})", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            //End : Action Patterns
 
-            // ATE1 / ATE0 -> Echo Mode Set
-            private static readonly Regex _bufferEchoModeSetRegex = new Regex(@"ATE[01]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _bufferEchoModeResultRegex = new Regex(@"ATE[ \t]*(?<echoMode>[01])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            // AT (بدون پسوند) -> GSM Connection Check
-            private static readonly Regex _bufferGsmConnectionCheckRegex = new Regex(@"AT[ \t]*\r?\n", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            //Terminal Patterns
+            private static readonly string _bufferTerminalBoundaryRegex = @"[\x0D\x0A]";
+            private static readonly Regex _bufferTerminalSuccessRegex = new Regex(@"(?:" + _bufferTerminalBoundaryRegex + @"+OK(?:" + _bufferTerminalBoundaryRegex + @"+|\z)|(?<!" + _bufferTerminalBoundaryRegex + @")OK" + _bufferTerminalBoundaryRegex + @"+)",
+                                                                                  RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            private static readonly Regex _bufferTerminalFailRegex = new Regex(@"(?:" + _bufferTerminalBoundaryRegex + @"+ERROR(?:" + _bufferTerminalBoundaryRegex + @"+|\z)|(?<!" + _bufferTerminalBoundaryRegex + @")ERROR" + _bufferTerminalBoundaryRegex + @"+)",
+                                                                               RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            //@"\x07OK" -> Matches "\x07OK" anywhere in the string. @"\x07OK\z" -> Matches "\x07OK" only at the end of the string. @"\A\x07OK\z" -> Matches only when the entire string is exactly "\x07OK".
+            private static readonly Regex _bufferTerminalOKRegex = new Regex(@"\x07OK", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            //End : Terminal Patterns
+
+
+
             // AT+CSQ -> Signal Get
             private static readonly Regex _bufferSignalGetRegex = new Regex(@"AT\+CSQ", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferSignalResponseRegex = new Regex(@"\+CSQ[ \t]*:[ \t]*(?<rssi>\d+)[ \t]*,[ \t]*(?<ber>\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
                                                                                RegexOptions.Compiled);
             private static readonly Regex _bufferSignalResponseResultRegex = new Regex(@"\+CSQ[ \t]*:[ \t]*(?<rssi>\d+)[ \t]*,[ \t]*(?<ber>\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
                                                                                RegexOptions.Compiled);
-            // AT+CMGF= -> PDU Mode Set
-            private static readonly Regex _bufferPduModeSetRegex = new Regex(@"AT\+CMGF[ \t]*=", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _bufferPduModeResultRegex = new Regex(@"AT\+CMGF[ \t]*=[ \t]*(?<mode>\d)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            // AT+CSCS= -> Char Mode Set
-            private static readonly Regex _bufferCharModeSetRegex = new Regex(@"AT\+CSCS[ \t]*=", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _bufferCharModeResultRegex = new Regex(@"AT\+CSCS[ \t]*=[ \t]*""(?<charType>[^""]*)""", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
-                                                                                 RegexOptions.Compiled);
             // AT+CUSD= -> USSD Request
             private static readonly Regex _bufferUssdRequestRegex = new Regex(@"AT\+CUSD[ \t]*=", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
             private static readonly Regex _bufferUssdRequestResultRegex = new Regex(@"AT\+CUSD[ \t]*=[ \t]*(?<mode>\d+)[ \t]*,[ \t]*""(?<ussdCode>[^""]*)""[ \t]*,[ \t]*(?<dcs>\d+)",
@@ -250,50 +270,32 @@ namespace GSM.Core.Source.Device
             private static readonly Regex _bufferSmsDeliveryReportResultRegex = new Regex(@"\+CDS[ \t]*:[ \t]*(?<length>\d+)[ \t]*\r?\n(?<pdu>[\s\S]*?)(?=OK|ERROR|$)",
                                                                                           RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-            //Terminal Patterns
-            private static readonly string _bufferTerminalBoundaryRegex = @"[\x0D\x0A]";
-            private static readonly Regex _bufferTerminalSuccessRegex = new Regex(@"(?:" + _bufferTerminalBoundaryRegex + @"+OK(?:" + _bufferTerminalBoundaryRegex + @"+|\z)" +
-                                                                                  @"|(?<!" + _bufferTerminalBoundaryRegex + @")OK" + _bufferTerminalBoundaryRegex + @"+" + @")",
-                                                                                  RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            private static readonly Regex _bufferTerminalFailRegex = new Regex(@"(?:" + _bufferTerminalBoundaryRegex + @"+ERROR(?:" + _bufferTerminalBoundaryRegex + @"+|\z)" +
-                                                                               @"|(?<!" + _bufferTerminalBoundaryRegex + @")ERROR" + _bufferTerminalBoundaryRegex + @"+" + @")",
-                                                                               RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            //Matches "(0007)OK" anywhere in the string.
-            //private static readonly Regex _bufferTerminalOKRegex = new Regex( @"\(0007\)OK", RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            //Matches "(0007)OK" only at the end of the string.
-            //private static readonly Regex _bufferTerminalOKRegex = new Regex(@"\(0007\)OK\z", RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            //Matches only when the entire string is exactly "(0007)OK".
-            private static readonly Regex _bufferTerminalOKRegex = new Regex(@"\A\(0007\)OK\z", RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
             // ============================================================
             // Buffer Pattern Definition
             // ============================================================
             private sealed class BufferPattern
             {
-                public BUFFER_ACTION Action;
-                public Regex StartRegex;
-                public Regex EndRegex;
-                public BufferPattern(BUFFER_ACTION Action, Regex StartRegex, Regex EndRegex = null)
-                {
-                    this.Action = Action;
-                    this.StartRegex = StartRegex;
-                    this.EndRegex = EndRegex;
-                }
+                public BUFFER_ACTION Action; public Regex StartRegex; public Regex EndRegex;
+                public BufferPattern(BUFFER_ACTION Action, Regex StartRegex, Regex EndRegex = null) { this.Action = Action; this.StartRegex = StartRegex; this.EndRegex = EndRegex; }
             }
             // ترتیب الگوها در صورت پیدا شدن چند الگو در یک موقعیت
             // اولویت را مشخص می‌کند.
             private static readonly BufferPattern[] _bufferPatterns =
             {
-                new BufferPattern(BUFFER_ACTION.DEVICE_NUMBER_GET, _bufferDeviceNumberRegex),
+                new BufferPattern(BUFFER_ACTION.DEVICE_NUMBER_GET, _bufferDeviceNumberGetRegex),
                 new BufferPattern(BUFFER_ACTION.MODEM_STARTUP, _bufferModemStartupRegex),
                 new BufferPattern(BUFFER_ACTION.MODEM_READY, _bufferModemReadyRegex),
-                
-                new BufferPattern(BUFFER_ACTION.GSM_CONNECTION_ATE1, _bufferEchoModeSetRegex),
-                new BufferPattern(BUFFER_ACTION.GSM_CONNECTION_AT, _bufferGsmConnectionCheckRegex),
+                new BufferPattern(BUFFER_ACTION.GSM_CONNECTION, _bufferGsmConnectionRegex),
+                new BufferPattern(BUFFER_ACTION.GSM_CONNECTION_ECHO, _bufferEchoModeResultRegex),
+                new BufferPattern(BUFFER_ACTION.GSM_CONNECTION_AT_TEST, _bufferGsmConnectionATTestRegex),
+                new BufferPattern(BUFFER_ACTION.POWER_GET, _bufferPowerGetRegex),
+                new BufferPattern(BUFFER_ACTION.POWER_SET, _bufferPowerSetRegex),
+                new BufferPattern(BUFFER_ACTION.PDU_MODE_SET, _bufferPduModeSetRegex),
+                new BufferPattern(BUFFER_ACTION.CHAR_TYPE_SET, _bufferCharTypeSetRegex),
+                new BufferPattern(BUFFER_ACTION.HARDWARE_MODEL, _bufferHardwareModelRegex),
+
                 new BufferPattern(BUFFER_ACTION.GSM_SIGNAL_GET, _bufferSignalGetRegex),
                 new BufferPattern(BUFFER_ACTION.GSM_SIGNAL_RESPONSE, _bufferSignalResponseRegex),
-                new BufferPattern(BUFFER_ACTION.PDU_MODE_SET, _bufferPduModeSetRegex),
-                new BufferPattern(BUFFER_ACTION.CHAR_MODE_SET, _bufferCharModeSetRegex),
                 new BufferPattern(BUFFER_ACTION.USSD_REQUEST, _bufferUssdRequestRegex),
                 new BufferPattern(BUFFER_ACTION.USSD_RESPONSE, _bufferUssdResponseRegex),
                 new BufferPattern(BUFFER_ACTION.SMS_SEND_COMMAND, _bufferSmsSendCommandRegex),
@@ -304,14 +306,12 @@ namespace GSM.Core.Source.Device
                 new BufferPattern(BUFFER_ACTION.SMS_STORAGE_COMMAND, _bufferSmsStorageCommandRegex),
                 new BufferPattern(BUFFER_ACTION.SMS_STORAGE_RESPONSE, _bufferSmsStorageResponseRegex),
                 new BufferPattern(BUFFER_ACTION.SMS_DELETE, _bufferSmsDeleteCommandRegex),
-
                 new BufferPattern(BUFFER_ACTION.SMS_RECEIVED, _bufferSmsReceivedRegex),
                 new BufferPattern(BUFFER_ACTION.SMS_DELIVERY_REPORT, _bufferSmsDeliveryReportRegex),
             };
             private sealed class BufferTerminalPattern
             {
-                public BUFFER_ACTION_STATUS Status;
-                public Regex Regex;
+                public BUFFER_ACTION_STATUS Status; public Regex Regex;
                 public BufferTerminalPattern(BUFFER_ACTION_STATUS Status, Regex Regex) { this.Status = Status; this.Regex = Regex; }
             }
             private static readonly BufferTerminalPattern[] _bufferTerminalPatterns =
@@ -462,12 +462,12 @@ namespace GSM.Core.Source.Device
             // ============================================================
             private static void BufferExtractStatus(BufferData data)
             {
-                if (data == null) return;
+                if (data == null) { data.Status = BUFFER_ACTION_STATUS.UNKNOWN; return; }
                 BufferTerminalPattern terminalPattern;
                 Match terminalMatch;
                 if (BufferFindNextTerminal(data.Message, 0, out terminalPattern, out terminalMatch)) { data.Status = terminalPattern.Status; return; }
-                if (data.Action == BUFFER_ACTION.USSD_RESPONSE && _bufferUssdResponseResultRegex.IsMatch(data.Message))
-                { data.Status = BUFFER_ACTION_STATUS.SUCCEEDED; return; }
+                //if (data.Action == BUFFER_ACTION.USSD_RESPONSE && _bufferUssdResponseResultRegex.IsMatch(data.Message))
+                //{ data.Status = BUFFER_ACTION_STATUS.SUCCEEDED; return; }
                 data.Status = BUFFER_ACTION_STATUS.UNKNOWN;
             }
             // ============================================================
@@ -476,59 +476,56 @@ namespace GSM.Core.Source.Device
             private static void BufferExtractFields(BufferData data)
             {
                 Match match;
-                if (data.Status == BUFFER_ACTION_STATUS.OK_MODEM_STATUS)
-                {
-                    match = _bufferOkModemStatusRegex.Match(data.Message);
-                    if (match.Success) { int modemStatus = (int)match.Groups["modemStatus"].Value[0]; data.Detail.Add(modemStatus.ToString()); }
-                }
                 switch (data.Action)
                 {
+                    case BUFFER_ACTION.MODEM_STARTUP:
+                    case BUFFER_ACTION.MODEM_READY:
+                    case BUFFER_ACTION.GSM_CONNECTION:
+                    case BUFFER_ACTION.GSM_CONNECTION_AT_TEST:
+                        break;
+
                     case BUFFER_ACTION.DEVICE_NUMBER_GET:
                         {
-                            match = _bufferDeviceNumberRegex.Match(data.Message);
-                            if (match.Success) { int deviceNumber = (int)match.Groups["deviceNumber"].Value[0]; data.Detail.Add(deviceNumber.ToString()); }
-                            break;
-                        }
-                    case BUFFER_ACTION.MODEM_STARTUP:
-                        {
+                            if ((match = _bufferDeviceNumberGetRegex.Match(data.Message)).Success) data.Detail.Add(((int)match.Groups["deviceNumber"].Value[0]).ToString());
                             break;
                         }
 
-                    case BUFFER_ACTION.MODEM_READY:
+                    case BUFFER_ACTION.GSM_CONNECTION_ECHO:
                         {
+                            if ((match = _bufferEchoModeResultRegex.Match(data.Message)).Success) data.Detail.Add(match.Groups["echoMode"].Value);
                             break;
                         }
 
-                    case BUFFER_ACTION.GSM_CONNECTION_ATE1:
+                    case BUFFER_ACTION.POWER_GET:
                         {
-                            match = _bufferEchoModeResultRegex.Match(data.Message);
-                            if (match.Success) data.Detail.Add(match.Groups["echoMode"].Value);
-                            break;
-                        }
-
-                    case BUFFER_ACTION.GSM_CONNECTION_AT:
-                        {
-                            break;
-                        }
-
-                    case BUFFER_ACTION.GSM_SIGNAL_RESPONSE:
-                        {
-                            match = _bufferSignalResponseResultRegex.Match(data.Message);
-                            if (match.Success) { data.Detail.Add(match.Groups["rssi"].Value); data.Detail.Add(match.Groups["ber"].Value); }
+                            if ((match = _bufferPowerGetRegex.Match(data.Message)).Success) data.Detail.Add(((int)match.Groups["powerStatus"].Value[0]).ToString());
                             break;
                         }
 
                     case BUFFER_ACTION.PDU_MODE_SET:
                         {
-                            match = _bufferPduModeResultRegex.Match(data.Message);
-                            if (match.Success) data.Detail.Add(match.Groups["mode"].Value);
+                            if ((match = _bufferPduModeSetRegex.Match(data.Message)).Success) data.Detail.Add(match.Groups["pduMode"].Value);
                             break;
                         }
 
-                    case BUFFER_ACTION.CHAR_MODE_SET:
+                    case BUFFER_ACTION.CHAR_TYPE_SET:
                         {
-                            match = _bufferCharModeResultRegex.Match(data.Message);
-                            if (match.Success) data.Detail.Add(match.Groups["charType"].Value);
+                            if ((match = _bufferCharTypeSetRegex.Match(data.Message)).Success) data.Detail.Add(match.Groups["charType"].Value);
+                            break;
+                        }
+
+                    case BUFFER_ACTION.HARDWARE_MODEL:
+                        {
+                            if ((match = _bufferHardwareModelRegex.Match(data.Message)).Success) data.Detail.Add(match.Groups["hardwareModel"].Value);
+                            break;
+                        }
+
+
+
+                    case BUFFER_ACTION.GSM_SIGNAL_RESPONSE:
+                        {
+                            match = _bufferSignalResponseResultRegex.Match(data.Message);
+                            if (match.Success) { data.Detail.Add(match.Groups["rssi"].Value); data.Detail.Add(match.Groups["ber"].Value); }
                             break;
                         }
 
@@ -544,7 +541,7 @@ namespace GSM.Core.Source.Device
                         {
                             match = _bufferUssdResponseResultRegex.Match(data.Message);
                             if (match.Success)
-                            { data.Detail.Add(match.Groups["status"].Value); data.Detail.Add(match.Groups["ussdText"].Value); data.Detail.Add(match.Groups["dcs"].Value);}
+                            { data.Detail.Add(match.Groups["status"].Value); data.Detail.Add(match.Groups["ussdText"].Value); data.Detail.Add(match.Groups["dcs"].Value); }
                             break;
                         }
 
@@ -573,8 +570,10 @@ namespace GSM.Core.Source.Device
                         {
                             match = _bufferInboxReadResponseResultRegex.Match(data.Message);
                             if (match.Success)
-                            { data.Detail.Add(match.Groups["messageStatus"].Value); data.Detail.Add(match.Groups["field2"].Value); data.Detail.Add(match.Groups["length"].Value);
-                              data.Detail.Add(match.Groups["textMessage"].Value); }
+                            {
+                                data.Detail.Add(match.Groups["messageStatus"].Value); data.Detail.Add(match.Groups["field2"].Value); data.Detail.Add(match.Groups["length"].Value);
+                                data.Detail.Add(match.Groups["textMessage"].Value);
+                            }
                             break;
                         }
 
@@ -582,9 +581,11 @@ namespace GSM.Core.Source.Device
                         {
                             match = _bufferSmsStorageResponseResultRegex.Match(data.Message);
                             if (match.Success)
-                            { data.Detail.Add(match.Groups["storage1"].Value); data.Detail.Add(match.Groups["used1"].Value); data.Detail.Add(match.Groups["total1"].Value);
-                              data.Detail.Add(match.Groups["storage2"].Value); data.Detail.Add(match.Groups["used2"].Value); data.Detail.Add(match.Groups["total2"].Value);
-                              data.Detail.Add(match.Groups["storage3"].Value); data.Detail.Add(match.Groups["used3"].Value); data.Detail.Add(match.Groups["total3"].Value); }
+                            {
+                                data.Detail.Add(match.Groups["storage1"].Value); data.Detail.Add(match.Groups["used1"].Value); data.Detail.Add(match.Groups["total1"].Value);
+                                data.Detail.Add(match.Groups["storage2"].Value); data.Detail.Add(match.Groups["used2"].Value); data.Detail.Add(match.Groups["total2"].Value);
+                                data.Detail.Add(match.Groups["storage3"].Value); data.Detail.Add(match.Groups["used3"].Value); data.Detail.Add(match.Groups["total3"].Value);
+                            }
                             break;
                         }
 
