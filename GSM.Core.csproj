@@ -261,7 +261,6 @@
     <Compile Include="Source\DllWrapper\DllWrapperDelegates.cs" />
     <Compile Include="Source\DllWrapper\DllWrapperLoader.cs" />
     <Compile Include="Source\DllWrapper\DllWrapperTypes.cs" />
-    <Compile Include="Source\DllWrapper\DllWrapper_Temp.cs" />
     <Compile Include="Source\FileManager\FileManager.cs" />
     <Compile Include="Source\SMS\SMSManager.cs" />
     <Compile Include="Source\SMS\SMSTypes.cs" />
