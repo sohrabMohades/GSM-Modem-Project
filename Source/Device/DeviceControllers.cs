@@ -23,9 +23,9 @@ namespace GSM.Core.Source.Device
         public bool DeviceCountGet(ref int DeviceCount, bool InternalValueSet)
         {
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
+            if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceCountGet));
             try
             {
-                if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceCountGet));
                 if (!this.InternalStatusCheck(INTERNAL_STATUS.BASIC_LEVEL, nameof(this.DeviceCountGet))) return this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.DeviceCountGet));
                 this.ErrorReset();
                 funcResult = this.DeviceCountGetWorkflow(ref DeviceCount, InternalValueSet);
@@ -46,9 +46,9 @@ namespace GSM.Core.Source.Device
         public bool DeviceIdentity(int DeviceIndex, ref int DeviceNumber, ref string IMEI)
         {
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
+            if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceIdentity));
             try
             {
-                if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceIdentity));
                 if (!this.InternalStatusCheck(INTERNAL_STATUS.BASIC_LEVEL, nameof(this.DeviceIdentity))) return this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.DeviceIdentity));
                 this.ErrorReset();
                 funcResult = this.DeviceIdentityComplexWorkflow(DeviceIndex, ref DeviceNumber, ref IMEI);
@@ -69,9 +69,9 @@ namespace GSM.Core.Source.Device
         public bool DeviceNumberChange(int DeviceNumberNew)
         {
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
+            if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceNumberChange));
             try
             {
-                if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceNumberChange));
                 if (!this.InternalStatusCheck(INTERNAL_STATUS.BASIC_LEVEL, nameof(this.DeviceNumberChange))) return this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.DeviceNumberChange));
                 this.ErrorReset();
                 //funcResult = this.DeviceNumberChangeComplexWorkflow(DeviceIndex, DeviceNumberNew);
@@ -92,9 +92,9 @@ namespace GSM.Core.Source.Device
         public bool DeviceUnselect()
         {
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
+            if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceUnselect));
             try
             {
-                if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceUnselect));
                 if (!this.InternalStatusCheck(INTERNAL_STATUS.BASIC_LEVEL, nameof(this.DeviceUnselect))) return this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.DeviceUnselect));
                 this.ErrorReset();
                 funcResult = this.DeviceUnselectComplexWorkflow();
@@ -119,9 +119,9 @@ namespace GSM.Core.Source.Device
         public bool DeviceRefresh(bool PowerRestartAllow)
         {
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
+            if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceRefresh));
             try
             {
-                if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.DeviceRefresh));
                 if (!this.InternalStatusCheck(INTERNAL_STATUS.SINGLE_DEVICE, nameof(this.DeviceRefresh))) return this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.DeviceRefresh));
                 funcResult = this.DeviceRefreshComplexWorkFlow(PowerRestartAllow);
                 ////////_runtimeFlags Updates
@@ -141,9 +141,9 @@ namespace GSM.Core.Source.Device
         public bool SmsSend(string PhoneNumber, string SmsText, ref List<string> SMSReference)
         {
             FUNC_RESULT funcResult = FUNC_RESULT.UNKNOWN;
+            if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.SmsSend));
             try
             {
-                if (!this.TrySetBusy()) return this.ErrorSet(ERROR_CODE.BUSY, nameof(this.SmsSend));
                 if (!this.InternalStatusCheck(INTERNAL_STATUS.SINGLE_DEVICE, nameof(this.SmsSend))) return this.ErrorSet(ERROR_CODE.INTERNAL_STATUS, nameof(this.SmsSend));
                 DeviceDefinitions.SmsSendData smsSendData = null;
                 funcResult = this.SmsSendDataInitial(ref smsSendData, PhoneNumber, SmsText);

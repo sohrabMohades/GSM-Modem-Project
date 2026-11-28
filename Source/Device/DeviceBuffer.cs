@@ -634,7 +634,6 @@ namespace GSM.Core.Source.Device
                 do
                 {
                     result = this.BufferUpdate(applyOperationDelay, clearBufferExtra);
-                    result = this.BufferUpdate(applyOperationDelay, clearBufferExtra);
                     resultTimeout = this.BufferCheckTimeout(result, BufferUpdateType, timeoutWatch.ElapsedMilliseconds);
                 }
                 while (this.BufferCheckWhileCondition(ref result, resultTimeout));

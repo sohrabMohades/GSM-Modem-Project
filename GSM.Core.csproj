@@ -288,6 +288,7 @@
     <None Include="Docs\Design\GSM_Design_v1.1_FA.docx" />
     <None Include="Docs\Requirements\GSM_Project_Definition_v1.1_FA.docx" />
     <None Include="Docs\Temp\Buffer_Data_Collect.xlsx" />
+    <None Include="Docs\Temp\Device_Review_Roadmap.docx" />
     <None Include="Docs\Temp\USB_Analyze.xlsx" />
     <None Include="Docs\Temp\WorkTime.xlsx" />
     <None Include="packages.config" />
